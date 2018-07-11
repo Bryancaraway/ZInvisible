@@ -247,22 +247,22 @@ int main()
 
                 const int& nSearchBin = tr.getVar<int>("nSearchBin");
                 const int& cntNJetsPt30Eta24Zinv = tr.getVar<int>("cntNJetsPt30Eta24Zinv");
-                const double& cleanMetPt = tr.getVar<double>("cleanMetPt");
-                const double& best_had_brJet_MT2Zinv = tr.getVar<double>("best_had_brJet_MT2Zinv");
+                const float& cleanMetPt = tr.getVar<float>("cleanMetPt");
+                const float& best_had_brJet_MT2Zinv = tr.getVar<float>("best_had_brJet_MT2Zinv");
                 const int& cntCSVSZinv            = tr.getVar<int>("cntCSVSZinv");
                 const int& nTopCandSortedCntZinv  = tr.getVar<int>("nTopCandSortedCntZinv");
                 const bool& passBaseline = tr.getVar<bool>("passBaseline");
                 const bool& passBaselineZinv = tr.getVar<bool>("passBaselineZinv");
                 const bool& passLeptVeto = tr.getVar<bool>("passLeptVeto");
-                const double& bTagSF_EventWeightSimple_Central = tr.getVar<double>("bTagSF_EventWeightSimple_Central");
+                const float& bTagSF_EventWeightSimple_Central = tr.getVar<float>("bTagSF_EventWeightSimple_Central");
 
-                const double& triggerEffMC = tr.getVar<double>("TriggerEffMC");
-                const double& nJetWgtDYZ   = tr.getVar<double>("nJetWgtDYZ");
-                const double& normWgt0b    = tr.getVar<double>("normWgt0b");
+                const float& triggerEffMC = tr.getVar<float>("TriggerEffMC");
+                const float& nJetWgtDYZ   = tr.getVar<float>("nJetWgtDYZ");
+                const float& normWgt0b    = tr.getVar<float>("normWgt0b");
 
                 if(passBaselineZinv && passLeptVeto && cntCSVSZinv>=1 && nTopCandSortedCntZinv >= 3 && cleanMetPt < 350)
                 {
-                    double weight_1 = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
+                    float weight_1 = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
                         N0_83 += weight_1;
                         N0square_83 += weight_1*weight_1;
                         //N0_divide_83 = N0_83/N0square_83;
@@ -271,7 +271,7 @@ int main()
                 }
                 if(passBaselineZinv && passLeptVeto && cntCSVSZinv>=3 && nTopCandSortedCntZinv >= 2 && cleanMetPt < 350)
                 {
-                    double weight_2 = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
+                    float weight_2 = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
                         N0_83_top += weight_2;
                         N0square_83_top += weight_2*weight_2;
                         //std::cout<<"events bin 83 top "<<tr.getEvtNum() <<std::endl;
@@ -280,14 +280,14 @@ int main()
 
                if(passBaselineZinv && passLeptVeto && cntCSVSZinv>=2 && nTopCandSortedCntZinv >= 3 && cleanMetPt > 350)
                 {
-                    double weight_3 = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
+                    float weight_3 = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
                         N0_84 += weight_3;
                         N0square_84 += weight_3*weight_3;
                         n84_num ++;
                 }
                 if(passBaselineZinv && passLeptVeto && cntCSVSZinv>=3 && nTopCandSortedCntZinv >= 3 && cleanMetPt > 350)
                 {
-                    double weight_4 = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
+                    float weight_4 = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
                         N0_84_top += weight_4;
                         N0square_84_top += weight_4*weight_4;
                         n84t_num ++;
@@ -304,7 +304,7 @@ int main()
                 //fill stat uncertainty histograms here
                 if(passBaselineZinv && passLeptVeto)
                 {
-                    double weight = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
+                    float weight = triggerEffMC * nJetWgtDYZ * normWgt0b * bTagSF_EventWeightSimple_Central * fs.getWeight();
 
                     if(nSearchBin >= 0 && nSearchBin < NSEARCHBINS)
                     {
@@ -362,7 +362,7 @@ int main()
         {
             h[ih][i]->Write();
             h[ih][i]->Scale(1/h[ih][i]->Integral(0, h[ih][i]->GetNbinsX() + 1));
-            double ll = -999.9, ul = -999.9;
+            float ll = -999.9, ul = -999.9;
             TH1* hint = (TH1*)h[ih][i]->Clone((std::string(h[ih][i]->GetName())+"_int").c_str());
             for(int iBin = 1; iBin <= h[ih][i]->GetNbinsX(); ++iBin)
             {

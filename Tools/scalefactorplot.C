@@ -13,17 +13,17 @@
 #include "TLegend.h"
 #include "TGraphAsymmErrors.h"
 
-void smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, double& gmin, double& gmax, double& gpThreshMax)
+void smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, float& gmin, float& gmax, float& gpThreshMax)
 {
     const bool isLog = p->GetLogy();
-    double min = 9e99;
-    double max = -9e99;
-    double pThreshMax = -9e99;
+    float min = 9e99;
+    float max = -9e99;
+    float pThreshMax = -9e99;
     int threshold = static_cast<int>(h->GetNbinsX()*(l->GetX1() - p->GetLeftMargin())/((1 - p->GetRightMargin()) - p->GetLeftMargin()));
 
     for(int i = 1; i <= h->GetNbinsX(); ++i)
     {
-        double bin = h->GetBinContent(i);
+        float bin = h->GetBinContent(i);
         if(bin > max) max = bin;
         else if(bin > 1e-10 && bin < min) min = bin;
         if(i >= threshold && bin > pThreshMax) pThreshMax = bin;
@@ -44,7 +44,7 @@ void makeplot(TFile* f, std::string hname)
     gStyle->SetErrorX(0.5);
     // Prepare canvas
     TCanvas *c;
-    double fontScale;
+    float fontScale;
     c = new TCanvas("c1", "c1", 1200, 800);
     c->Divide(1, 1);
     c->cd(1);
@@ -70,7 +70,7 @@ void makeplot(TFile* f, std::string hname)
     dummy->GetYaxis()->SetLabelSize(0.20 * 2 / 6.5 * fontScale);
     if(dummy->GetNdivisions() % 100 > 5) dummy->GetXaxis()->SetNdivisions(6, 5, 0);
 
-    double max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
+    float max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
     int iSingle = 0, iRatio = 0;
     char legEntry[128];
 

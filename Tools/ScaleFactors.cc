@@ -2,11 +2,11 @@
 
 extern "C" 
 {
-    static double python_sf_norm0b()
+    static float python_sf_norm0b()
     {
         return ScaleFactors::sf_norm0b();
     }
-    static double python_sf_norm0b_err()
+    static float python_sf_norm0b_err()
     {
         return ScaleFactors::sfunc_norm0b();
     }

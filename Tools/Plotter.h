@@ -42,14 +42,14 @@ private:
         std::string rawName;
         VarName name;
         char type;
-        double val, val2;
+        float val, val2;
         bool inverted;
 
-        Cut(std::string s, char t, bool inv, double v, double v2 = 0);
+        Cut(std::string s, char t, bool inv, float v, float v2 = 0);
         bool passCut(const NTupleReader& tr) const;
     private:
         void parseName();
-        double translateVar(const NTupleReader& tr) const;
+        float translateVar(const NTupleReader& tr) const;
         bool boolReturn(const NTupleReader& tr) const;
     };
 
@@ -89,14 +89,14 @@ public:
     public:
         std::string label, weightStr;
         std::vector<AnaSamples::FileSummary> files;
-        double kfactor;
+        float kfactor;
 
         DatasetSummary() {}
-//        DatasetSummary(std::string lab, std::string nam, std::string tree, std::string cuts, double xs, double l, double k, double n);
-        DatasetSummary(std::string lab, std::vector<AnaSamples::FileSummary>& f, std::string cuts = "", std::string weights = "", double k = 1.0);
+//        DatasetSummary(std::string lab, std::string nam, std::string tree, std::string cuts, float xs, float l, float k, float n);
+        DatasetSummary(std::string lab, std::vector<AnaSamples::FileSummary>& f, std::string cuts = "", std::string weights = "", float k = 1.0);
 
-        double getWeight(const NTupleReader& tr) const;
-        double extractWeightNames(std::set<std::string>& ab) const;
+        float getWeight(const NTupleReader& tr) const;
+        float extractWeightNames(std::set<std::string>& ab) const;
 
     private:
         std::vector<std::string> weightVec_;
@@ -122,15 +122,15 @@ public:
         std::vector<HistVecAndType> hists;
         std::string name;
         int nBins;
-        double low, high;
+        float low, high;
         bool isLog, isNorm, isRatio;
         std::string xAxisLabel, yAxisLabel;
         std::pair<int, int> ratio;
-        std::vector<double> binEdges;
+        std::vector<float> binEdges;
 
         HistSummary() {}
-        HistSummary(std::string l, std::vector<Plotter::DataCollection> ns, std::pair<int, int> ratio, std::string cuts, int nb, double ll, double ul, bool log, bool norm, std::string xal, std::string yal, bool isRatio = true);
-        HistSummary(std::string l, std::vector<Plotter::DataCollection> ns, std::pair<int, int> ratio, std::string cuts, std::vector<double> be, bool log, bool norm, std::string xal, std::string yal, bool isRatio = true);
+        HistSummary(std::string l, std::vector<Plotter::DataCollection> ns, std::pair<int, int> ratio, std::string cuts, int nb, float ll, float ul, bool log, bool norm, std::string xal, std::string yal, bool isRatio = true);
+        HistSummary(std::string l, std::vector<Plotter::DataCollection> ns, std::pair<int, int> ratio, std::string cuts, std::vector<float> be, bool log, bool norm, std::string xal, std::string yal, bool isRatio = true);
         ~HistSummary();
 
         TH1* fhist(){if(hists.size()) return hists.front().hcsVec.front()->h;}
@@ -147,7 +147,7 @@ public:
         const Plotter::DatasetSummary* dssp;
 
         void setDSS(const Plotter::DatasetSummary* d) { dssp = d; }
-        void fillHist(const NTupleReader& tr, const double& weight);
+        void fillHist(const NTupleReader& tr, const float& weight);
         void generateHist();
 
         CutFlowSummary(std::string n, Plotter::DataCollection ns, std::vector<std::string> cutLevels);
@@ -165,14 +165,14 @@ public:
     static void parseSingleVar(const std::string& name, VarName& var);
 
     void setPlotDir(const std::string plotDir);
-    void setLumi(const double lumi);
+    void setLumi(const float lumi);
     void setDoHists(const bool doHists);
     void setDoTuple(const bool doTuple);
     void setRegisterFunction(RegisterFunctions* rf);
     void setPrintInterval(const int printInterval);
     void setCutFlows(std::vector<CutFlowSummary> cfs);
 
-    double getLumi();
+    float getLumi();
 
     void plot();
     void saveHists();
@@ -189,7 +189,7 @@ private:
     const int startFile_;
     const int maxEvts_;
     int printInterval_;
-    double lumi_;
+    float lumi_;
     bool doHists_, doTuple_;
     RegisterFunctions *registerfunc_;
 
@@ -209,10 +209,10 @@ private:
 
     void createHistsFromTuple();
     void createHistsFromFile();
-    void fillHist(TH1 * const h, const VarName& name, const NTupleReader& tr, const double weight);
-    void smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, double& gmin, double& gmax, double& gpThreshMax, const bool error = false) const;
+    void fillHist(TH1 * const h, const VarName& name, const NTupleReader& tr, const float weight);
+    void smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, float& gmin, float& gmax, float& gpThreshMax, const bool error = false) const;
 
-    template<typename T> static const double& tlvGetValue(const std::string& name, const T& v)
+    template<typename T> static const float& tlvGetValue(const std::string& name, const T& v)
     {
         if     (name.find("pt")  != std::string::npos)
         {
@@ -248,7 +248,7 @@ private:
         {
             printf("Invalid lorentz variable: \"%s\", returning nullptr segfault incoming!!!\n", name.c_str());
             fflush(stdin);
-            return *static_cast<double*>(nullptr);
+            return *static_cast<float*>(nullptr);
         }
     }
 
@@ -262,7 +262,7 @@ private:
         return *obj;
     }
 
-    template<typename T> void fillHistFromVec(TH1* const h, const VarName& name, const NTupleReader& tr, const double weight)
+    template<typename T> void fillHistFromVec(TH1* const h, const VarName& name, const NTupleReader& tr, const float weight)
     {
         if(name.var.compare("size") == 0)
         {
@@ -297,7 +297,7 @@ private:
         return *static_cast<R*>(nullptr);
     }
 
-    template<typename T> inline void vectorFill(TH1 * const h, const VarName& name, const T& obj, const double weight)
+    template<typename T> inline void vectorFill(TH1 * const h, const VarName& name, const T& obj, const float weight)
     {
         h->Fill(obj, weight);
     }

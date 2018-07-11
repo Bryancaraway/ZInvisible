@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
     TRandom3 *trg = new TRandom3(12321);
     TFile * fZRes = new TFile("zRes.root");
     TH1* hZRes = (TH1*)fZRes->Get("zRes");
-    double hZRes_int = hZRes->Integral(hZRes->FindBin(-0.3), hZRes->FindBin(0.3));
+    float hZRes_int = hZRes->Integral(hZRes->FindBin(-0.3), hZRes->FindBin(0.3));
 
     //for(auto& file : sc["DYJetsToLL"]) 
     auto& file = ss[dataSets];
@@ -182,28 +182,28 @@ int main(int argc, char* argv[])
             const std::vector<const TLorentzVector*>& genMatchMuInAcc    = tr.getVec<const TLorentzVector*>("genMatchMuInAcc");
             const std::vector<const TLorentzVector*>& genMuInAcc         = tr.getVec<const TLorentzVector*>("genMuInAcc");
             const std::vector<const TLorentzVector*>& genMu              = tr.getVec<const TLorentzVector*>("genMu");
-            const std::vector<double>& genMuAct                = tr.getVec<double>("genMuAct");
-            const std::vector<double>& genMuInAccAct           = tr.getVec<double>("genMuInAccAct");
-            const std::vector<double>& genMatchMuInAccAct      = tr.getVec<double>("genMatchMuInAccAct");
-            const std::vector<double>& genMatchIsoMuInAccAct   = tr.getVec<double>("genMatchIsoMuInAccAct");
+            const std::vector<float>& genMuAct                = tr.getVec<float>("genMuAct");
+            const std::vector<float>& genMuInAccAct           = tr.getVec<float>("genMuInAccAct");
+            const std::vector<float>& genMatchMuInAccAct      = tr.getVec<float>("genMatchMuInAccAct");
+            const std::vector<float>& genMatchIsoMuInAccAct   = tr.getVec<float>("genMatchIsoMuInAccAct");
 
             const std::vector<const TLorentzVector*>& genMatchIsoElecInAcc = tr.getVec<const TLorentzVector*>("genMatchIsoElecInAcc");
             const std::vector<const TLorentzVector*>& genMatchElecInAcc    = tr.getVec<const TLorentzVector*>("genMatchElecInAcc");
             const std::vector<const TLorentzVector*>& genElecInAcc         = tr.getVec<const TLorentzVector*>("genElecInAcc");
             const std::vector<const TLorentzVector*>& genElec              = tr.getVec<const TLorentzVector*>("genElec");
-            const std::vector<double>& genElecAct                = tr.getVec<double>("genElecAct");
-            const std::vector<double>& genElecInAccAct           = tr.getVec<double>("genElecInAccAct");
-            const std::vector<double>& genMatchElecInAccAct      = tr.getVec<double>("genMatchElecInAccAct");
-            const std::vector<double>& genMatchIsoElecInAccAct   = tr.getVec<double>("genMatchIsoElecInAccAct");
+            const std::vector<float>& genElecAct                = tr.getVec<float>("genElecAct");
+            const std::vector<float>& genElecInAccAct           = tr.getVec<float>("genElecInAccAct");
+            const std::vector<float>& genMatchElecInAccAct      = tr.getVec<float>("genMatchElecInAccAct");
+            const std::vector<float>& genMatchIsoElecInAccAct   = tr.getVec<float>("genMatchIsoElecInAccAct");
 
             //const bool& passZinvBaselineNoTag = tr.getVar<bool>("passZinvBaselineNoTag");
             //const bool& passMuZinvSel = tr.getVar<bool>("passMuZinvSel");
 
-            const double& recoZPt    = tr.getVar<double>("bestRecoZPt");
-            const double& genZPt     = tr.getVar<double>("genZPt");
-            const double& genZM      = tr.getVar<double>("genZmass");
-            const double& cleanHt    = tr.getVar<double>("ht");
-            const double& cleanMetPt = tr.getVar<double>("cleanMetPt");
+            const float& recoZPt    = tr.getVar<float>("bestRecoZPt");
+            const float& genZPt     = tr.getVar<float>("genZPt");
+            const float& genZM      = tr.getVar<float>("genZmass");
+            const float& cleanHt    = tr.getVar<float>("ht");
+            const float& cleanMetPt = tr.getVar<float>("cleanMetPt");
             const int&    pdgIdZDec  = tr.getVar<int>("pdgIdZDec");
 
             if(pdgIdZDec == 13)
@@ -220,15 +220,15 @@ int main(int argc, char* argv[])
                 int count = 0, random = 0;//trg->Integer(400000000) & 1;
                 bool oneMatch = false, twoMatch = false;
 
-                double modHt = cleanHt;
+                float modHt = cleanHt;
 
                 for(auto& tlv : genMuInAcc)
                 {
                     if(tlv->Pt() > 50) modHt -= tlv->Pt();
                 }
 
-                //const std::vector<double>& jActR1 = tr.getVec<double>("jActR1");
-                //const std::vector<double>& jActR2 = tr.getVec<double>("jActR2");
+                //const std::vector<float>& jActR1 = tr.getVec<float>("jActR1");
+                //const std::vector<float>& jActR2 = tr.getVec<float>("jActR2");
 
                 for(auto& tlv : genMuInAcc)
                 {
@@ -312,9 +312,9 @@ int main(int argc, char* argv[])
                     if(genMuInAcc.size() >= 2)// && genMuInAcc[0]->Pt() > 45 && genMuInAcc[1]->Pt() > 20 && genZM > 71 && genZM < 111)
                     {
                         // muon iso cut 
-                        double muDeltaR = ROOT::Math::VectorUtil::DeltaR(*genMuInAcc[0], *genMuInAcc[1]);
-                        double minMuPt = std::min(genMuInAcc[0]->Pt(), genMuInAcc[1]->Pt());
-                        double mudRMin = 10.0/minMuPt;
+                        float muDeltaR = ROOT::Math::VectorUtil::DeltaR(*genMuInAcc[0], *genMuInAcc[1]);
+                        float minMuPt = std::min(genMuInAcc[0]->Pt(), genMuInAcc[1]->Pt());
+                        float mudRMin = 10.0/minMuPt;
                         if(minMuPt < 50)       mudRMin = 0.2;
                         else if(minMuPt > 200) mudRMin = 0.05;
                         //if(cleanMetPt > 1000) std::cout << muDeltaR << " > " << mudRMin << "\t" << genMuInAcc.size() << std::endl;
@@ -349,7 +349,7 @@ int main(int argc, char* argv[])
             {
                 //Electrons 
 
-                double modHt = cleanHt;
+                float modHt = cleanHt;
 
                 for(auto& tlv : genElecInAcc)
                 {

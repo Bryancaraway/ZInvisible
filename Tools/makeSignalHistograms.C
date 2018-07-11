@@ -28,7 +28,7 @@ private:
     int mMass_;
     int dMass_;
     
-    void makeHist(const std::string name, int N, double ll, double ul)
+    void makeHist(const std::string name, int N, float ll, float ul)
         {
             char hname[128];
             if(mMass_ >= 0 && dMass_ >= 0) sprintf(hname, "Sig_%d_%d_%s", mMass_, dMass_, name.c_str());
@@ -66,11 +66,11 @@ public:
             bookHists();
         }
 
-    void fill(const NTupleReader& tr, const double weight)
+    void fill(const NTupleReader& tr, const float weight)
         {
-            const double& met                 = tr.getVar<double>("cleanMetPt");
-            const double& best_had_brJet_MT2  = tr.getVar<double>("best_had_brJet_MT2Zinv");
-            const double& HTZinv              = tr.getVar<double>("HTZinv");
+            const float& met                 = tr.getVar<float>("cleanMetPt");
+            const float& best_had_brJet_MT2  = tr.getVar<float>("best_had_brJet_MT2Zinv");
+            const float& HTZinv              = tr.getVar<float>("HTZinv");
             const int& cntCSVS                = tr.getVar<int>("cntCSVSZinv");
             const int& nTopCandSortedCnt      = tr.getVar<int>("nTopCandSortedCntZinv");
             const int& cntNJetsPt30Eta24Zinv  = tr.getVar<int>("cntNJetsPt30Eta24Zinv");
@@ -127,8 +127,8 @@ public:
 
 //void calcSearchBin(NTupleReader& tr)
 //{
-//    const double& met                = tr.getVar<double>("met");
-//    const double& best_had_brJet_MT2 = tr.getVar<double>("best_had_brJet_MT2");
+//    const float& met                = tr.getVar<float>("met");
+//    const float& best_had_brJet_MT2 = tr.getVar<float>("best_had_brJet_MT2");
 //    const int& cntCSVS               = tr.getVar<int>("cntCSVS");
 //    const int& nTopCandSortedCnt     = tr.getVar<int>("nTopCandSortedCnt");
 //
@@ -242,11 +242,11 @@ int main(int argc, char* argv[])
             {
                 if(tr.getEvtNum() % 10000 == 0) std::cout << "Event #: " << tr.getEvtNum() << std::endl;
 
-                const double& SusyMotherMass_ref  = tr.getVar<double>("SusyMotherMass");
-                const double& SusyLSPMass_ref     = tr.getVar<double>("SusyLSPMass");
+                const float& SusyMotherMass_ref  = tr.getVar<float>("SusyMotherMass");
+                const float& SusyLSPMass_ref     = tr.getVar<float>("SusyLSPMass");
 
-                double SusyMotherMass = -999;
-                double SusyLSPMass = -999;
+                float SusyMotherMass = -999;
+                float SusyLSPMass = -999;
 
                 if(&SusyMotherMass_ref != nullptr && &SusyLSPMass_ref != nullptr)
                 {

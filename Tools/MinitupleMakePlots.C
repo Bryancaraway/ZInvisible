@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
     bool doPlots = true, doSave = true, doTuple = true, fromTuple = true, runOnCondor = false;
     string histFile = "", dataSets = "", sampleloc = "/uscms/home/pastika/nobackup/zinv/dev/CMSSW_7_4_8/src/ZInvisible/Tools/condor/", plotDir = "Mini_plots";
     int nFiles = -1, startFile = 0, nEvts = -1;
-    double lumi = AnaSamples::luminosity;
+    float lumi = AnaSamples::luminosity;
 
     while((opt = getopt_long(argc, argv, "pstfcH:D:N:M:E:P:L:", long_options, &option_index)) != -1)
     {
@@ -103,11 +103,11 @@ int main(int argc, char* argv[])
     AnaSamples::SampleSet        ss(sampleloc, lumi);
     AnaSamples::SampleCollection sc(ss);
 
-    const double zAcc = 1.0;
-//    const double zAcc = 0.5954;
-//    const double zAcc = 0.855;
-    const double znunu_mumu_ratio = 5.942;
-    const double znunu_ee_ratio   = 5.942;
+    const float zAcc = 1.0;
+//    const float zAcc = 0.5954;
+//    const float zAcc = 0.855;
+    const float znunu_mumu_ratio = 5.942;
+    const float znunu_ee_ratio   = 5.942;
 
     map<string, vector<AnaSamples::FileSummary>> fileMap;
 

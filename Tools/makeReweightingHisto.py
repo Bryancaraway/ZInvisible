@@ -15,14 +15,14 @@ from math import sqrt
 import math
 
 from ctypes import cdll
-from ctypes import c_double
+from ctypes import c_float
 
 class ScaleFactors:
     def __init__(self):
         self.lib = cdll.LoadLibrary('obj/ScaleFactors.so')
         print(dir(self.lib))
-        self.lib.python_sf_norm0b.restype = c_double
-        self.lib.python_sf_norm0b_err.restype = c_double
+        self.lib.python_sf_norm0b.restype = c_float
+        self.lib.python_sf_norm0b_err.restype = c_float
 
     def getRnorm(self):
         return float(self.lib.python_sf_norm0b())
@@ -197,11 +197,11 @@ includeBasettBar = """#ifndef SCALEFACTORSTTBAR_H
 class ScaleFactorsttBar
 {
 public:
-    static double sf_norm0b()
+    static float sf_norm0b()
     {
         return %0.3f;
     }
-    static double sfunc_norm0b()
+    static float sfunc_norm0b()
     {
         return %0.3f;
     }
@@ -214,11 +214,11 @@ sourceBasettBar = """#include "ScaleFactorsttBar.h"
 
 extern "C"
 {
-    static double python_sf_norm0b()
+    static float python_sf_norm0b()
     {
         return ScaleFactors::sf_norm0b();
     }
-    static double python_sf_norm0b_err()
+    static float python_sf_norm0b_err()
     {
         return ScaleFactors::sfunc_norm0b();
     }
@@ -236,11 +236,11 @@ includeBase = """#ifndef SCALEFACTORS_H
 class ScaleFactors
 {
 public:
-    static double sf_norm0b()
+    static float sf_norm0b()
     {
 	return %0.3f;
     }
-    static double sfunc_norm0b()
+    static float sfunc_norm0b()
     {
 	return %0.3f;
     }
@@ -253,11 +253,11 @@ sourceBase = """#include "ScaleFactors.h"
 
 extern "C" 
 {
-    static double python_sf_norm0b()
+    static float python_sf_norm0b()
     {
         return ScaleFactors::sf_norm0b();
     }
-    static double python_sf_norm0b_err()
+    static float python_sf_norm0b_err()
     {
         return ScaleFactors::sfunc_norm0b();
     }
@@ -1056,7 +1056,7 @@ def extrapolationSyst(filename):
 
         # The first loop sank into the swamp, so we built it again!
         # but no really my boy, we had to calculate the total histograms from the individual
-        # slices first, then make the double ratios here
+        # slices first, then make the float ratios here
         # Yes, I know, this is stupidly inefficient
         for cutNames, cutStrs in cutLists.iteritems():
             hRatioTotal = makeRatio(hDataTotal[varLabel+"_cut_"+cutNames], [hBGTotal[varLabel+"_cut_"+cutNames]], bins=theBins, newname="".join(["totalRatio_", varLabel, "_cut_", cutNames]))

@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     bool doPlots = true, doSave = true, doTuple = true, fromTuple = true, runOnCondor = false;
     string histFile = "topStudyOutput.root", dataSets = "", sampleloc = AnaSamples::fileDir, plotDir = "top_plots";
     int nFiles = -1, startFile = 0, nEvts = -1;
-    double lumi = AnaSamples::luminosity;
+    float lumi = AnaSamples::luminosity;
     std::string sbEra = "SB_37_2015";
 
     while((opt = getopt_long(argc, argv, "psfcH:D:N:M:E:P:L:S:", long_options, &option_index)) != -1)

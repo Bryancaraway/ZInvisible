@@ -34,16 +34,16 @@ namespace AnaSamples
         return sampleSet_;
     }
     
-    SampleSet::SampleSet(std::string fDir, double lumi) : fDir_(fDir), lumi_(lumi)
+    SampleSet::SampleSet(std::string fDir, float lumi) : fDir_(fDir), lumi_(lumi)
     {
         // ---------------
         // - backgrounds -
         // ---------------
 
         // branching ratio info from PDG
-        double W_Lept_BR = 0.1086*3;
-        double TTbar_SingleLept_BR = 0.43930872; // 2*W_Lept_BR*(1-W_Lept_BR)
-        double TTbar_DiLept_BR = 0.10614564; // W_Lept_BR^2
+        float W_Lept_BR = 0.1086*3;
+        float TTbar_SingleLept_BR = 0.43930872; // 2*W_Lept_BR*(1-W_Lept_BR)
+        float TTbar_DiLept_BR = 0.10614564; // W_Lept_BR^2
 
 //        std::string MCloc = "Spring15_74X_Oct_2015_Ntp_v2X/";
         std::string MCloc = "";

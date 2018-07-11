@@ -15,17 +15,17 @@
 #include "TGraphAsymmErrors.h"
 #include "TLine.h"
 
-void smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, double& gmin, double& gmax, double& gpThreshMax)
+void smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, float& gmin, float& gmax, float& gpThreshMax)
 {
     const bool isLog = p->GetLogy();
-    double min = 9e99;
-    double max = -9e99;
-    double pThreshMax = -9e99;
+    float min = 9e99;
+    float max = -9e99;
+    float pThreshMax = -9e99;
     int threshold = static_cast<int>(h->GetNbinsX()*(l->GetX1() - p->GetLeftMargin())/((1 - p->GetRightMargin()) - p->GetLeftMargin()));
 
     for(int i = 1; i <= h->GetNbinsX(); ++i)
     {
-        double bin = h->GetBinContent(i);
+        float bin = h->GetBinContent(i);
         if(bin > max) max = bin;
         else if(bin > 1e-10 && bin < min) min = bin;
         if(i >= threshold && bin > pThreshMax) pThreshMax = bin;
@@ -36,7 +36,7 @@ void smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, d
     gmin = std::min(gmin, min);
 }
 
-void makeplot(TFile* f, std::string hname, double xlow, double xhigh, double ylow, double yhigh, std::string xtitle, std::string ytitle, std::string prefix, bool log = false, bool overlay = true)
+void makeplot(TFile* f, std::string hname, float xlow, float xhigh, float ylow, float yhigh, std::string xtitle, std::string ytitle, std::string prefix, bool log = false, bool overlay = true)
 {
 
     TH1D* h = (TH1D*)f->Get(hname.c_str());
@@ -46,7 +46,7 @@ void makeplot(TFile* f, std::string hname, double xlow, double xhigh, double ylo
     gStyle->SetErrorX(0.5);
     // Prepare canvas
     TCanvas *c;
-    double fontScale;
+    float fontScale;
     c = new TCanvas("c1", "c1", 1200, 800);
     c->Divide(1, 1);
     c->cd(1);
@@ -72,7 +72,7 @@ void makeplot(TFile* f, std::string hname, double xlow, double xhigh, double ylo
     dummy->GetYaxis()->SetLabelSize(0.20 * 2 / 6.5 * fontScale);
     if(dummy->GetNdivisions() % 100 > 5) dummy->GetXaxis()->SetNdivisions(6, 5, 0);
 
-    double max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
+    float max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
     int iSingle = 0, iRatio = 0;
     char legEntry[128];
 
@@ -127,7 +127,7 @@ void makeplot(TFile* f, std::string hname, double xlow, double xhigh, double ylo
     c->Close();
 }
 
-void makeplotratio(TFile* f, std::vector<std::string> hnames, std::vector<std::string> hnames_ratio, double xlow, double xhigh, double ylow, double yhigh, std::string prefix, double ratiomax = 0.08)
+void makeplotratio(TFile* f, std::vector<std::string> hnames, std::vector<std::string> hnames_ratio, float xlow, float xhigh, float ylow, float yhigh, std::string prefix, float ratiomax = 0.08)
 {
 
     std::vector<TH1D*> histos;
@@ -146,7 +146,7 @@ void makeplotratio(TFile* f, std::vector<std::string> hnames, std::vector<std::s
     gStyle->SetErrorX(0.5);
     // Prepare canvas
     TCanvas *c;
-    double fontScale;
+    float fontScale;
     c = new TCanvas("c1", "c1", 1200, 800);
     c->Divide(1, 2);
     c->cd(1);
@@ -172,7 +172,7 @@ void makeplotratio(TFile* f, std::vector<std::string> hnames, std::vector<std::s
     dummy->GetYaxis()->SetLabelSize(0.20 * 2 / 6.5 * fontScale);
     if(dummy->GetNdivisions() % 100 > 5) dummy->GetXaxis()->SetNdivisions(6, 5, 0);
 
-    double max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
+    float max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
     int iSingle = 0, iRatio = 0;
     char legEntry[128];
 
@@ -322,7 +322,7 @@ int main(int argc, char* argv[])
     
     //f1 = TFile::Open("/uscms_data/d3/pastika/zinv/dev/CMSSW_7_4_8/src/ZInvisible/Tools/looseToTight.root");
     f1 = TFile::Open("looseToTight.root");
-    std::map<std::string, std::pair<std::string, double> > hnames3 = {
+    std::map<std::string, std::pair<std::string, float> > hnames3 = {
 	{"DoubleRatioTight_nj_cut_mt2",   {"N_{jets}", 20}},
 	{"DoubleRatioTight_nj_cut_met",   {"N_{jets}", 20}},
 	{"DoubleRatioTight_nj_cut_nb",    {"N_{jets}", 20}},

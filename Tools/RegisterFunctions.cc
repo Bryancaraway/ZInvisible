@@ -382,7 +382,7 @@ void RegisterFunctionsTopStudy::registerFunctions(NTupleReader& tr)
 
 /////////////////////////////////
 
-void drawSBregionDefCopy(const double ymin_Yields, const double ymax_Yields, const bool logscale)
+void drawSBregionDefCopy(const float ymin_Yields, const float ymax_Yields, const bool logscale)
 {
     SearchBins::drawSBregionDef(ymin_Yields, ymax_Yields, logscale);
 }

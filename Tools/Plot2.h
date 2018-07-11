@@ -25,9 +25,9 @@ class Leaf {
  public:
   TString name, xlabel, ylabel, plotTitle;
   int bins, rebin;
-  double xmin,xmax;
+  float xmin,xmax;
 
-  void SetValues(TString n, TString x, TString y, TString p, int b, double xm, double xp){
+  void SetValues(TString n, TString x, TString y, TString p, int b, float xm, float xp){
     name = n;
     xlabel = x;
     ylabel = y;
@@ -50,8 +50,8 @@ class Leaf {
   TString GetYlabel() {return ylabel;}
   int GetNbins() {return bins;}
   int GetRebin() {return rebin;}
-  double GetMin() {return xmin;}
-  double GetMax() {return xmax;}
+  float GetMin() {return xmin;}
+  float GetMax() {return xmax;}
 };
 
 TTree *GetTree(TString fileName, TString dir) {
@@ -61,7 +61,7 @@ TTree *GetTree(TString fileName, TString dir) {
 }
 
 void SetTextAndTitle(TString title, bool isDivision, bool fixMark) {
-  double fontScale;
+  float fontScale;
 
   if (isDivision && fixMark) fontScale = 1.3;
 
@@ -278,8 +278,8 @@ void RatioPlot(TH1D *hist1, TH1D *hist2, Leaf leaf,TString name1, TString name2,
 
   gPad->Modified();
   pad2->cd();
-  double xmax = hist1->GetXaxis()->GetXmax();
-  double xmin = hist1->GetXaxis()->GetXmin();
+  float xmax = hist1->GetXaxis()->GetXmax();
+  float xmin = hist1->GetXaxis()->GetXmin();
 
   TLine *line = new TLine(xmin,1,xmax,1);
   line->SetLineStyle(6);

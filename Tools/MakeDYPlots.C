@@ -31,7 +31,7 @@ int main(int argc, char* argv[])
     bool doPlots = true, doSave = true, doTuple = true, fromTuple = true, runOnCondor = false;
     string histFile = "", dataSets = "", sampleloc = AnaSamples::fileDir, plotDir = "plots";
     int nFiles = -1, startFile = 0, nEvts = -1;
-    double lumi = AnaSamples::luminosity;
+    float lumi = AnaSamples::luminosity;
     std::string sbEra = "SB_v1_2017";//"SB_v1_2017";
 
     while((opt = getopt_long(argc, argv, "pstfcH:D:N:M:E:P:L:S:", long_options, &option_index)) != -1)
@@ -114,11 +114,11 @@ int main(int argc, char* argv[])
     AnaSamples::SampleSet        ss("sampleSets.txt");
     AnaSamples::SampleCollection sc("sampleCollections.txt", ss);
 
-    const double zAcc = 1.0;
-    //    const double zAcc = 0.5954;
-    //    const double zAcc = 0.855;
-    const double znunu_mumu_ratio = 5.942;
-    const double znunu_ee_ratio   = 5.942;
+    const float zAcc = 1.0;
+    //    const float zAcc = 0.5954;
+    //    const float zAcc = 0.855;
+    const float znunu_mumu_ratio = 5.942;
+    const float znunu_ee_ratio   = 5.942;
 
     map<string, vector<AnaSamples::FileSummary>> fileMap;
 
@@ -369,8 +369,8 @@ int main(int argc, char* argv[])
     }
     for(std::pair<std::string,std::string>& cut : cutlevels_muon)
     {
-        vector<double> metBins = {0, 50, 100, 150, 200, 275, 300, 350, 400, 450, 2000};
-        vector<double> mt2Bins = {0, 50, 100, 150, 200, 250, 300, 350, 400, 2000};
+        vector<float> metBins = {0, 50, 100, 150, 200, 275, 300, 350, 400, 450, 2000};
+        vector<float> mt2Bins = {0, 50, 100, 150, 200, 250, 300, 350, 400, 2000};
         vh.push_back(PHS("DataMCw_SingleMuon_25b_met_"        +cut.first,  {dcData_SingleMuon_met,        dcwMC_met},        {1, 2}, cut.second, 25, 0, 1500, true, false,  label_met, "Events / 60 GeV"));
         vh.push_back(PHS("DataMCw_SingleMuon_rebin_met_"  +cut.first,  {dcData_SingleMuon_met,        dcwMC_met},        {1, 2}, cut.second, metBins,     true, false,  label_met,             "Events"));
         vh.push_back(PHS("DataMCw_SingleMuon_rebin_mt2_"  +cut.first,  {dcData_SingleMuon_mt2,        dcwMC_mt2},        {1, 2}, cut.second, mt2Bins,     true, false,  label_mt2,             "Events"));

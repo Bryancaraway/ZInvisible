@@ -14,17 +14,17 @@
 #include "TLegend.h"
 #include "TGraphAsymmErrors.h"
 
-void smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, double& gmin, double& gmax, double& gpThreshMax)
+void smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, float& gmin, float& gmax, float& gpThreshMax)
 {
     const bool isLog = p->GetLogy();
-    double min = 9e99;
-    double max = -9e99;
-    double pThreshMax = -9e99;
+    float min = 9e99;
+    float max = -9e99;
+    float pThreshMax = -9e99;
     int threshold = static_cast<int>(h->GetNbinsX()*(l->GetX1() - p->GetLeftMargin())/((1 - p->GetRightMargin()) - p->GetLeftMargin()));
 
     for(int i = 1; i <= h->GetNbinsX(); ++i)
     {
-        double bin = h->GetBinContent(i);
+        float bin = h->GetBinContent(i);
         if(bin > max) max = bin;
         else if(bin > 1e-10 && bin < min) min = bin;
         if(i >= threshold && bin > pThreshMax) pThreshMax = bin;
@@ -104,17 +104,17 @@ int main(int argc, char* argv[])
     TGraphAsymmErrors* g4 = new TGraphAsymmErrors();
     TGraphAsymmErrors* g5 = new TGraphAsymmErrors();
     const int n = h2->GetNbinsX();
-    double x[n];
-    double y[n];
-    double exl[n];
-    double exh[n];
-    double eyl_1[n];
-    double eyh_1[n];
-    double eyl_2[n];
-    double eyh_2[n];
-    double rel_unc_2 = ScaleFactors::sfunc_norm0b()/ScaleFactors::sf_norm0b();
-    double e2_temp;
-    std::vector<double> v_uncertainty;
+    float x[n];
+    float y[n];
+    float exl[n];
+    float exh[n];
+    float eyl_1[n];
+    float eyh_1[n];
+    float eyl_2[n];
+    float eyh_2[n];
+    float rel_unc_2 = ScaleFactors::sfunc_norm0b()/ScaleFactors::sf_norm0b();
+    float e2_temp;
+    std::vector<float> v_uncertainty;
     // loop over bins
     for(int i = 1; i < n+1; ++i)
     {
@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
         eyl_2[i-1] = sqrt(eyl_1[i-1]*eyl_1[i-1] + e2_temp*e2_temp);
         eyh_2[i-1] = sqrt(eyh_1[i-1]*eyh_1[i-1] + e2_temp*e2_temp);
       
-        double err = h3->GetBinContent(i) * h1->GetBinContent(i);
+        float err = h3->GetBinContent(i) * h1->GetBinContent(i);
         err = sqrt(err*err + eyl_2[i-1]*eyl_2[i-1]);
         g3->SetPoint(i - 1, h1->GetBinCenter(i), h1->GetBinContent(i));
         g3->SetPointError(i - 1, 0.5, 0.5, err, err);
@@ -137,11 +137,11 @@ int main(int argc, char* argv[])
         g4->SetPoint(i - 1, h1->GetBinCenter(i), h1->GetBinContent(i));
         g4->SetPointError(i - 1, 0.5, 0.5, err, err);
 
-        double err5 = h5->GetBinContent(i) * h1->GetBinContent(i);
-        //double err6 = h6->GetBinContent(i) * h1->GetBinContent(i);
-        //double err7 = h7->GetBinContent(i) * h1->GetBinContent(i);
-        //double err8 = h8->GetBinContent(i) * h1->GetBinContent(i);
-        //double err9 = h9->GetBinContent(i) * h1->GetBinContent(i);
+        float err5 = h5->GetBinContent(i) * h1->GetBinContent(i);
+        //float err6 = h6->GetBinContent(i) * h1->GetBinContent(i);
+        //float err7 = h7->GetBinContent(i) * h1->GetBinContent(i);
+        //float err8 = h8->GetBinContent(i) * h1->GetBinContent(i);
+        //float err9 = h9->GetBinContent(i) * h1->GetBinContent(i);
         //h5_2->SetBinContent(i, sqrt(err5*err5 + err6*err6 + err7*err7 + err8*err8 + err9*err9));
         err = sqrt(err*err + err5*err5);// + err6*err6 + err7*err7 + err8*err8 + err9*err9);
         g5->SetPoint(i - 1, h1->GetBinCenter(i), h1->GetBinContent(i));
@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
 
     // Prepare canvas
     TCanvas *c;
-    double fontScale;
+    float fontScale;
     bool showRatio = false;
     if(showRatio)
     {
@@ -212,7 +212,7 @@ int main(int argc, char* argv[])
     leg->SetNColumns(1);
     leg->SetTextFont(42);
 
-    double max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
+    float max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
     int iSingle = 0, iRatio = 0;
     char legEntry[128];
 
@@ -220,7 +220,7 @@ int main(int argc, char* argv[])
     h1->SetLineColor(kBlack);
     h1->SetLineWidth(3);
     iSingle++;
-    double integral = h1->Integral(0, h1->GetNbinsX() + 1);
+    float integral = h1->Integral(0, h1->GetNbinsX() + 1);
     sprintf(legEntry, "%s", "prediction");
     leg->AddEntry(h1, legEntry);
     smartMax(h1, leg, static_cast<TPad*>(gPad), min, max, lmax);
@@ -248,12 +248,12 @@ int main(int argc, char* argv[])
     gPad->SetLogy(isLog);
     if(isLog)
     {
-        double locMin = std::min(0.2*minAvgWgt, std::max(0.0001, 0.05 * min));
-        double legSpan = (log10(3*max) - log10(locMin)) * (leg->GetY1() - gPad->GetBottomMargin()) / ((1 - gPad->GetTopMargin()) - gPad->GetBottomMargin());
-        double legMin = legSpan + log10(locMin);
+        float locMin = std::min(0.2*minAvgWgt, std::max(0.0001, 0.05 * min));
+        float legSpan = (log10(3*max) - log10(locMin)) * (leg->GetY1() - gPad->GetBottomMargin()) / ((1 - gPad->GetTopMargin()) - gPad->GetBottomMargin());
+        float legMin = legSpan + log10(locMin);
         if(log10(lmax) > legMin)
         {
-            double scale = (log10(lmax) - log10(locMin)) / (legMin - log10(locMin));
+            float scale = (log10(lmax) - log10(locMin)) / (legMin - log10(locMin));
             max = pow(max/locMin, scale)*locMin;
         }
         //dummy->GetYaxis()->SetRangeUser(locMin, 50*max);
@@ -261,8 +261,8 @@ int main(int argc, char* argv[])
     }
     else
     {
-        double locMin = 0.0;
-        double legMin = (1.2*max - locMin) * (leg->GetY1() - gPad->GetBottomMargin()) / ((1 - gPad->GetTopMargin()) - gPad->GetBottomMargin());
+        float locMin = 0.0;
+        float legMin = (1.2*max - locMin) * (leg->GetY1() - gPad->GetBottomMargin()) / ((1 - gPad->GetTopMargin()) - gPad->GetBottomMargin());
         if(lmax > legMin) max *= (lmax - locMin)/(legMin - locMin);
         dummy->GetYaxis()->SetRangeUser(0.0, max*1.4);
     }
@@ -323,7 +323,7 @@ int main(int argc, char* argv[])
 
     // Now also make a table containing the information
     std::cout << "begin first info table" << std::endl;
-    std::vector<double> prediction;
+    std::vector<float> prediction;
     const int m = h1->GetNbinsX();
     std::cout << "n bins = " << m << std::endl;
     for(int i=0; i<m; ++i)

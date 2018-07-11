@@ -282,8 +282,8 @@ void PhotonMethod() {
     dataHistDY->Add(backgroundsDY[i],-1.0);                                                                                                
   }                                                                                                                                        
 
-  double dataSum = dataHistDY->Integral();
-  double gJetsSum = dYHist->Integral();
+  float dataSum = dataHistDY->Integral();
+  float gJetsSum = dYHist->Integral();
 
   std::cout << dataSum/gJetsSum << std::endl;
 

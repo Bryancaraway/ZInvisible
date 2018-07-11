@@ -110,7 +110,7 @@ void Plotter::read()
     }
 }
 
-Plotter::Cut::Cut(std::string s, char t, bool inv, double v, double v2)
+Plotter::Cut::Cut(std::string s, char t, bool inv, float v, float v2)
 {
     rawName = s;
     type = t;
@@ -135,12 +135,12 @@ void Plotter::Cuttable::extractCuts(std::set<std::string>& ab) const
     for(auto& cut : cutVec_) ab.insert(cut.rawName);
 }
 
-Plotter::HistSummary::HistSummary(std::string l, std::vector<Plotter::DataCollection> ns, std::pair<int, int> ratio, std::string cuts, int nb, double ll, double ul, bool log, bool norm, std::string xal, std::string yal, bool isRatio) : Cuttable(cuts), name(l), nBins(nb), low(ll), high(ul), isLog(log), isNorm(norm), xAxisLabel(xal), yAxisLabel(yal), ratio(ratio), isRatio(isRatio)
+Plotter::HistSummary::HistSummary(std::string l, std::vector<Plotter::DataCollection> ns, std::pair<int, int> ratio, std::string cuts, int nb, float ll, float ul, bool log, bool norm, std::string xal, std::string yal, bool isRatio) : Cuttable(cuts), name(l), nBins(nb), low(ll), high(ul), isLog(log), isNorm(norm), xAxisLabel(xal), yAxisLabel(yal), ratio(ratio), isRatio(isRatio)
 {
     parseName(ns);
 }
 
-Plotter::HistSummary::HistSummary(std::string l, std::vector<Plotter::DataCollection> ns, std::pair<int, int> ratio, std::string cuts, std::vector<double> be, bool log, bool norm, std::string xal, std::string yal, bool isRatio) : Cuttable(cuts), name(l), nBins(0), low(0.0), high(0.0), binEdges(be), isLog(log), isNorm(norm), xAxisLabel(xal), yAxisLabel(yal), ratio(ratio), isRatio(isRatio)
+Plotter::HistSummary::HistSummary(std::string l, std::vector<Plotter::DataCollection> ns, std::pair<int, int> ratio, std::string cuts, std::vector<float> be, bool log, bool norm, std::string xal, std::string yal, bool isRatio) : Cuttable(cuts), name(l), nBins(0), low(0.0), high(0.0), binEdges(be), isLog(log), isNorm(norm), xAxisLabel(xal), yAxisLabel(yal), ratio(ratio), isRatio(isRatio)
 {
     parseName(ns);
 }
@@ -211,7 +211,7 @@ void Plotter::CutFlowSummary::generateHist()
     if(!h) h = new TH1D(name.c_str(), name.c_str(), cuts_.size(), -0.5, -0.5 + cuts_.size());
 }
 
-void Plotter::CutFlowSummary::fillHist(const NTupleReader& tr, const double& weight)
+void Plotter::CutFlowSummary::fillHist(const NTupleReader& tr, const float& weight)
 {
     for(int i = 0; i < cuts_.size(); ++i)
     {
@@ -224,7 +224,7 @@ Plotter::CutFlowSummary::~CutFlowSummary()
     if(h) delete h;
 }
 
-Plotter::DatasetSummary::DatasetSummary(std::string lab, std::vector<AnaSamples::FileSummary>& f, std::string cuts, std::string weights, double k) : Cuttable(cuts), label(lab), files(f), kfactor(k), weightStr(weights)
+Plotter::DatasetSummary::DatasetSummary(std::string lab, std::vector<AnaSamples::FileSummary>& f, std::string cuts, std::string weights, float k) : Cuttable(cuts), label(lab), files(f), kfactor(k), weightStr(weights)
 {
     parseWeights();
 }
@@ -242,12 +242,12 @@ void Plotter::DatasetSummary::parseWeights()
     }
 }
 
-double Plotter::DatasetSummary::getWeight(const NTupleReader& tr) const
+float Plotter::DatasetSummary::getWeight(const NTupleReader& tr) const
 {
-    double retval = 1.0;
+    float retval = 1.0;
     for(auto& weightName : weightVec_)
     {
-        const double& weight = tr.getVar<double>(weightName);
+        const float& weight = tr.getVar<float>(weightName);
         //std::cout<<weightName<<std::endl;
         if(weight == weight)
         {
@@ -265,7 +265,7 @@ double Plotter::DatasetSummary::getWeight(const NTupleReader& tr) const
     return retval;
 }
 
-double Plotter::DatasetSummary::extractWeightNames(std::set<std::string>& ab) const
+float Plotter::DatasetSummary::extractWeightNames(std::set<std::string>& ab) const
 {
     for(auto& w : weightVec_) ab.insert(w);
 }
@@ -478,7 +478,7 @@ void Plotter::createHistsFromTuple()
                     //fill histograms
                     if(doHists_)
                     {
-                        double fileWgt = file.getWeight();
+                        float fileWgt = file.getWeight();
 
                         for(auto& histsToFillVec : histsToFill)
                         {
@@ -494,7 +494,7 @@ void Plotter::createHistsFromTuple()
                             if(!hs.passCuts(tr)) continue;
 
                             // get the weight associated with the dataset
-                            double weight = fileWgt * dss.getWeight(tr) * dss.kfactor;
+                            float weight = fileWgt * dss.getWeight(tr) * dss.kfactor;
 
                             for(auto& hist : histsToFillVec.second.second)
                             {
@@ -508,7 +508,7 @@ void Plotter::createHistsFromTuple()
                     for(auto& cutFlow : cutFlowsToFill)
                     {
                         //get event weight here
-                        double weight = file.getWeight() * cutFlow->dssp->getWeight(tr) * cutFlow->dssp->kfactor;
+                        float weight = file.getWeight() * cutFlow->dssp->getWeight(tr) * cutFlow->dssp->kfactor;
 
                         cutFlow->fillHist(tr, weight);
                     }
@@ -619,7 +619,7 @@ void Plotter::Cuttable::parseCutString()
         char vname[32];
         sscanf(t1.c_str(), "%s", vname);
         tmp = vname;
-        double cutvalue;
+        float cutvalue;
         sscanf(t2.c_str(), "%lf", &cutvalue);
         Cut tmpCut(tmp, cutType, inverted, cutvalue);
         cutVec_.push_back(tmpCut);
@@ -643,7 +643,7 @@ bool Plotter::Cut::passCut(const NTupleReader& tr) const
     }
 }
 
-template<> const double& Plotter::getVarFromVec<TLorentzVector, double>(const VarName& name, const NTupleReader& tr)
+template<> const float& Plotter::getVarFromVec<TLorentzVector, float>(const VarName& name, const NTupleReader& tr)
 {
     const auto& vec = tr.getVec<TLorentzVector>(name.name);
 
@@ -651,33 +651,33 @@ template<> const double& Plotter::getVarFromVec<TLorentzVector, double>(const Va
     {
         const int& i = name.index;
         if(i < vec.size()) return tlvGetValue(name.var, vec.at(i));
-        else return *static_cast<double*>(nullptr);
+        else return *static_cast<float*>(nullptr);
     }
-    return *static_cast<double*>(nullptr);
+    return *static_cast<float*>(nullptr);
 }
 
-double Plotter::Cut::translateVar(const NTupleReader& tr) const
+float Plotter::Cut::translateVar(const NTupleReader& tr) const
 {
     std::string type;
     tr.getType(name.name, type);
 
     if(type.find("vector") != std::string::npos)
     {
-        if     (type.find("pair")           != std::string::npos) return Plotter::getVarFromVec<std::pair<double, double>>(name, tr).first;
-        else if(type.find("double")         != std::string::npos) return static_cast<double>(Plotter::getVarFromVec<double>(name, tr));
-        else if(type.find("unsigned int")   != std::string::npos) return static_cast<double>(Plotter::getVarFromVec<unsigned int>(name, tr));
-        else if(type.find("int")            != std::string::npos) return static_cast<double>(Plotter::getVarFromVec<int>(name, tr));
-        else if(type.find("TLorentzVector") != std::string::npos) return Plotter::getVarFromVec<TLorentzVector, double>(name, tr);
+        if     (type.find("pair")           != std::string::npos) return Plotter::getVarFromVec<std::pair<float, float>>(name, tr).first;
+        else if(type.find("float")         != std::string::npos) return static_cast<float>(Plotter::getVarFromVec<float>(name, tr));
+        else if(type.find("unsigned int")   != std::string::npos) return static_cast<float>(Plotter::getVarFromVec<unsigned int>(name, tr));
+        else if(type.find("int")            != std::string::npos) return static_cast<float>(Plotter::getVarFromVec<int>(name, tr));
+        else if(type.find("TLorentzVector") != std::string::npos) return Plotter::getVarFromVec<TLorentzVector, float>(name, tr);
     }
     else
     {
-        if     (type.find("double")       != std::string::npos) return tr.getVar<double>(name.name);
-        else if(type.find("unsigned int") != std::string::npos) return static_cast<double>(tr.getVar<unsigned int>(name.name));
-        else if(type.find("int")          != std::string::npos) return static_cast<double>(tr.getVar<int>(name.name));
-        else if(type.find("float")        != std::string::npos) return static_cast<double>(tr.getVar<float>(name.name));
-        else if(type.find("char")         != std::string::npos) return static_cast<double>(tr.getVar<char>(name.name));
-        else if(type.find("short")        != std::string::npos) return static_cast<double>(tr.getVar<short>(name.name));
-        else if(type.find("long")         != std::string::npos) return static_cast<double>(tr.getVar<long>(name.name));
+        if     (type.find("float")       != std::string::npos) return tr.getVar<float>(name.name);
+        else if(type.find("unsigned int") != std::string::npos) return static_cast<float>(tr.getVar<unsigned int>(name.name));
+        else if(type.find("int")          != std::string::npos) return static_cast<float>(tr.getVar<int>(name.name));
+        else if(type.find("float")        != std::string::npos) return static_cast<float>(tr.getVar<float>(name.name));
+        else if(type.find("char")         != std::string::npos) return static_cast<float>(tr.getVar<char>(name.name));
+        else if(type.find("short")        != std::string::npos) return static_cast<float>(tr.getVar<short>(name.name));
+        else if(type.find("long")         != std::string::npos) return static_cast<float>(tr.getVar<long>(name.name));
     }
 }
 
@@ -744,7 +744,7 @@ void Plotter::setPlotDir(const std::string plotDir)
     plotDir_ = plotDir + "/";
 }
 
-void Plotter::setLumi(const double lumi)
+void Plotter::setLumi(const float lumi)
 {
     lumi_ = lumi;
 }
@@ -774,7 +774,7 @@ void Plotter::setCutFlows(std::vector<CutFlowSummary> cfs)
     cutFlows_ = cfs;
 }
 
-double Plotter::getLumi()
+float Plotter::getLumi()
 {
     return lumi_;
 }
@@ -798,7 +798,7 @@ void Plotter::plot()
         }
 
         TCanvas *c;
-        double fontScale;
+        float fontScale;
         if(showRatio)
         {
             c = new TCanvas("c1", "c1", 800, 900);
@@ -854,7 +854,7 @@ void Plotter::plot()
         leg->SetNColumns(1);
         leg->SetTextFont(42);
 
-        double max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
+        float max = 0.0, lmax = 0.0, min = 1.0e300, minAvgWgt = 1.0e300;
         int iSingle = 0, iRatio = 0, iFill = 0;
         char legEntry[128];
 
@@ -868,7 +868,7 @@ void Plotter::plot()
                     hvec.hcsVec.front()->h->SetLineWidth(3);
                     hvec.hcsVec.front()->h->SetMarkerColor(kBlack);
                     hvec.hcsVec.front()->h->SetMarkerStyle(20);
-                    double integral = hvec.hcsVec.front()->h->Integral(0, hvec.hcsVec.front()->h->GetNbinsX() + 1);
+                    float integral = hvec.hcsVec.front()->h->Integral(0, hvec.hcsVec.front()->h->GetNbinsX() + 1);
                     if(     integral < 3.0)   sprintf(legEntry, "%s (%0.2lf)", hvec.hcsVec.front()->label.c_str(), integral);
                     else if(integral < 1.0e5) sprintf(legEntry, "%s (%0.0lf)", hvec.hcsVec.front()->label.c_str(), integral);
                     else                      sprintf(legEntry, "%s (%0.2e)",  hvec.hcsVec.front()->label.c_str(), integral);
@@ -898,7 +898,7 @@ void Plotter::plot()
                     iStyle++;
                     h->h->SetLineWidth(3);
                     iSingle++;
-                    double integral = h->h->Integral(0, h->h->GetNbinsX() + 1);
+                    float integral = h->h->Integral(0, h->h->GetNbinsX() + 1);
                     if(     integral < 3.0)   sprintf(legEntry, "%s (%0.2lf)", h->label.c_str(), integral);
                     else if(integral < 1.0e5) sprintf(legEntry, "%s (%0.0lf)", h->label.c_str(), integral);
                     else                      sprintf(legEntry, "%s (%0.2e)",  h->label.c_str(), integral);
@@ -906,7 +906,7 @@ void Plotter::plot()
                     //if(hist.isNorm) h->h->Scale(hist.fhist()->Integral()/h->h->Integral());
                     if(hist.isNorm) if(h->h->Integral() > 0.0) h->h->Scale(1.0/h->h->Integral());
                     smartMax(h->h, leg, static_cast<TPad*>(gPad), min, max, lmax);
-                    minAvgWgt = std::min(minAvgWgt, h->h->GetSumOfWeights()/h->h->GetEntries());
+                    minAvgWgt = std::min(minAvgWgt, static_cast<float>(h->h->GetSumOfWeights()/h->h->GetEntries()));
                 }
             }
             else if(hvec.type.compare("ratio") == 0 && hvec.hcsVec.size() >= 2)
@@ -922,14 +922,14 @@ void Plotter::plot()
                 hratio->Divide((*hIter)->h);
                 leg->AddEntry(hratio, hvec.flabel().c_str());
                 smartMax(hratio, leg, static_cast<TPad*>(gPad), min, max, lmax);
-                minAvgWgt = std::min(minAvgWgt, 1.0);
+                minAvgWgt = std::min(minAvgWgt, 1.0f);
             }
             else if(hvec.type.compare("stack") == 0)
             {
                 THStack *stack = new THStack((hist.name + hvec.hcsVec.front()->label).c_str(), "stack");
                 hvec.h = static_cast<TNamed*>(stack);
 
-                double sow = 0, te = 0;
+                float sow = 0, te = 0;
                 TH1* thstacksucks = nullptr;
                 int iStack = 0;
                 for(auto ih = hvec.hcsVec.begin(); ih != hvec.hcsVec.end(); ++ih)
@@ -939,7 +939,7 @@ void Plotter::plot()
                     (*ih)->h->SetLineColor(stackColors[iStack%NSTACKCOLORS]);
                     (*ih)->h->SetFillColor(stackColors[iStack%NSTACKCOLORS]);
                     iStack++;
-                    double integral = (*ih)->h->Integral(0, (*ih)->h->GetNbinsX() + 1);
+                    float integral = (*ih)->h->Integral(0, (*ih)->h->GetNbinsX() + 1);
                     if(     integral < 3.0)   sprintf(legEntry, "%s (%0.2lf)", (*ih)->label.c_str(), integral);
                     else if(integral < 1.0e5) sprintf(legEntry, "%s (%0.0lf)", (*ih)->label.c_str(), integral);
                     else                      sprintf(legEntry, "%s (%0.2e)",  (*ih)->label.c_str(), integral);
@@ -970,20 +970,20 @@ void Plotter::plot()
         gPad->SetLogy(hist.isLog);
         if(hist.isLog)
         {
-            double locMin = std::min(0.2*minAvgWgt, std::max(0.00011, 0.05 * min));
-            double legSpan = (log10(3*max) - log10(locMin)) * (leg->GetY1() - gPad->GetBottomMargin()) / ((1 - gPad->GetTopMargin()) - gPad->GetBottomMargin());
-            double legMin = legSpan + log10(locMin);
+            float locMin = std::min(0.2*minAvgWgt, std::max(0.00011, 0.05 * min));
+            float legSpan = (log10(3*max) - log10(locMin)) * (leg->GetY1() - gPad->GetBottomMargin()) / ((1 - gPad->GetTopMargin()) - gPad->GetBottomMargin());
+            float legMin = legSpan + log10(locMin);
             if(log10(lmax) > legMin)
             {
-                double scale = (log10(lmax) - log10(locMin)) / (legMin - log10(locMin));
+                float scale = (log10(lmax) - log10(locMin)) / (legMin - log10(locMin));
                 max = pow(max/locMin, scale)*locMin;
             }
             dummy->GetYaxis()->SetRangeUser(locMin, 3*max);
         }
         else
         {
-            double locMin = 0.0;
-            double legMin = (1.2*max - locMin) * (leg->GetY1() - gPad->GetBottomMargin()) / ((1 - gPad->GetTopMargin()) - gPad->GetBottomMargin());
+            float locMin = 0.0;
+            float legMin = (1.2*max - locMin) * (leg->GetY1() - gPad->GetBottomMargin()) / ((1 - gPad->GetTopMargin()) - gPad->GetBottomMargin());
             if(lmax > legMin) max *= (lmax - locMin)/(legMin - locMin);
             dummy->GetYaxis()->SetRangeUser(0.0, max*1.2);
             if(hist.hists.front().type.compare("ratio") == 0 && max > 5) dummy->GetYaxis()->SetRangeUser(0.0, 5*1.2);
@@ -1111,13 +1111,13 @@ void Plotter::plot()
                     //h1->SetLineColor(kBlack);
                     h1->SetMarkerStyle(20);
                     h1->SetMarkerColor(h1->GetLineColor());
-                    double d2ymin = 0.0;
-                    double d2ymax = 1.5;
+                    float d2ymin = 0.0;
+                    float d2ymax = 1.5;
                     for(int iBin = 1; iBin <= h1->GetNbinsX(); ++iBin)
                     {
                         if(h1->GetBinContent(iBin) < 5.0)
                         {
-                            d2ymax = std::max(d2ymax, h1->GetBinContent(iBin));
+                            d2ymax = std::max(d2ymax, static_cast<float>(h1->GetBinContent(iBin)));
                         }
                     }
                     dummy2->GetYaxis()->SetRangeUser(d2ymin, 1.5*d2ymax);
@@ -1133,10 +1133,10 @@ void Plotter::plot()
                     h1->SetMarkerColor(h1->GetLineColor());
 
                     //h1->Add(h2, -1.0);
-                    const double absoluteMaxPull = 10.0;
-                    double maxPull = 2.0;
-                    double sumW2_1 = 0.0, sumW_1 = 0.0;
-                    double sumW2_2 = 0.0, sumW_2 = 0.0;
+                    const float absoluteMaxPull = 10.0;
+                    float maxPull = 2.0;
+                    float sumW2_1 = 0.0, sumW_1 = 0.0;
+                    float sumW2_2 = 0.0, sumW_2 = 0.0;
                     for(int iBin = 1; iBin <= h1->GetNbinsX(); ++iBin)
                     {
                         sumW_1 += h1->GetBinContent(iBin);
@@ -1148,8 +1148,8 @@ void Plotter::plot()
                     {
                         //if(h1->GetBinError(iBin) > 0.00001) h1->SetBinContent(iBin, h1->GetBinContent(iBin)/h1->GetBinError(iBin));
                         //else h1->SetBinContent(iBin, -999.9);
-                        double binVal = binVal = h1->GetBinContent(iBin) - h2->GetBinContent(iBin);
-                        double binErr = -999.9;
+                        float binVal = binVal = h1->GetBinContent(iBin) - h2->GetBinContent(iBin);
+                        float binErr = -999.9;
                         if(h1->GetBinContent(iBin) > 1e-10 && h2->GetBinContent(iBin) > 1e-10)
                         {
                             binErr = sqrt(pow(h1->GetBinError(iBin), 2) + pow(h2->GetBinError(iBin), 2));
@@ -1163,10 +1163,10 @@ void Plotter::plot()
                             binErr = sqrt(pow(h2->GetBinError(iBin), 2) + pow(1.8 * sumW2_2/sumW_2, 2));
                         }
                         h1->SetBinContent(iBin, binVal/binErr);
-                        if(fabs(h1->GetBinContent(iBin)) < absoluteMaxPull) maxPull = std::max(maxPull, fabs(h1->GetBinContent(iBin)));
+                        if(fabs(h1->GetBinContent(iBin)) < absoluteMaxPull) maxPull = std::max(maxPull, static_cast<float>(fabs(h1->GetBinContent(iBin))));
                     }
-                    double d2ymin = -std::min(ceil(maxPull*1.2), absoluteMaxPull);
-                    double d2ymax =  std::min(ceil(maxPull*1.2), absoluteMaxPull);
+                    float d2ymin = -std::min(static_cast<float>(ceil(maxPull*1.2)), absoluteMaxPull);
+                    float d2ymax =  std::min(static_cast<float>(ceil(maxPull*1.2)), absoluteMaxPull);
                     dummy2->GetYaxis()->SetRangeUser(d2ymin, d2ymax);
                     dummy2->GetYaxis()->SetTitle("Pull");
                     dummy2->GetYaxis()->SetNdivisions(2, 5, 0);
@@ -1229,7 +1229,7 @@ void Plotter::plot()
     }
 }
 
-void Plotter::fillHist(TH1 * const h, const VarName& name, const NTupleReader& tr, const double weight)
+void Plotter::fillHist(TH1 * const h, const VarName& name, const NTupleReader& tr, const float weight)
 {
     std::string type;
     tr.getType(name.name, type);
@@ -1242,8 +1242,8 @@ void Plotter::fillHist(TH1 * const h, const VarName& name, const NTupleReader& t
         }
         else
         {
-            if     (type.find("pair")           != std::string::npos) fillHistFromVec<std::pair<double, double>>(h, name, tr, weight);
-            else if(type.find("double")         != std::string::npos) fillHistFromVec<double>(h, name, tr, weight);
+            if     (type.find("pair")           != std::string::npos) fillHistFromVec<std::pair<float, float>>(h, name, tr, weight);
+            else if(type.find("float")         != std::string::npos) fillHistFromVec<float>(h, name, tr, weight);
             else if(type.find("unsigned int")   != std::string::npos) fillHistFromVec<unsigned int>(h, name, tr, weight);
             else if(type.find("int")            != std::string::npos) fillHistFromVec<int>(h, name, tr, weight);
             else if(type.find("TLorentzVector") != std::string::npos) fillHistFromVec<TLorentzVector>(h, name, tr, weight);
@@ -1251,7 +1251,7 @@ void Plotter::fillHist(TH1 * const h, const VarName& name, const NTupleReader& t
     }
     else
     {
-        if     (type.find("double")         != std::string::npos) h->Fill(tr.getVar<double>(name.name), weight);
+        if     (type.find("float")         != std::string::npos) h->Fill(tr.getVar<float>(name.name), weight);
         else if(type.find("unsigned int")   != std::string::npos) h->Fill(tr.getVar<unsigned int>(name.name), weight);
         else if(type.find("int")            != std::string::npos) h->Fill(tr.getVar<int>(name.name), weight);
         else if(type.find("float")          != std::string::npos) h->Fill(tr.getVar<float>(name.name), weight);
@@ -1261,27 +1261,27 @@ void Plotter::fillHist(TH1 * const h, const VarName& name, const NTupleReader& t
     }
 }
 
-template<> inline void Plotter::vectorFill(TH1 * const h, const VarName& name, const TLorentzVector& obj, const double weight)
+template<> inline void Plotter::vectorFill(TH1 * const h, const VarName& name, const TLorentzVector& obj, const float weight)
 {
     h->Fill(tlvGetValue(name.var, obj), weight);
 }
 
-template<> inline void Plotter::vectorFill(TH1 * const h, const VarName& name, const std::pair<double, double>& obj, const double weight)
+template<> inline void Plotter::vectorFill(TH1 * const h, const VarName& name, const std::pair<float, float>& obj, const float weight)
 {
     h->Fill(obj.first, obj.second * weight);
 }
 
-void Plotter::smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, double& gmin, double& gmax, double& gpThreshMax, const bool error) const
+void Plotter::smartMax(const TH1* const h, const TLegend* const l, const TPad* const p, float& gmin, float& gmax, float& gpThreshMax, const bool error) const
 {
     const bool isLog = p->GetLogy();
-    double min = 9e99;
-    double max = -9e99;
-    double pThreshMax = -9e99;
+    float min = 9e99;
+    float max = -9e99;
+    float pThreshMax = -9e99;
     int threshold = static_cast<int>(h->GetNbinsX()*(l->GetX1() - p->GetLeftMargin())/((1 - p->GetRightMargin()) - p->GetLeftMargin()));
 
     for(int i = 1; i <= h->GetNbinsX(); ++i)
     {
-        double bin = 0.0;
+        float bin = 0.0;
         if(error) bin = h->GetBinContent(i) + h->GetBinError(i);
         else      bin = h->GetBinContent(i);
         if(bin > max) max = bin;

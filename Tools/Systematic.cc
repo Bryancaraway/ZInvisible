@@ -21,12 +21,12 @@ void Systematic::modifyParameters(NTupleReader& tr)
     std::string type;
     std::string type2;
     tr.getType(var_, type);
-    std::vector<std::pair<std::string, std::pair<std::string, double>>> typevarvals = {{type, {var_, -999.}}};
+    std::vector<std::pair<std::string, std::pair<std::string, float>>> typevarvals = {{type, {var_, -999.}}};
 
     if(var2_.size())
     {
 	tr.getType(var2_,type2);
-	typevarvals.emplace_back(std::pair<std::string, std::pair<std::string, double>>({type2, {var2_, -999.}}));
+	typevarvals.emplace_back(std::pair<std::string, std::pair<std::string, float>>({type2, {var2_, -999.}}));
     }
 
     for(auto& typevarval : typevarvals)
@@ -37,20 +37,20 @@ void Systematic::modifyParameters(NTupleReader& tr)
 	}
 	else
 	{
-	    if     (typevarval.first.find("double")       != std::string::npos) typevarval.second.second = tr.getVar<double>(typevarval.second.first);
-	    else if(typevarval.first.find("unsigned int") != std::string::npos) typevarval.second.second = static_cast<double>(tr.getVar<unsigned int>(typevarval.second.first));
-	    else if(typevarval.first.find("int")          != std::string::npos) typevarval.second.second = static_cast<double>(tr.getVar<int>(typevarval.second.first));
-	    else if(typevarval.first.find("float")        != std::string::npos) typevarval.second.second = static_cast<double>(tr.getVar<float>(typevarval.second.first));
-	    else if(typevarval.first.find("char")         != std::string::npos) typevarval.second.second = static_cast<double>(tr.getVar<char>(typevarval.second.first));
-	    else if(typevarval.first.find("short")        != std::string::npos) typevarval.second.second = static_cast<double>(tr.getVar<short>(typevarval.second.first));
-	    else if(typevarval.first.find("long")         != std::string::npos) typevarval.second.second = static_cast<double>(tr.getVar<long>(typevarval.second.first));
+	    if     (typevarval.first.find("float")       != std::string::npos) typevarval.second.second = tr.getVar<float>(typevarval.second.first);
+	    else if(typevarval.first.find("unsigned int") != std::string::npos) typevarval.second.second = static_cast<float>(tr.getVar<unsigned int>(typevarval.second.first));
+	    else if(typevarval.first.find("int")          != std::string::npos) typevarval.second.second = static_cast<float>(tr.getVar<int>(typevarval.second.first));
+	    else if(typevarval.first.find("float")        != std::string::npos) typevarval.second.second = static_cast<float>(tr.getVar<float>(typevarval.second.first));
+	    else if(typevarval.first.find("char")         != std::string::npos) typevarval.second.second = static_cast<float>(tr.getVar<char>(typevarval.second.first));
+	    else if(typevarval.first.find("short")        != std::string::npos) typevarval.second.second = static_cast<float>(tr.getVar<short>(typevarval.second.first));
+	    else if(typevarval.first.find("long")         != std::string::npos) typevarval.second.second = static_cast<float>(tr.getVar<long>(typevarval.second.first));
 	    else
 	    {
 		throw "Systematic::modifyParameters(...): variable not defined. Var: " + typevarval.second.first;
 	    }
 	}
     }
-    double weight = 1.0;
+    float weight = 1.0;
     if(func_)      weight = func_->Eval(typevarvals[0].second.second);
     else if(hist_) weight = hist_->GetBinContent(hist_->FindBin(typevarvals[0].second.second));
     else if(hist2_) weight = hist2_->GetBinContent(hist2_->GetXaxis()->FindBin(typevarvals[0].second.second),hist2_->GetYaxis()->FindBin(typevarvals[1].second.second));
@@ -92,26 +92,26 @@ void SystWeights::getWeights(NTupleReader& tr)
     const int& cntNJetsPt30Eta24Zinv = tr.getVar<int>("cntNJetsPt30Eta24Zinv");
     const int& nSearchBin = tr.getVar<int>("nSearchBin");
 
-    double mean_0b_DY  = njWDYZ_0b   ->GetBinContent(njWDYZ_0b->FindBin(cntNJetsPt30Eta24Zinv));
-    double mean_g1b_DY = njWDYZ_g1b  ->GetBinContent(njWDYZ_g1b->FindBin(cntNJetsPt30Eta24Zinv));
-    double mean_0b_tt  = njWTTbar_0b ->GetBinContent(njWTTbar_0b->FindBin(cntNJetsPt30Eta24Zinv));
-    double mean_g1b_tt = njWTTbar_g1b->GetBinContent(njWTTbar_g1b->FindBin(cntNJetsPt30Eta24Zinv));
+    float mean_0b_DY  = njWDYZ_0b   ->GetBinContent(njWDYZ_0b->FindBin(cntNJetsPt30Eta24Zinv));
+    float mean_g1b_DY = njWDYZ_g1b  ->GetBinContent(njWDYZ_g1b->FindBin(cntNJetsPt30Eta24Zinv));
+    float mean_0b_tt  = njWTTbar_0b ->GetBinContent(njWTTbar_0b->FindBin(cntNJetsPt30Eta24Zinv));
+    float mean_g1b_tt = njWTTbar_g1b->GetBinContent(njWTTbar_g1b->FindBin(cntNJetsPt30Eta24Zinv));
 
-    double rms_0b_DY  = njWDYZ_0b   ->GetBinError(njWDYZ_0b->FindBin(cntNJetsPt30Eta24Zinv));
-    double rms_g1b_DY = njWDYZ_g1b  ->GetBinError(njWDYZ_g1b->FindBin(cntNJetsPt30Eta24Zinv));
-    double rms_0b_tt  = njWTTbar_0b ->GetBinError(njWTTbar_0b->FindBin(cntNJetsPt30Eta24Zinv));
-    double rms_g1b_tt = njWTTbar_g1b->GetBinError(njWTTbar_g1b->FindBin(cntNJetsPt30Eta24Zinv));
+    float rms_0b_DY  = njWDYZ_0b   ->GetBinError(njWDYZ_0b->FindBin(cntNJetsPt30Eta24Zinv));
+    float rms_g1b_DY = njWDYZ_g1b  ->GetBinError(njWDYZ_g1b->FindBin(cntNJetsPt30Eta24Zinv));
+    float rms_0b_tt  = njWTTbar_0b ->GetBinError(njWTTbar_0b->FindBin(cntNJetsPt30Eta24Zinv));
+    float rms_g1b_tt = njWTTbar_g1b->GetBinError(njWTTbar_g1b->FindBin(cntNJetsPt30Eta24Zinv));
     
-    auto* weightedSB = new std::vector<std::pair<double, double> >();
+    auto* weightedSB = new std::vector<std::pair<float, float> >();
     
     for(int i = 0; i < 100; ++i)
     {
-        double wgt_0b_DY  = tr3.Gaus(1.0, rms_0b_DY/mean_0b_DY);
-        double wgt_g1b_DY = tr3.Gaus(1.0, rms_g1b_DY/mean_g1b_DY);
-        double wgt_0b_tt  = tr3.Gaus(1.0, rms_0b_tt/mean_0b_tt);
-        double wgt_g1b_tt = tr3.Gaus(1.0, rms_g1b_tt/mean_g1b_tt);
+        float wgt_0b_DY  = tr3.Gaus(1.0, rms_0b_DY/mean_0b_DY);
+        float wgt_g1b_DY = tr3.Gaus(1.0, rms_g1b_DY/mean_g1b_DY);
+        float wgt_0b_tt  = tr3.Gaus(1.0, rms_0b_tt/mean_0b_tt);
+        float wgt_g1b_tt = tr3.Gaus(1.0, rms_g1b_tt/mean_g1b_tt);
         
-        weightedSB->emplace_back(std::make_pair(static_cast<double>(nSearchBin), wgt_0b_DY*wgt_g1b_DY*wgt_0b_tt*wgt_g1b_tt));
+        weightedSB->emplace_back(std::make_pair(static_cast<float>(nSearchBin), wgt_0b_DY*wgt_g1b_DY*wgt_0b_tt*wgt_g1b_tt));
         //unweightedSB->emplace_back(nSearchBin);
     }
 

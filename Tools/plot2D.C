@@ -38,11 +38,11 @@ int main()
         {
             if(tr.getEvtNum() % 10000 == 0) std::cout << "Event #: " << tr.getEvtNum() << std::endl;
 
-            const double& HT = tr.getVar<double>("HTZinv");
-            const double& cleanMetPt = tr.getVar<double>("cleanMetPt");
-            const double& best_had_brJet_MT2Zinv = tr.getVar<double>("best_had_brJet_MT2Zinv");
-            const double& cntNJetsPt30Eta24Zinv = tr.getVar<int>("cntNJetsPt30Eta24Zinv");
-            const double& nTopCandSortedCntZinv = tr.getVar<int>("nTopCandSortedCntZinv");
+            const float& HT = tr.getVar<float>("HTZinv");
+            const float& cleanMetPt = tr.getVar<float>("cleanMetPt");
+            const float& best_had_brJet_MT2Zinv = tr.getVar<float>("best_had_brJet_MT2Zinv");
+            const float& cntNJetsPt30Eta24Zinv = tr.getVar<int>("cntNJetsPt30Eta24Zinv");
+            const float& nTopCandSortedCntZinv = tr.getVar<int>("nTopCandSortedCntZinv");
 
             const bool& passNoiseEventFilterZinv = tr.getVar<bool>("passNoiseEventFilterZinv");
             const bool& passMuZinvSel = tr.getVar<bool>("passMuZinvSel");

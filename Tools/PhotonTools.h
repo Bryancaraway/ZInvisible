@@ -27,7 +27,7 @@
 namespace PhotonConsts
 {
   struct IDselection {
-    double HoE, sieie, pfCHadIso,pfNHadIso, factor1, factor2, pfGIso, factor3;
+    float HoE, sieie, pfCHadIso,pfNHadIso, factor1, factor2, pfGIso, factor3;
   };
 
   //barrel
@@ -61,8 +61,8 @@ namespace PhotonFunctions
 {
   
   bool passPhoton(const TLorentzVector& photon){
-    const double minPt = 100, barrelMax = 1.4442, endcapMin = 1.566, endcapMax = 2.5;
-    double perPhotonPt = photon.Pt(), perPhotonEta = photon.Eta();
+    const float minPt = 100, barrelMax = 1.4442, endcapMin = 1.566, endcapMax = 2.5;
+    float perPhotonPt = photon.Pt(), perPhotonEta = photon.Eta();
     return (minPt == -1 || perPhotonPt > minPt)
       && ((barrelMax == -1 || fabs(perPhotonEta) < barrelMax)
 	  || ((endcapMin == -1 || fabs(perPhotonEta) > endcapMin)
@@ -70,27 +70,27 @@ namespace PhotonFunctions
   }
 
   bool isBarrelECAL(const TLorentzVector& photon){
-    const double barrelMax = 1.4442;
-    double perPhotonEta = photon.Eta();
+    const float barrelMax = 1.4442;
+    float perPhotonEta = photon.Eta();
     return (barrelMax == -1 || fabs(perPhotonEta) <= barrelMax);
   }
   
   bool isEndcapECAL(const TLorentzVector& photon){
-    const double endcapMin = 1.566, endcapMax = 2.5;
-    double perPhotonEta = photon.Eta();
+    const float endcapMin = 1.566, endcapMax = 2.5;
+    float perPhotonEta = photon.Eta();
     return (endcapMin == -1 || fabs(perPhotonEta) >= endcapMin)
       || (endcapMax == -1 || fabs(perPhotonEta) <= endcapMax);
   }
 
   bool isGenMatched(const TLorentzVector& photon, std::vector<TLorentzVector> genPhoton){
-    double RecoPt = photon.Pt();
+    float RecoPt = photon.Pt();
     bool match = false;
     
     //std::cout << "genPhotons: " << genPhoton.size() << std::endl;
     for(int i = 0; i < genPhoton.size(); i++){
-      double deltaR = ROOT::Math::VectorUtil::DeltaR(genPhoton[i],photon);
-      double GenPt = genPhoton[i].Pt();
-      double temp_ratio = GenPt/RecoPt;
+      float deltaR = ROOT::Math::VectorUtil::DeltaR(genPhoton[i],photon);
+      float GenPt = genPhoton[i].Pt();
+      float temp_ratio = GenPt/RecoPt;
       /*
       std::cout << "igenPhoton: " << i+1 << std::endl;
       std::cout << "Reco Photon Pt: " << RecoPt << std::endl;
@@ -114,7 +114,7 @@ namespace PhotonFunctions
     bool isDirect = false;
 
     for(int i = 0; i < genParton.size(); i++){
-      double deltaR = ROOT::Math::VectorUtil::DeltaR(photon,genParton[i]);
+      float deltaR = ROOT::Math::VectorUtil::DeltaR(photon,genParton[i]);
       //std::cout << "deltaR: " << deltaR << std::endl;
       if (deltaR > 0.4){
         isDirect = true;
@@ -130,7 +130,7 @@ namespace PhotonFunctions
     bool isFrag = false;
 
     for(int i = 0; i < genParton.size(); i++){
-      double deltaR = ROOT::Math::VectorUtil::DeltaR(photon,genParton[i]);
+      float deltaR = ROOT::Math::VectorUtil::DeltaR(photon,genParton[i]);
       //std::cout << "deltaR: " << deltaR << std::endl;
       if (deltaR < 0.4){
         isFrag = true;
@@ -262,7 +262,7 @@ namespace PhotonFunctions
     TLatex mark;
     mark.SetNDC(true);
 
-    double fontScale = 6.5/8;
+    float fontScale = 6.5/8;
 
     mark.SetTextAlign(11);
     mark.SetTextSize(0.042 * fontScale * 1.25);
@@ -344,8 +344,8 @@ namespace PhotonFunctions
 
     gPad->Modified();
     pad2->cd();
-    double xmax = hist2->GetXaxis()->GetXmax();
-    double xmin = hist2->GetXaxis()->GetXmin();
+    float xmax = hist2->GetXaxis()->GetXmax();
+    float xmin = hist2->GetXaxis()->GetXmin();
 
     TLine *line = new TLine(2,1,16,1);
     line->SetLineStyle(1);
@@ -433,18 +433,18 @@ namespace PhotonFunctions
     for(int i = 0; i < hist->GetNbinsX(); i++){
 
       int sfbin = weights->FindBin(hist->GetBinCenter(i+1));
-      double sf = weights->GetBinContent(sfbin);
-      double sf_e = weights->GetBinError(sfbin);
+      float sf = weights->GetBinContent(sfbin);
+      float sf_e = weights->GetBinError(sfbin);
 
       if (sfbin == 0) continue;
 
-      double bc_old = hist->GetBinContent(i+1);
-      double be_old = hist->GetBinError(i+1);
+      float bc_old = hist->GetBinContent(i+1);
+      float be_old = hist->GetBinError(i+1);
 
       if (bc_old == 0) continue;
 
-      double bc = bc_old*sf;
-      double be = bc*TMath::Sqrt( (be_old/bc_old)*(be_old/bc_old) + (sf_e/sf)*(sf_e/sf) );
+      float bc = bc_old*sf;
+      float be = bc*TMath::Sqrt( (be_old/bc_old)*(be_old/bc_old) + (sf_e/sf)*(sf_e/sf) );
 
       hist->SetBinContent(i+1,bc);
       hist->SetBinError(i+1,be);
@@ -456,9 +456,9 @@ namespace PhotonFunctions
   {
   public:
     
-    double HoverE, sietaieta, pfChargedHadronIso, pfNeutralHadronIso, pfGammaIso;
+    float HoverE, sietaieta, pfChargedHadronIso, pfNeutralHadronIso, pfGammaIso;
     
-    void getIDvar(double HoE, double sieie, double pfCHadIso, double pfNhadIso, double pfPhoIso) {
+    void getIDvar(float HoE, float sieie, float pfCHadIso, float pfNhadIso, float pfPhoIso) {
       HoverE = HoE;
       sietaieta = sieie;
       pfChargedHadronIso = pfCHadIso;
@@ -466,31 +466,31 @@ namespace PhotonFunctions
       pfGammaIso = pfPhoIso;
     }
     
-    double GetHoverE() {return HoverE;}
-    double GetSieie() {return sietaieta;}
-    double GetChargedHadIso() {return pfChargedHadronIso;}
-    double GetNeutralHadIso() {return pfNeutralHadronIso;}
-    double GetGammaIso() {return pfGammaIso;}
+    float GetHoverE() {return HoverE;}
+    float GetSieie() {return sietaieta;}
+    float GetChargedHadIso() {return pfChargedHadronIso;}
+    float GetNeutralHadIso() {return pfNeutralHadronIso;}
+    float GetGammaIso() {return pfGammaIso;}
   };
 
-  double pfNhadronIsoCalc(const TLorentzVector& photon, const PhotonConsts::IDselection& paramArr){
-    double photonPt = photon.Pt();
-    double product = paramArr.pfNHadIso + paramArr.factor1*photonPt+paramArr.factor2*photonPt*photonPt;
+  float pfNhadronIsoCalc(const TLorentzVector& photon, const PhotonConsts::IDselection& paramArr){
+    float photonPt = photon.Pt();
+    float product = paramArr.pfNHadIso + paramArr.factor1*photonPt+paramArr.factor2*photonPt*photonPt;
     return product;
   }
   
-  double pfGammaIsoCalc(const TLorentzVector& photon, const PhotonConsts::IDselection& paramArr){
-    double photonPt = photon.Pt();
-    double product = paramArr.pfGIso + paramArr.factor3*photonPt;
+  float pfGammaIsoCalc(const TLorentzVector& photon, const PhotonConsts::IDselection& paramArr){
+    float photonPt = photon.Pt();
+    float product = paramArr.pfGIso + paramArr.factor3*photonPt;
     return product;
   }
   
   bool GetPhotonID(const TLorentzVector& photon, SelectID& IDobj, TString decision){
-    const double HoE = IDobj.GetHoverE();
-    const double sieie = IDobj.GetSieie();
-    const double pfCHadIso = IDobj.GetChargedHadIso();
-    const double pfNhadIso = IDobj.GetNeutralHadIso(); 
-    const double pfPhoIso = IDobj.GetGammaIso();
+    const float HoE = IDobj.GetHoverE();
+    const float sieie = IDobj.GetSieie();
+    const float pfCHadIso = IDobj.GetChargedHadIso();
+    const float pfNhadIso = IDobj.GetNeutralHadIso(); 
+    const float pfPhoIso = IDobj.GetGammaIso();
     
     bool passIDbarrel = false;
     bool passIDendcap = false;
