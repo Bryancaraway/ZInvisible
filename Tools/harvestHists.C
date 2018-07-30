@@ -6,7 +6,7 @@
 #include <cstdio>
 #include <string>
 
-TH2* rebin2d(TH2* old, float xbins[], int nx, float ybins[], int ny)
+TH2* rebin2d(TH2* old, double xbins[], int nx, double ybins[], int ny)
 {
     //create a new TH2 with your bin arrays spec
     //int nx = sizeof(xbins)/sizeof(float) - 1;
@@ -55,9 +55,9 @@ void combineActBins(TH2* hnum, TH2* hden, const int N = 5)
     }
 }
 
-static float dzbt[] = {0.0};
+static double dzbt[] = {0.0};
 
-void makeRatio1D(std::string label, TFile *fin, TFile *fout, float bins[] = dzbt, int nbins = 0)
+void makeRatio1D(std::string label, TFile *fin, TFile *fout, double bins[] = dzbt, int nbins = 0)
 {
     fin->cd();
     TH1 *num = (TH1*)fin->Get((label+"_num").c_str());
@@ -76,7 +76,7 @@ void makeRatio1D(std::string label, TFile *fin, TFile *fout, float bins[] = dzbt
     ratio->Write();
 }
 
-void makeRatio2D(std::string label, TFile *fin, TFile *fout, float binsX[] = dzbt, int nx = 0, float binsY[] = dzbt, int ny = 0)
+void makeRatio2D(std::string label, TFile *fin, TFile *fout, double binsX[] = dzbt, int nx = 0, double binsY[] = dzbt, int ny = 0)
 {
     fin->cd();
     TH2 *num = (TH2*)fin->Get((label+"_num").c_str());
@@ -104,29 +104,29 @@ int main ()
 {
     TH1::AddDirectory(false);
 
-    float xbins[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 220.0, 240.0, 260.0, 280.0, 300.0, 340.0, 380.0, 420.0, 460.0, 500.0, 560.0, 2000.0};
+    double xbins[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 220.0, 240.0, 260.0, 280.0, 300.0, 340.0, 380.0, 420.0, 460.0, 500.0, 560.0, 2000.0};
     int nxbins = sizeof(xbins)/sizeof(float);
 
-    float ybins[] = {0.0, 10.0, 40.0, 120.0, 200.0, 300.0, 400.0, 650.0, 800.0, 1000.0, 5000.0};
+    double ybins[] = {0.0, 10.0, 40.0, 120.0, 200.0, 300.0, 400.0, 650.0, 800.0, 1000.0, 5000.0};
     int nybins = sizeof(ybins)/sizeof(float);
 
-    float zptbins[] = {0.0, 100.0, 140.0, 180.0, 220.0, 300.0, 400.0, 500.0, 600.0, 800.0, 2000.0};
+    double zptbins[] = {0.0, 100.0, 140.0, 180.0, 220.0, 300.0, 400.0, 500.0, 600.0, 800.0, 2000.0};
     int nzptbins = sizeof(zptbins)/sizeof(float);
 
-    float zptbins2[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0, 360.0, 370.0, 380.0, 390.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 640.0, 680.0, 720.0, 760.0, 800.0, 840.0, 920.0, 1000.0, 1400.0, 2000.0};
+    double zptbins2[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0, 120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0, 270.0, 280.0, 290.0, 300.0, 310.0, 320.0, 330.0, 340.0, 350.0, 360.0, 370.0, 380.0, 390.0, 400.0, 420.0, 440.0, 460.0, 480.0, 500.0, 520.0, 540.0, 560.0, 580.0, 600.0, 640.0, 680.0, 720.0, 760.0, 800.0, 840.0, 920.0, 1000.0, 1400.0, 2000.0};
     int nzptbins2 = sizeof(zptbins2)/sizeof(float);
 
-    float muptbins[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 120.0, 140.0, 180.0, 200.0, 300.0, 400.0, 500.0, 600.0, 800.0, 2000.0};
+    double muptbins[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 120.0, 140.0, 180.0, 200.0, 300.0, 400.0, 500.0, 600.0, 800.0, 2000.0};
     int nmuptbins = sizeof(muptbins)/sizeof(float);
 
-    float muptbins2[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0, 150.0, 300.0, 500.0, 800.0, 1400.0, 2000.0};
+    double muptbins2[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0, 150.0, 300.0, 500.0, 800.0, 1400.0, 2000.0};
     int nmuptbins2 = sizeof(muptbins2)/sizeof(float);
 
-    float muptbins3[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 120.0, 140.0, 180.0, 200.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1200.0, 2000.0};
+    double muptbins3[] = {0.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 120.0, 140.0, 180.0, 200.0, 300.0, 400.0, 500.0, 600.0, 800.0, 1200.0, 2000.0};
     int nmuptbins3 = sizeof(muptbins3)/sizeof(float);
 
     //float actbins[] = {0.0, 5.0, 10.0, 20.0, 40.0, 60.0, 80.0, 100.0, 120.0, 200.0};//, 500.0, 3000.0};
-    float actbins[] = {0.0, 0.02, 0.05, 0.10, 0.15, 0.40, 0.60, 1.0, 20.0};
+    double actbins[] = {0.0, 0.02, 0.05, 0.10, 0.15, 0.40, 0.60, 1.0, 20.0};
     int nactbins = sizeof(actbins)/sizeof(float);
 
     TFile  *fin = new TFile("effhists.root");

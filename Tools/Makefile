@@ -45,7 +45,7 @@ LHAPDFLIB  = -L$(LHAPDF_DATA_PATH)/../../lib -lLHAPDF
 
 #PROGRAMS = calcEff harvestHists makePlots systematics nJetWgtSyst moneyplot plot2d scalefactorplot systplot miniMakePlots beffCalc makeSignalHistograms makeTopPlots makeDataMCplots simpleAnalyzer
 #PROGRAMS = calcEff harvestHists makePlots moneyplot plot2d scalefactorplot systplot beffCalc makeSignalHistograms makeTopPlots makeDataMCplots simpleAnalyzer
-PROGRAMS = calcEff harvestHists makePlots moneyplot scalefactorplot systplot beffCalc makeSignalHistograms makeTopPlots makeDataMCplots makeDYPlots makePhotonPlots
+PROGRAMS = calcEff harvestHists makePlots moneyplot scalefactorplot systplot beffCalc makeSignalHistograms makeTopPlots makeDataMCplots makeDYPlots makePhotonPlots simpleAnalyzer
 
 all: mkobj PyWraps $(PROGRAMS)
 
@@ -120,6 +120,9 @@ harvestHists: $(ODIR)/harvestHists.o
 	$(LD) $^ $(LIBS) -o $@
 
 makePlots: $(ODIR)/NTupleReader.o $(ODIR)/SATException.o $(ODIR)/samples.o $(ODIR)/Plotter.o $(ODIR)/MakePlots.o $(ODIR)/MiniTupleMaker.o $(ODIR)/PDFUncertainty.o $(ODIR)/RegisterFunctions.o $(ODIR)/Systematic.o $(ODIR)/searchBins.o $(ODIR)/BTagCorrector.o $(ODIR)/BTagCalibrationStandalone.o $(ODIR)/TaggerUtility.o $(ODIR)/PlotUtility.o $(ODIR)/baselineDef.o $(ODIR)/customize.o $(ODIR)/ISRCorrector.o $(ODIR)/PileupWeights.o
+	$(LD) $^ $(LIBS) $(MT2LIB) $(LHAPDFLIB) -o $@
+
+simpleAnalyzer: $(ODIR)/NTupleReader.o $(ODIR)/SATException.o $(ODIR)/samples.o $(ODIR)/simpleAnalyzer.o $(ODIR)/BTagCorrector.o $(ODIR)/BTagCalibrationStandalone.o $(ODIR)/TaggerUtility.o $(ODIR)/PlotUtility.o $(ODIR)/baselineDef.o $(ODIR)/customize.o $(ODIR)/ISRCorrector.o $(ODIR)/PileupWeights.o
 	$(LD) $^ $(LIBS) $(MT2LIB) $(LHAPDFLIB) -o $@
 
 makeTopPlots: $(ODIR)/NTupleReader.o $(ODIR)/SATException.o $(ODIR)/samples.o $(ODIR)/Plotter.o $(ODIR)/MakeTopPlots.o $(ODIR)/MiniTupleMaker.o $(ODIR)/PDFUncertainty.o $(ODIR)/RegisterFunctions.o $(ODIR)/Systematic.o $(ODIR)/searchBins.o $(ODIR)/BTagCorrector.o $(ODIR)/BTagCalibrationStandalone.o $(ODIR)/TaggerUtility.o $(ODIR)/PlotUtility.o $(ODIR)/baselineDef.o $(ODIR)/customize.o $(ODIR)/ISRCorrector.o $(ODIR)/PileupWeights.o

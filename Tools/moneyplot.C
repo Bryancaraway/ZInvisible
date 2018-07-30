@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
     sprintf(legEntry, "%s", "prediction");
     leg->AddEntry(h1, legEntry);
     smartMax(h1, leg, static_cast<TPad*>(gPad), min, max, lmax);
-    minAvgWgt = std::min(minAvgWgt, h1->GetSumOfWeights()/h1->GetEntries());
+    minAvgWgt = std::min(minAvgWgt, static_cast<float>(h1->GetSumOfWeights()/h1->GetEntries()));
 
     // Format errors
     g1->SetFillColor(kRed-7);
