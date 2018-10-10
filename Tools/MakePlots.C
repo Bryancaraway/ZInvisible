@@ -294,6 +294,9 @@ int main(int argc, char* argv[])
 
     vector<Plotter::HistSummary> vh;
 
+    // available wegihts: muTrigWgt;bTagSF_EventWeightSimple_Central;_PUweightFactor;isr_Unc_Cent;genWeight
+    // remove bTagSF_EventWeightSimple_Central due to error with recoJetsFlavor at the moment
+
     Plotter::DatasetSummary dsDY_nunu(            "Z#rightarrow#nu#nu",                fileMap["ZJetsToNuNu"], "passLeptVeto", "");
     // Datasetsummaries we are using                                                                                                        
     // no weight (genWeight deals with negative weights); also add btag weights here                                                        

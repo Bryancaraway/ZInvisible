@@ -61,7 +61,6 @@ namespace plotterFunctions
             const std::vector<data_t>& elespfActivity       = tr.getVec<data_t>("elespfActivity");
             const std::vector<data_t>& W_emu_pfActivityVec  = tr.getVec<data_t>("W_emu_pfActivityVec");
 
-            //const data_t& ht                              = tr.getVar<data_t>("ht");
             const auto& met                                 = tr.getVar<data_t>("met");
             const auto& metphi                              = tr.getVar<data_t>("metphi");
 

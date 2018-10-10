@@ -67,7 +67,7 @@ namespace plotterFunctions
             const auto& pdgIdZDec       = tr.getVar<int>("pdgIdZDec");
             const auto& passMuZinvSel   = tr.getVar<bool>("passMuZinvSel");
             const auto& passElecZinvSel = tr.getVar<bool>("passElecZinvSel");
-            const auto& ht              = tr.getVar<data_t>("ht");
+            const auto& ht              = tr.getVar<data_t>("genHT");
             const auto& bestRecoZPt     = tr.getVar<data_t>("bestRecoZPt");
             const auto& genZPt          = tr.getVar<data_t>("genZPt");
 
