@@ -94,7 +94,7 @@ void activateBranches(std::set<std::string>& activeBranches)
     activeBranches.insert("photonEta");
     activeBranches.insert("photonPhi");
     activeBranches.insert("totalPhotons");
-    activeBranches.insert("gammaLVec");
+    activeBranches.insert("photonLVec");
 }
 
 ////////////////////////////////

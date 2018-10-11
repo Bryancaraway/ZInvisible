@@ -73,18 +73,18 @@ if __name__ == "__main__":
     
     # gen
     histogramMapGen = []
-    histogramMapGen += [{"gammaLVecGen"                : "MC_PhotonGenAccPt_singlegammaLVecGenptgammaLVecGen(pt)GJets #gamma Gensingle"}]
-    histogramMapGen += [{"gammaLVecGenEta"             : "MC_PhotonGenAccPt_singlegammaLVecGenEtaptgammaLVecGenEta(pt)GJets #gamma GenEtasingle"}]
-    histogramMapGen += [{"gammaLVecGenEtaPt"           : "MC_PhotonGenMatchPt_singlegammaLVecGenEtaPtptgammaLVecGenEtaPt(pt)GJets #gamma GenEtaPtsingle"}]
-    histogramMapGen += [{"gammaLVecGenEtaPtMatched"    : "MC_PhotonGenMatchPt_singlegammaLVecGenEtaPtMatchedptgammaLVecGenEtaPtMatched(pt)GJets #gamma GenEtaPtMatchedsingle"}]
+    histogramMapGen += [{"photonLVecGen"                : "MC_PhotonGenAccPt_singlephotonLVecGenptphotonLVecGen(pt)GJets #gamma Gensingle"}]
+    histogramMapGen += [{"photonLVecGenEta"             : "MC_PhotonGenAccPt_singlephotonLVecGenEtaptphotonLVecGenEta(pt)GJets #gamma GenEtasingle"}]
+    histogramMapGen += [{"photonLVecGenEtaPt"           : "MC_PhotonGenMatchPt_singlephotonLVecGenEtaPtptphotonLVecGenEtaPt(pt)GJets #gamma GenEtaPtsingle"}]
+    histogramMapGen += [{"photonLVecGenEtaPtMatched"    : "MC_PhotonGenMatchPt_singlephotonLVecGenEtaPtMatchedptphotonLVecGenEtaPtMatched(pt)GJets #gamma GenEtaPtMatchedsingle"}]
     
     # reco
     histogramMapReco = []
-    histogramMapReco += [{"gammaLVecReco"                : "MC_PhotonRecoAccPt_singlegammaLVecRecoptgammaLVecReco(pt)GJets #gamma Recosingle"}]
-    histogramMapReco += [{"gammaLVecRecoEta"             : "MC_PhotonRecoAccPt_singlegammaLVecRecoEtaptgammaLVecRecoEta(pt)GJets #gamma RecoEtasingle"}]
-    histogramMapReco += [{"gammaLVecRecoEtaPt"           : "MC_PhotonRecoIsoPt_singlegammaLVecRecoEtaPtptgammaLVecRecoEtaPt(pt)GJets #gamma RecoEtaPtsingle"}]
-    histogramMapReco += [{"gammaLVecRecoIso"             : "MC_PhotonRecoIsoPt_singlegammaLVecRecoIsoptgammaLVecRecoIso(pt)GJets #gamma RecoIsosingle"}]
-    histogramMapReco += [{"gammaLVecRecoEtaPtMatched"    : "MC_PhotonRecoMatchPt_singlegammaLVecRecoEtaPtMatchedptgammaLVecRecoEtaPtMatched(pt)GJets #gamma RecoEtaPtMatchedsingle"}]
+    histogramMapReco += [{"photonLVecReco"                : "MC_PhotonRecoAccPt_singlephotonLVecRecoptphotonLVecReco(pt)GJets #gamma Recosingle"}]
+    histogramMapReco += [{"photonLVecRecoEta"             : "MC_PhotonRecoAccPt_singlephotonLVecRecoEtaptphotonLVecRecoEta(pt)GJets #gamma RecoEtasingle"}]
+    histogramMapReco += [{"photonLVecRecoEtaPt"           : "MC_PhotonRecoIsoPt_singlephotonLVecRecoEtaPtptphotonLVecRecoEtaPt(pt)GJets #gamma RecoEtaPtsingle"}]
+    histogramMapReco += [{"photonLVecRecoIso"             : "MC_PhotonRecoIsoPt_singlephotonLVecRecoIsoptphotonLVecRecoIso(pt)GJets #gamma RecoIsosingle"}]
+    histogramMapReco += [{"photonLVecRecoEtaPtMatched"    : "MC_PhotonRecoMatchPt_singlephotonLVecRecoEtaPtMatchedptphotonLVecRecoEtaPtMatched(pt)GJets #gamma RecoEtaPtMatchedsingle"}]
    
 
     resultsGen  = getResults("Gen",  options.input_file, histogramMapGen)
@@ -92,14 +92,14 @@ if __name__ == "__main__":
 
     # final
     finalGen = {}
-    finalGen["genAcc"]           = resultsGen["gammaLVecGenEta/gammaLVecGen"]
-    finalGen["genMatchedToReco"] = resultsGen["gammaLVecGenEtaPtMatched/gammaLVecGenEtaPt"]
+    finalGen["genAcc"]           = resultsGen["photonLVecGenEta/photonLVecGen"]
+    finalGen["genMatchedToReco"] = resultsGen["photonLVecGenEtaPtMatched/photonLVecGenEtaPt"]
     genEff = calcFinal(finalGen)
 
     finalReco = {}
-    finalReco["recoAcc"]          = resultsReco["gammaLVecRecoEta/gammaLVecReco"]
-    finalReco["recoIso"]          = resultsReco["gammaLVecRecoIso/gammaLVecRecoEtaPt"]
-    finalReco["recoMatchedToGen"] = resultsReco["gammaLVecRecoEtaPtMatched/gammaLVecRecoIso"]
+    finalReco["recoAcc"]          = resultsReco["photonLVecRecoEta/photonLVecReco"]
+    finalReco["recoIso"]          = resultsReco["photonLVecRecoIso/photonLVecRecoEtaPt"]
+    finalReco["recoMatchedToGen"] = resultsReco["photonLVecRecoEtaPtMatched/photonLVecRecoIso"]
     recoEff = calcFinal(finalReco)
     
 

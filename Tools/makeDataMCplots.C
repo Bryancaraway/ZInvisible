@@ -491,9 +491,9 @@ int main(int argc, char* argv[])
        vh.push_back(PHS("HT" + cut.first,  PDCMaker12("HTpho"), {1, 1}, cut.second, 20, 0, 5000, true, true,  "HT", "Events"));
        vh.push_back(PHS("photonPtWcuts" + cut.first,  PDCMaker12("photonPtWcuts"), {1, 1}, cut.second, 15, 0, 3000, true, true, "Pt",  "Events"));
        vh.push_back(PHS("photonEtaWcuts" + cut.first,  PDCMaker12("photonEtaWcuts"), {1, 1}, cut.second, 20, -4.0, 4.0, true, true,  "Eta",  "Events"));
-       //vh.push_back(PHS("gammaLVec_Pt"  + cut.first,  PDCMaker12("gammaLVec_200(pt)"),  {1, 1}, cut.second, 30, 0, 3000, true, true,  "pt",   "Events"));//Andres pt cut
-       //vh.push_back(PHS("gammaLVec_Eta"  + cut.first,  PDCMaker12("gammaLVec_200(eta)"),  {1, 1}, cut.second, 100, -3.7, 3.7, true, true,  "eta",   "Events"));
-       //vh.push_back(PHS("gammaLVec_Phi"  + cut.first,  PDCMaker12("gammaLVec_200(phi)"),  {1, 1}, cut.second, 100, -5, 5, true, true,  "phi",   "Events"));
+       //vh.push_back(PHS("photonLVec_Pt"  + cut.first,  PDCMaker12("photonLVec_200(pt)"),  {1, 1}, cut.second, 30, 0, 3000, true, true,  "pt",   "Events"));//Andres pt cut
+       //vh.push_back(PHS("photonLVec_Eta"  + cut.first,  PDCMaker12("photonLVec_200(eta)"),  {1, 1}, cut.second, 100, -3.7, 3.7, true, true,  "eta",   "Events"));
+       //vh.push_back(PHS("photonLVec_Phi"  + cut.first,  PDCMaker12("photonLVec_200(phi)"),  {1, 1}, cut.second, 100, -5, 5, true, true,  "phi",   "Events"));
        //vh.push_back(PHS("gmet" + cut.first,  PDCMaker12("gammaMet"), {1, 1}, cut.second, 15, 0, 1500, true, false, "met",  "Events"));
        //vh.push_back(PHS("MET" + cut.first,  PDCMaker12("met"), {1, 1}, cut.second, 15, 0, 1500, true, false, "met",  "Events"));
        //vh.push_back(PHS("gpt" + cut.first,  PDCMaker12("gpt"), {1, 1}, cut.second, 65, 150, 800, true, false, "pt",  "Events"));
