@@ -135,13 +135,14 @@ namespace plotterFunctions
         
         // check vector lengths: photonLVecRecoEta should have the same length as photon ntuple values for which passAcc=true
         bool passed = true;
-        if (photonLVecReco->size() != photongenMatched.size()) passed = false;
-        if (photonLVecReco->size() != loosePhotonID.size())    passed = false;
-        if (photonLVecReco->size() != mediumPhotonID.size())   passed = false;
-        if (photonLVecReco->size() != tightPhotonID.size())    passed = false;
+        if (photonLVecRecoEta->size() != photonLVecReco->size())  passed = false;
+        if (photonLVecReco->size()    != photongenMatched.size()) passed = false;
+        if (photonLVecReco->size()    != loosePhotonID.size())    passed = false;
+        if (photonLVecReco->size()    != mediumPhotonID.size())   passed = false;
+        if (photonLVecReco->size()    != tightPhotonID.size())    passed = false;
         if (debug) // print debugging statements
         {
-          printf("photonLVecGen | photonLVecRecoEta | photonLVecReco == photongenMatched loosePhotonID mediumPhotonID tightPhotonID: %d | %d | %d == %d %d %d %d --- %s\n", \
+          printf("photonLVecGen | photonLVecRecoEta == photonLVecReco == photongenMatched loosePhotonID mediumPhotonID tightPhotonID: %d | %d == %d == %d %d %d %d --- %s\n", \
             int(photonLVecGen.size()), int(photonLVecRecoEta->size()), int(photonLVecReco->size()), int(photongenMatched.size()), \
             int(loosePhotonID.size()), int(mediumPhotonID.size()), int(tightPhotonID.size()), passed ? "pass" : "fail");
         }
