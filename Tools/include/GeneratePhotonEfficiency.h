@@ -47,7 +47,7 @@ namespace plotterFunctions
 
         void generatePhotonEfficiency(NTupleReader& tr)
         {
-            const auto& gammaLVecPassLooseID = tr.getVec<TLorentzVector>("gammaLVecPassLooseID"); // loose photon
+            const auto& photonLVecPassLooseID = tr.getVec<TLorentzVector>("photonLVecPassLooseID"); // loose photon
             const auto& passPhotonSelection  = tr.getVar<bool>("passPhotonSelection");            // photon selection
             data_t photonCrossSectionRatio = -1.0;
             data_t photonAcceptance = -1.0;
@@ -56,13 +56,13 @@ namespace plotterFunctions
             photonCrossSectionRatio = hCrossSectionRatio->GetBinContent(1);
             if (passPhotonSelection)
             {
-                if (gammaLVecPassLooseID.size() == 1)
+                if (photonLVecPassLooseID.size() == 1)
                 {
-                    photonPt = gammaLVecPassLooseID[0].Pt();
+                    photonPt = photonLVecPassLooseID[0].Pt();
                 }
                 else
                 {
-                    std::cout << "ERROR: passPhotonSelection = true, but gammaLVecPassLooseID.size() = " << gammaLVecPassLooseID.size() << " (should be 1)" << std::endl;
+                    std::cout << "ERROR: passPhotonSelection = true, but photonLVecPassLooseID.size() = " << photonLVecPassLooseID.size() << " (should be 1)" << std::endl;
                 }
             }
             if (photonPt > 0)

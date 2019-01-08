@@ -67,12 +67,10 @@ namespace plotterFunctions
             const auto& pdgIdZDec       = tr.getVar<int>("pdgIdZDec");
             const auto& passMuZinvSel   = tr.getVar<bool>("passMuZinvSel");
             const auto& passElecZinvSel = tr.getVar<bool>("passElecZinvSel");
-            const auto& ht              = tr.getVar<data_t>("ht");
+            const auto& genHT              = tr.getVar<data_t>("genHT");
             const auto& bestRecoZPt     = tr.getVar<data_t>("bestRecoZPt");
             const auto& genZPt          = tr.getVar<data_t>("genZPt");
 
-            //const auto& nJets           =  tr.getVar<int>("nJets"); // variable not produced in CMSSW8028_2016 ntuples
-            const auto& nJets           =  tr.getVar<int>("nJets_CUT");
             const auto& stored_weight   = tr.getVar<data_t>("stored_weight");
 
             // Calculate PU weight
@@ -238,7 +236,7 @@ namespace plotterFunctions
                 }
             }
 
-            double genCleanHt = ht;
+            double genCleanHt = genHT;
             for(auto& tlvp : genMuInAcc) if(tlvp.Pt() > 50) genCleanHt -= tlvp.Pt();
 
             const double MHT_jetPtMin = 30.0;
