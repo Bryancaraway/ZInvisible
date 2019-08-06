@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # quickPlots.sh
 # Caleb J. Smith
 # October 11, 2018

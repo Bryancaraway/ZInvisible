@@ -58,13 +58,15 @@ namespace plotterFunctions
         void lepInfo(NTupleReader& tr)
         {
             std::vector<int> genDecayPdgIdVec;
+            std::vector<int> genMotherPdgIdVec;
             std::vector<int> GenPart_statusFlags;
             std::vector<TLorentzVector> genDecayLVec;
             if (tr.checkBranch("GenPartTLV"))
             {
-                genDecayPdgIdVec                    = tr.getVec<int>("GenPart_pdgId");
-                GenPart_statusFlags                 = tr.getVec<int>("GenPart_statusFlags");
-                genDecayLVec                        = tr.getVec<TLorentzVector>("GenPartTLV");
+	      genDecayPdgIdVec                    = tr.getVec<int>("GenPart_pdgId");
+	      genMotherPdgIdVec                   = tr.getVec<int>("GenPart_genPartIdxMother");
+	      GenPart_statusFlags                 = tr.getVec<int>("GenPart_statusFlags");
+	      genDecayLVec                        = tr.getVec<TLorentzVector>("GenPartTLV");
             }
             const auto& muonsLVec                           = tr.getVec<TLorentzVector>("MuonTLV");
             const auto& muonsCharge                         = tr.getVec<int>("Muon_charge");
@@ -81,14 +83,19 @@ namespace plotterFunctions
 
             bool Pass_MuonVeto = false;
             bool Pass_ElecVeto = false;
+	    bool isZToLL       = false;
+	    bool isTAllHad     = false;
             
             try
-            {
+	      {
                 const auto& Pass_MuonVetoTmp = tr.getVar<bool>("Pass_MuonVeto");
                 const auto& Pass_ElecVetoTmp = tr.getVar<bool>("Pass_ElecVeto");
+                //const auto& isZToLLTmp = tr.getVar<bool>("isZToLL");
                 if(&Pass_MuonVetoTmp != nullptr) Pass_MuonVeto = Pass_MuonVetoTmp;
                 if(&Pass_ElecVetoTmp != nullptr) Pass_ElecVeto = Pass_ElecVetoTmp;
-            }
+		//if(&isZToLLTmp != nullptr) isZToLL = isZToLLTmp;
+		
+	      }
             catch(const std::string e)
             {
                 std::cout << "In LepInfo.h: Caught exception, variable \"" << e << "\" not found" << std::endl;
@@ -135,27 +142,74 @@ namespace plotterFunctions
             
             if(tr.checkBranch("GenPartTLV") && &genDecayLVec != nullptr)
             {
-                for (int i = 0; i < genDecayPdgIdVec.size(); ++i)
-                {
-                    //int i = W_emuVec[index];
-                    int maskedStatusFlag = (GenPart_statusFlags[i] & GENPARTMASK);
-                    bool isGoodGenPart = (maskedStatusFlag == GENPARTMASK);
-                    if (isGoodGenPart)
+	      for (int i = 0; i < genDecayPdgIdVec.size(); ++i)
+		{
+		  ///// added by Bryan to check if Z goes to ll or nunu in ttztollnunu /////
+		  /// Check if we can directly identify a leptonic daughter from the Z
+		  if ((genDecayPdgIdVec[genMotherPdgIdVec[i]] == 23) && ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15))) { 
+		    isZToLL = true;
+		  }
+		  /// If no direct daughter is found, check to see if the lepton in the event is from the main interaction + has a OSSF partner with the same mother
+		  else if ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15)) {
+		    if (((genMotherPdgIdVec[i] == -1) || (genMotherPdgIdVec[i] == 0)) || 
+			((abs(genDecayPdgIdVec[genMotherPdgIdVec[i]]) == 1) || (abs(genDecayPdgIdVec[genMotherPdgIdVec[i]]) == 2) || (genDecayPdgIdVec[genMotherPdgIdVec[i]] == 21))) {
+		      for (int j = i; j < genDecayPdgIdVec.size(); ++j){
+			if ((genMotherPdgIdVec[i] == genMotherPdgIdVec[j]) && (genMotherPdgIdVec[i] == (-1*genMotherPdgIdVec[j]))){
+			  isZToLL = true ;
+			}
+		      }
+		    }		    
+		  }
+		  /// Check if the top decays all hadronically or not
+		  // First, find the positive W that is from the top
+		  if ((genDecayPdgIdVec[genMotherPdgIdVec[i]] == 6) && (genDecayPdgIdVec[i]) == 24) {
+		    // Then Check if it decays hadronically
+		    std::vector<int> wDaughters;
+		    for (int j = 0; j < genDecayPdgIdVec.size(); ++j){
+		      if(genDecayPdgIdVec[genMotherPdgIdVec[j]] == 24) wDaughters.push_back(genDecayPdgIdVec[j]);
+		    }
+		    int countDaughters = 0;
+		    for (int j = 0; j < wDaughters.size(); ++j){
+		      if (wDaughters[j] < 10) countDaughters += 1;
+		    }
+		    if (countDaughters >= 2){
+		      // Second, check if negative W decays all hadronically
+		      for (int j = 0; j < genDecayPdgIdVec.size(); ++j){ 
+			if ((genDecayPdgIdVec[genMotherPdgIdVec[j]] == -6) && (genDecayPdgIdVec[j]) == -24) {
+			  // Then Check if it decays hadronically
+			  std::vector<int> wDaughters;
+			  for (int k = 0; k < genDecayPdgIdVec.size(); ++k){
+			    if(genDecayPdgIdVec[genMotherPdgIdVec[j]] == -24) wDaughters.push_back(genDecayPdgIdVec[j]);
+			  }
+			  int countDaughters = 0;
+			  for (int k = 0; k < wDaughters.size(); ++k){
+			    if (wDaughters[k] < 10) countDaughters += 1;
+			  }
+			  if (countDaughters >= 2) isTAllHad = true;
+			}
+		      }
+		    }
+		  }
+		  //////////////////////////////////////////////////////////////////////////
+		  //int i = W_emuVec[index];
+		  int maskedStatusFlag = (GenPart_statusFlags[i] & GENPARTMASK);
+		  bool isGoodGenPart = (maskedStatusFlag == GENPARTMASK);
+		  if (isGoodGenPart)
                     {
-                        //muon efficiency and acceptance
-                        if(abs(genDecayPdgIdVec[i]) == 13)
+		      //muon efficiency and acceptance
+		      if(abs(genDecayPdgIdVec[i]) == 13)
                         {
-                            genMu->push_back(&genDecayLVec[i]);
-                            if(AnaFunctions::passMuonAccOnly(genDecayLVec[i], AnaConsts::muonsMiniIsoArr) && genDecayLVec[i].Pt() > minMuPt)
+			  genMu->push_back(&genDecayLVec[i]);
+			  if(AnaFunctions::passMuonAccOnly(genDecayLVec[i], AnaConsts::muonsMiniIsoArr) && genDecayLVec[i].Pt() > minMuPt)
                             {
-                                genMuInAcc->push_back(genDecayLVec[i]);
-                                double dRMin = 999.9;
-                                double matchPt = -999.9;
-                                for(int j = 0; j < cutMuVecRecoOnly.size(); ++j)
+			      genMuInAcc->push_back(genDecayLVec[i]);
+			      double dRMin = 999.9;
+			      double matchPt = -999.9;
+			      for(int j = 0; j < cutMuVecRecoOnly.size(); ++j)
                                 {
-                                    // difference in angle between gen and reco muons 
-                                    double dR = ROOT::Math::VectorUtil::DeltaR(genDecayLVec[i], cutMuVecRecoOnly[j]);
-                                    if(dR < dRMin)
+				  // difference in angle between gen and reco muons 
+				  double dR = ROOT::Math::VectorUtil::DeltaR(genDecayLVec[i], cutMuVecRecoOnly[j]);
+				  if(dR < dRMin)
                                     {
                                         dRMin = dR;
                                         matchPt = cutMuVecRecoOnly[j].Pt();
@@ -579,6 +633,8 @@ namespace plotterFunctions
             tr.registerDerivedVar("passElMuZinvSel",             passElMuZinvSel);
             tr.registerDerivedVar("passElMuZinvSelOnZMassPeak",  passElMuZinvSelOnZMassPeak);
             tr.registerDerivedVar("passElMuZinvSelOffZMassPeak", passElMuZinvSelOffZMassPeak);
+            tr.registerDerivedVar("isZToLL", isZToLL);
+            tr.registerDerivedVar("isTAllHad", isTAllHad);
             tr.registerDerivedVar("Zrecopt", Zrecoptpt);
         }
 

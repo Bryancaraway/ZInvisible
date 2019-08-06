@@ -95,6 +95,8 @@ void activateBranches(std::set<std::string>& activeBranches)
     activeBranches.insert("photonPhi");
     activeBranches.insert("totalPhotons");
     activeBranches.insert("gammaLVec");
+    activeBranches.insert("isZToLL");
+    
 }
 
 ////////////////////////////////
