@@ -26,10 +26,11 @@ def main():
 
     parser = optparse.OptionParser("usage: %prog [options]\n")
     
-    parser.add_option ('-n', dest='nEvents',  type='int',          default = '-1',  help="Number of total events per sample")
-    parser.add_option ('-d', dest='datasets', type='string',       default = '',    help="List of datasets 'ZJetsToNuNu_2016,GJets_2016,DYJetsToLL_2016'")             
-    parser.add_option ('-y', dest='year',     type='string',       default = None,  help="Year data or MC to analyze.")
-    parser.add_option ('-p', dest='pre',      action='store_true', default = False, help="Analyze PreProcessed version of sampleSets.")
+    parser.add_option ('-n', dest='nEvents',       type='int',          default = '-1',  help="Number of total events per sample")
+    parser.add_option ('-d', dest='datasets',      type='string',       default = '',    help="List of datasets 'ZJetsToNuNu_2016,GJets_2016,DYJetsToLL_2016'")             
+    parser.add_option ('-y', dest='year',          type='string',       default = None,  help="Year data or MC to analyze.")
+    parser.add_option ('-f', dest='inputFile',     type='string',       default = None,  help="Use an optional file")
+    parser.add_option ('-p', dest='pre',           action='store_true', default = False, help="Analyze PreProcessed version of sampleSets.")
                        
     options, args = parser.parse_args()
     year = options.year 
@@ -53,7 +54,7 @@ def main():
 
     # Return datasets, with MC weights
     sampleDict = getDataWeights(datasets,sampleSetsFile,sampleCollectionsFile,lumiYearDict[year])
-    doAnalyzer(sampleDict, options.nEvents)
+    doAnalyzer(sampleDict, options.nEvents, options.inputFile)
 
     
 def getDataWeights(datasets,sampleSetsFile,sampleCollectionsFile,lumi):
@@ -75,7 +76,7 @@ def getDataWeights(datasets,sampleSetsFile,sampleCollectionsFile,lumi):
                      "weight":lumi*float(csv[7].strip())*float(csv[4].strip())/(float(csv[5].strip())-float(csv[6].strip()))})# lumi*k_factor*x-section/(positive_weights-negative_weights)
     return sampleDict
 
-def doAnalyzer(sampleDict , nmax):
+def doAnalyzer(sampleDict , nmax, inputFile):
     trees = []
     #weightNames    = ['puWeight', 'BTagWeight', 'ISRWeight', 'PrefireWeight']
     #eventSelection = ["nBottoms_drLeptonCleaned>1", "nResolvedTops_drLeptonCleaned>0"]
@@ -90,6 +91,8 @@ def doAnalyzer(sampleDict , nmax):
                     break
                 fname = line.split()[0]
                 isZToLL = None ## new branch in tree
+                if (inputFile): 
+                    fname = inputFile
                 with uproot.open(fname) as f:
                     print(fname)
                     t = f.get('Events')
@@ -107,10 +110,36 @@ def doAnalyzer(sampleDict , nmax):
                     isFromZ  = ((IDs[mothers] == 23) & (isllnunu))
                     noZ      = (isFromZ.sum() == False)
 
-                    fromZDict         = {"nZEvents" : len(isFromZ.sum()), "nZTwoDaughters": 0, "nZMassDaughters": 0}
-
+                    fromZDict         = {"nZEvents" : len(isFromZ.sum()), "nZTwoDaughters": 0, "nZMassDaughters": 0, "TTLep": 0, "TTHad": 0}
                     
+                    # find if T decays semileptonically or all hadronically
+                    
+                    IDcut = (((IDs[mothers] == 6) | (IDs[mothers] == 24) |
+                              (IDs[mothers] == -6) | (IDs[mothers] == -24)) &
+                             ((IDs != 24) & (IDs != -24) &
+                             (IDs != 5) & (IDs != -5)))                    
+                    variety = (abs(IDs[IDcut]) < 10).sum()
+                    print (len(variety[variety == 4]))
+                    
+                    for daughters, mother in zip(IDs, mothers):
+                        if(len(daughters)>0):
+                            foundWPlus  = False
+                            foundWMinus = False
+                            for i in range(0,len(daughters)):
+                                for j in range(0,len(daughters)):
+                                    if ((daughters[i] != daughters[j]) and (mother[i] == mother[j]) and ((abs(daughters[i]) < 5) and (abs(daughters[j]) < 5))) :
+                                        if (((daughters[mother[i]] == 24) or (daughters[mother[i]] == 6)) and (foundWPlus == False)) :
+                                            foundWPlus = True
+                                        if (((daughters[mother[i]] == -24) or (daughters[mother[i]] == -6)) and (foundWMinus == False)) :
+                                            foundWMinus = True
+                            if (foundWMinus and foundWPlus) :
+                                
+                                fromZDict["TTHad"] += 1
+                            else :
+                                fromZDict["TTLep"] += 1
 
+                    print(fromZDict["TTHad"], fromZDict["TTLep"])
+                    ## Find definite daughters of Z
 
 
                     for pair, mother, mass, pt, phi, eta in zip(IDs[isFromZ], mothers[isFromZ], masses[isFromZ], pts[isFromZ], phis[isFromZ], etas[isFromZ]):
@@ -126,6 +155,8 @@ def doAnalyzer(sampleDict , nmax):
                             partSum = part1 + part2
                             diKnownLNuZMass[str(abs(pair[0]))].append(partSum.M())
 
+
+                    ## Find best matched daughter of Z
 
                     otherMothersIndex = ['-1','0']
                     otherMothers     = ['-1','1','-2','2','21']
@@ -147,10 +178,10 @@ def doAnalyzer(sampleDict , nmax):
                                             part1.SetPtEtaPhiM(pt[i],eta[i],phi[i],massDict[str(abs(ID[i]))])
                                             part2.SetPtEtaPhiM(pt[j],eta[j],phi[j],massDict[str(abs(ID[j]))])
                                             partSum = part1 + part2
-                                            if ((abs(partSum.M() - massDict['23']) < 1500) and (abs(partSum.M() - massDict['23']) < (abs(bestZMass - massDict['23'])))) :
+                                            if ((abs(partSum.M() - massDict['23']) < (abs(bestZMass - massDict['23'])))) :
                                                 bestZMass = partSum.M()
                                                 bestZMassID = str(abs(ID[i]))
-
+                                    
                             if ((bestZMass != 9999) and (bestZMassID != -1)) :
                                 fromZDict["nZMassDaughters"] += 1
                                 fromZDict[bestZMassID] += 1
@@ -159,16 +190,16 @@ def doAnalyzer(sampleDict , nmax):
                             else : 
                                 noZMask.append(False)
                                 print ID
-                                
+                    
+
                     for key in sorted(fromZDict.keys()):
                         print("%s: %s" % (key, fromZDict[key])),
                     n_ += len(isFromZ.sum())
                     print("")
                     x = IDs[noZ]
                     ### PRINT OUT EVENTS THAT WERENT COUNTED ###
-                    
-    print(diKnownLNuZMass)
-    print(diUnknownLNuZMass)
+                if (inputFile): break    
+    
     # PLOT HERE
     makeHistogram(diKnownLNuZMass,   "From Known Daughters")
     del diKnownLNuZMass

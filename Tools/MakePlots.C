@@ -493,20 +493,22 @@ int main(int argc, char* argv[])
     ///////
 
     std::vector<StrPair>  mc_samples = { 
-      {"DY",               "DYJetsToLL"},
-      {"t#bar{t}Z_ll",     "TTZToLLNuNu"},
-      {"t#bar{t}Z_nunu",   "TTZToLLNuNu"},
-      {"t#bar{t}Z_qq",     "TTZToQQ"},
-      {"t#bar{t}W",        "TTW"},
-      {"tZq",              "ST_tZq_ll"},
-      {"VVV",              "Triboson"},
-      {"t#bar{t}H",        "ttH"},
-      {"t#bar{t}t#bar{t}", "TTTT"},
-      {"WZ",               "WZ_amcatnlo"},
-      {"Diboson",          "Diboson"},
-      {"t",                "SingleTop"},
-      {"t#bar{t}_2l",      "TTbarDiLep"},
-      {"t#bar{t}_1l",      "TTbarSingleLep"}};
+      {"DY",                   "DYJetsToLL"},
+      {"t#bar{t}Had_Z_ll",     "TTZToLLNuNu"},
+      {"t#bar{t}Lep_Z_ll",     "TTZToLLNuNu"},
+      {"t#bar{t}Had_Z_nunu",   "TTZToLLNuNu"},
+      {"t#bar{t}Lep_Z_nunu",   "TTZToLLNuNu"},
+      {"t#bar{t}Z_qq",         "TTZToQQ"},
+      {"t#bar{t}W",            "TTW"},
+      {"tZq",                  "ST_tZq_ll"},
+      {"VVV",                  "Triboson"},
+      {"t#bar{t}H",            "ttH"},
+      {"t#bar{t}t#bar{t}",     "TTTT"},
+      {"WZ",                   "WZ_amcatnlo"},
+      {"Diboson",              "Diboson"},
+      {"t",                    "SingleTop"},
+      {"t#bar{t}_2l",          "TTbarDiLep"},
+      {"t#bar{t}_1l",          "TTbarSingleLep"}};
       
     std::vector<Variable> kenimatic_vars = { // Usage: label, variable, range, logScale? 
       {"Z_ll_mass", "bestRecoZM",                                    0.0, 200.0,  false},
@@ -575,15 +577,28 @@ int main(int argc, char* argv[])
     std::vector<std::vector<PDS>> dsTTZ_mu_stack ;
     std::vector<std::vector<PDS>> dsTTZ_elec_loose_stack ;
     std::vector<std::vector<PDS>> dsTTZ_mu_loose_stack ;
+    std::vector<std::vector<PDS>> TTZ_stack;
     //
     for ( StrPair& sample : mc_samples){
-      if (sample.first == "t#bar{t}Z_ll"){
-	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";isZToLL", "")});
-	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";isZToLL",   "")});
+      if      (sample.first == "t#bar{t}Had_Z_ll"){
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";isZToLL;isTAllHad", "")});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";isZToLL;isTAllHad",   "")});
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "isZToLL;isTAllHad",                "")});
       }
-      else if (sample.first == "t#bar{t}Z_nunu"){
-	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL", "")});
-	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL",   "")});
+      else if (sample.first == "t#bar{t}Lep_Z_ll"){
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";isZToLL;!isTAllHad", "")});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";isZToLL;!isTAllHad",   "")});
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "isZToLL;!isTAllHad",                "")});
+      }
+      else if (sample.first == "t#bar{t}Had_Z_nunu"){
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL;isTAllHad", "")});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL;isTAllHad",   "")});
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL;isTAllHad",                "")});
+      }
+      else if (sample.first == "t#bar{t}Lep_Z_nunu"){
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL;!isTAllHad", "")});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL;!isTAllHad",   "")});
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL;!isTAllHad",                "")});
       }
       else{
 	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts, "")});
@@ -602,6 +617,7 @@ int main(int argc, char* argv[])
     std::vector<PDC> dsMC_DiLepLoose_mu;
     std::vector<PDC> dsData_Elec;
     std::vector<PDC> dsData_Mu;
+    std::vector<PDC> dsData_TTZ;
     //
     for ( Variable& var : kenimatic_vars ){
       dsMC_DiLep_elec.push_back(PDC(     "stack", std::get<1>(var), dsTTZ_elec_stack));
@@ -615,7 +631,12 @@ int main(int argc, char* argv[])
     }
     dsMC_DiLepLoose_elec.push_back(PDC("stack", "bestRecoZM", dsTTZ_elec_loose_stack));
     dsMC_DiLepLoose_mu.push_back(PDC(  "stack", "bestRecoZM", dsTTZ_mu_loose_stack));
-
+    // test
+    dsData_TTZ.push_back(PDC(           "stack", "bestRecoZM", TTZ_stack));
+    vh.push_back(PHS("MC_TTZ"+std::get<0>(kenimatic_vars[0])+eraTag,            {dsData_TTZ[0]},      {1,1}, "", 
+		     60, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+    // end test
+    
     // === PHS === //
     for(int i = 0 ; i < dsMC_DiLep_elec.size() ; i++){
       for(StrPair& b_sel : bot_selections){

@@ -465,11 +465,8 @@ void Plotter::createHistsFromTuple()
             try
             {
                 NTupleReader tr(t, activeBranches);
-		std::cout << "before here here"<<std::endl;
                 tr.setReThrow(false);
-		std::cout << "before here"<<std::endl;
                 registerfunc_->registerFunctions(tr);
-		std::cout << "here"<<std::endl;
                 while(tr.getNextEvent())
                 {
                     //Things to run only on first event

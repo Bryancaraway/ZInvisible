@@ -81,6 +81,12 @@ namespace plotterFunctions
             const auto& met                                 = tr.getVar<data_t>("MET_pt");
             const auto& metphi                              = tr.getVar<data_t>("MET_phi");
 
+	    // Bryan print out event identifier (Lumi, Event, Run) for events that pass selection criteria
+	    const auto& lumi                                = tr.getVar<unsigned int>("luminosityBlock");
+	    const auto& event                               = tr.getVar<unsigned long long>("event");
+	    const auto& run                                 = tr.getVar<unsigned int>("run");
+	    // 
+
             bool Pass_MuonVeto = false;
             bool Pass_ElecVeto = false;
 	    bool isZToLL       = false;
@@ -140,6 +146,10 @@ namespace plotterFunctions
             //Gen info parsing
             const int GENPARTMASK = 0x2100;
             
+	    // Bryan
+	    bool foundWPlus  = false;
+	    bool foundWMinus = false;
+	    // 
             if(tr.checkBranch("GenPartTLV") && &genDecayLVec != nullptr)
             {
 	      for (int i = 0; i < genDecayPdgIdVec.size(); ++i)
@@ -162,31 +172,13 @@ namespace plotterFunctions
 		  }
 		  /// Check if the top decays all hadronically or not
 		  // First, find the positive W that is from the top
-		  if ((genDecayPdgIdVec[genMotherPdgIdVec[i]] == 6) && (genDecayPdgIdVec[i]) == 24) {
-		    // Then Check if it decays hadronically
-		    std::vector<int> wDaughters;
-		    for (int j = 0; j < genDecayPdgIdVec.size(); ++j){
-		      if(genDecayPdgIdVec[genMotherPdgIdVec[j]] == 24) wDaughters.push_back(genDecayPdgIdVec[j]);
-		    }
-		    int countDaughters = 0;
-		    for (int j = 0; j < wDaughters.size(); ++j){
-		      if (wDaughters[j] < 10) countDaughters += 1;
-		    }
-		    if (countDaughters >= 2){
-		      // Second, check if negative W decays all hadronically
-		      for (int j = 0; j < genDecayPdgIdVec.size(); ++j){ 
-			if ((genDecayPdgIdVec[genMotherPdgIdVec[j]] == -6) && (genDecayPdgIdVec[j]) == -24) {
-			  // Then Check if it decays hadronically
-			  std::vector<int> wDaughters;
-			  for (int k = 0; k < genDecayPdgIdVec.size(); ++k){
-			    if(genDecayPdgIdVec[genMotherPdgIdVec[j]] == -24) wDaughters.push_back(genDecayPdgIdVec[j]);
-			  }
-			  int countDaughters = 0;
-			  for (int k = 0; k < wDaughters.size(); ++k){
-			    if (wDaughters[k] < 10) countDaughters += 1;
-			  }
-			  if (countDaughters >= 2) isTAllHad = true;
-			}
+		  for (int j = 0; j < genDecayPdgIdVec.size(); ++j) {
+		    if ((genDecayPdgIdVec[i] != genDecayPdgIdVec[j]) && (genMotherPdgIdVec[i] == genMotherPdgIdVec[j]) && ((abs(genDecayPdgIdVec[i]) < 5) && (abs(genDecayPdgIdVec[j]) < 5))) {
+		      if (((genDecayPdgIdVec[genMotherPdgIdVec[i]] == 24) || (genDecayPdgIdVec[genMotherPdgIdVec[i]] == 6)) && (!foundWPlus)) {
+			foundWPlus = true;
+		      }
+		      if (((genDecayPdgIdVec[genMotherPdgIdVec[i]] == -24) || (genDecayPdgIdVec[genMotherPdgIdVec[i]] == -6)) && (!foundWMinus)) {
+			foundWMinus = true;
 		      }
 		    }
 		  }
@@ -282,6 +274,10 @@ namespace plotterFunctions
                     }
                 }
             }
+	    
+	    // Bryan: if W plus/mius hadronic daughters found then save as all had TT
+	    if (foundWPlus && foundWMinus) isTAllHad = true;
+	    //
 
             bool debug = false;
 
@@ -573,7 +569,15 @@ namespace plotterFunctions
                     printf("\n");
                 }
             }
-            
+	    // Bryan print out event identifier (Lumi, Event, Run) for events that pass selection criteria
+	    bool sel_cuts = ((passElecZinvSelOnZMassPeak || passMuZinvSelOnZMassPeak) && (bestRecoZPt > 300));
+	    const auto& nRTops = tr.getVar<int>("nResolvedTops_drLeptonCleaned");
+	    const auto& nBots =  tr.getVar<int>("nBottoms");
+	    bool obj_cuts = (nRTops > 0);
+	    if (sel_cuts && obj_cuts) {
+	      printf("Lumi Block: %i, Event#: %i, Run#: %i, Z to LL: %i, TT all Hadronic: %i\n",lumi,event,run,isZToLL,isTAllHad);
+	    }
+	    //
             tr.registerDerivedVar("bestRecoZPt", bestRecoZPt);
             tr.registerDerivedVar("bestRecoZM", bestRecoZ.M());
             tr.registerDerivedVar("metWithLL", metWithLL);
