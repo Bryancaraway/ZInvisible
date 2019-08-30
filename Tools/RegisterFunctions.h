@@ -59,11 +59,15 @@ class RegisterFunctionsNTuple : public RegisterFunctions
 {
 private:
     BaselineVessel *myBLV;
-    BaselineVessel *blvZinv;
-    BaselineVessel *blvNoVeto;
-    BaselineVessel *blvPFLeptonCleaned;
+    BaselineVessel *myBLV_jetpt20;
+    BaselineVessel *myBLV_jetpt30;
     BaselineVessel *blv_drLeptonCleaned;
+    BaselineVessel *blv_drLeptonCleaned_jetpt20;
+    BaselineVessel *blv_drLeptonCleaned_jetpt30;
     BaselineVessel *blv_drPhotonCleaned;
+    BaselineVessel *blv_drPhotonCleaned_jetpt20;
+    BaselineVessel *blv_drPhotonCleaned_jetpt30;
+    BaselineVessel *blvZinv;
     //BaselineVessel *blvZinv1b;
     //BaselineVessel *blvZinv2b;
     //BaselineVessel *blvZinv3b;
@@ -92,7 +96,6 @@ private:
     plotterFunctions::PrepareMiniTupleVars      *prepareMiniTupleVars;
     plotterFunctions::SystematicPrep            *systematicPrep;
     plotterFunctions::SystematicCalc            *systematicCalc;
-    plotterFunctions::Taudiv                    *taudiv;
     plotterFunctions::NJetAk8                   *nJetAk8;
     plotterFunctions::Ak8DrMatch                *ak8DrMatch;
 
@@ -169,7 +172,6 @@ class RegisterFunctionsTopStudy : public RegisterFunctions
 private:
     BaselineVessel *myBLV;
     plotterFunctions::PrepareTopVars *prepareTopVars;
-    plotterFunctions::Taudiv *taudiv;
     plotterFunctions::Ak8DrMatch *ak8DrMatch;
     plotterFunctions::TriggerInfo *triggerInfo;
 

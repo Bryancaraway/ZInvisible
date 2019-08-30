@@ -160,11 +160,11 @@ namespace plotterFunctions
 		    isZToLL = true;
 		  }
 		  /// If no direct daughter is found, check to see if the lepton in the event is from the main interaction + has a OSSF partner with the same mother
-		  else if ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15)) {
+		  else if ((genDecayPdgIdVec[genMotherPdgIdVec[i]] != 23) && ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15))) {
 		    if (((genMotherPdgIdVec[i] == -1) || (genMotherPdgIdVec[i] == 0)) || 
 			((abs(genDecayPdgIdVec[genMotherPdgIdVec[i]]) == 1) || (abs(genDecayPdgIdVec[genMotherPdgIdVec[i]]) == 2) || (genDecayPdgIdVec[genMotherPdgIdVec[i]] == 21))) {
 		      for (int j = i; j < genDecayPdgIdVec.size(); ++j){
-			if ((genMotherPdgIdVec[i] == genMotherPdgIdVec[j]) && (genMotherPdgIdVec[i] == (-1*genMotherPdgIdVec[j]))){
+			if ((genMotherPdgIdVec[i] == genMotherPdgIdVec[j]) && (genDecayPdgIdVec[i] == (-1*genDecayPdgIdVec[j]))){
 			  isZToLL = true ;
 			}
 		      }
@@ -334,19 +334,19 @@ namespace plotterFunctions
             double zMuMassCurrent = 1.0e300, zEff = 1.0e100, zAcc = 1.0e100;
             TLorentzVector bestRecoMuZ;
             TLorentzVector Zrecopt;
-            for(int i = 0; i < cutMuVec.size(); ++i)
-            {
-            Zrecopt =  muonsLVec[0]+muonsLVec[1];//cutMuVec[0] + cutMuVec[1];
-                if(cutMuVec[i].Pt() < minMuPt) continue;
-                for(int j = 0; j < i && j < cutMuVec.size(); ++j)
+            for(int i = 0; i < cutMuVec.size(); ++i){
+	      if (cutMuVec.size() == 2) printf("MuPt 1: %f\t MuPt 2: %f\n",cutMuVec[0].Pt(),cutMuVec[1].Pt());
+	      Zrecopt =  muonsLVec[0]+muonsLVec[1];//cutMuVec[0] + cutMuVec[1];
+	      if(cutMuVec[i].Pt() < minMuPt) continue;
+	      for(int j = 0; j < i && j < cutMuVec.size(); ++j)
                 {
-                    if(cutMuVec[j].Pt() < minMuPt) continue;
-                    double zm = (cutMuVec[i] + cutMuVec[j]).M();
-                    // check that zm is non-zero... otherwise 0.0 is chosen over values > 182.0
-                    if(zm > 0.0 && fabs(zm - zMass) < fabs(zMuMassCurrent - zMass))
+		  if(cutMuVec[j].Pt() < minMuPt) continue;
+		  double zm = (cutMuVec[i] + cutMuVec[j]).M();
+		  // check that zm is non-zero... otherwise 0.0 is chosen over values > 182.0
+		  if(zm > 0.0 && fabs(zm - zMass) < fabs(zMuMassCurrent - zMass))
                     {
-                        bestRecoMuZ = cutMuVec[i] + cutMuVec[j];
-                        zMuMassCurrent = zm;
+		      bestRecoMuZ = cutMuVec[i] + cutMuVec[j];
+		      zMuMassCurrent = zm;
                     }
                 }
             }
@@ -573,11 +573,11 @@ namespace plotterFunctions
 	    bool sel_cuts = ((passElecZinvSelOnZMassPeak || passMuZinvSelOnZMassPeak) && (bestRecoZPt > 300));
 	    const auto& nRTops = tr.getVar<int>("nResolvedTops_drLeptonCleaned");
 	    const auto& nBots =  tr.getVar<int>("nBottoms");
-	    bool obj_cuts = (nRTops > 0);
-	    if (sel_cuts && obj_cuts) {
-	      printf("Lumi Block: %i, Event#: %i, Run#: %i, Z to LL: %i, TT all Hadronic: %i\n",lumi,event,run,isZToLL,isTAllHad);
+	    bool obj_cuts = ((nRTops > 0) & (nBots > 1));
+	    if ((sel_cuts && obj_cuts) && (isZToLL == true && isTAllHad == false)) {
+	      printf("Event,%i,%i,%i,%i,%i\n",lumi,event,run,isZToLL,isTAllHad); // Lumi,Event,Run,ZtoLL,TTallHad
 	    }
-	    //
+	    // ===========================================================================================
             tr.registerDerivedVar("bestRecoZPt", bestRecoZPt);
             tr.registerDerivedVar("bestRecoZM", bestRecoZ.M());
             tr.registerDerivedVar("metWithLL", metWithLL);

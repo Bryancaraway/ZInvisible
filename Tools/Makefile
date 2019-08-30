@@ -44,11 +44,11 @@ INCLUDES += -I$(ZINVISIBLE)/Tools/include
 
 CXXFLAGS += -DDOTENSORFLOWPYBIND
 
-LIBS       = $(shell root-config --glibs)
+LIBS       = $(shell root-config --glibs) -lASImage
 MT2LIB     = -L$(shell $(PYTHONCFG) --prefix)/lib $(shell $(PYTHONCFG) --libs) -L$(TTTDIR) -lTopTagger
 LHAPDFLIB  = -L$(LHAPDF_DATA_PATH)/../../lib -lLHAPDF
 
-PROGRAMS = calcEff calcEffPhoton harvestHists makePlots moneyplot scalefactorplot systplot beffCalc makeSignalHistograms makeTopPlots makeDataMCplots makeDYPlots makePhotonPlots simpleAnalyzer
+PROGRAMS = calcEff calcEffPhoton harvestHists makePlots moneyplot scalefactorplot systplot makeTopPlots makeDataMCplots makeDYPlots makePhotonPlots simpleAnalyzer
 
 all: mkobj PyWraps $(PROGRAMS)
 

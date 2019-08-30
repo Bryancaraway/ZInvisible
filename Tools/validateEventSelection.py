@@ -96,6 +96,8 @@ def doAnalyzer(sampleDict , nmax, inputFile):
                 with uproot.open(fname) as f:
                     print(fname)
                     t = f.get('Events')
+                    checkEvents(t)
+
                     IDs     = t.array('GenPart_pdgId')
                     masses  = t.array('GenPart_mass')
                     pts     = t.array('GenPart_pt')
@@ -201,9 +203,9 @@ def doAnalyzer(sampleDict , nmax, inputFile):
                 if (inputFile): break    
     
     # PLOT HERE
-    makeHistogram(diKnownLNuZMass,   "From Known Daughters")
-    del diKnownLNuZMass
-    makeHistogram(diUnknownLNuZMass, "From Best Matched Daughters")
+    #makeHistogram(diKnownLNuZMass,   "From Known Daughters")
+    #del diKnownLNuZMass
+    #makeHistogram(diUnknownLNuZMass, "From Best Matched Daughters")
 
 def makeHistogram(mass_array,title):
     fig, particle_plots = plt.subplots( 2, 3, figsize=(16, 10))
@@ -224,6 +226,42 @@ def makeHistogram(mass_array,title):
     plt.show()
     plt.clf()
     plt.close()
+
+def checkEvents(t):
+    
+    
+    event   = t.array('event')
+    lumi    = t.array('luminosityBlock')
+
+    IDs     = t.array('GenPart_pdgId')
+    masses  = t.array('GenPart_mass')
+    pts     = t.array('GenPart_pt')
+    phis    = t.array('GenPart_phi')
+    etas    = t.array('GenPart_eta')
+    mothers = t.array('GenPart_genPartIdxMother')
+    status  = t.array('GenPart_status')
+    flag    = t.array('GenPart_statusFlags')
+    
+    checkEvents = {'Event': [],'Lumi': []}
+    csvFile = "ttbarlep.csv"
+    with open(csvFile, 'r') as f:
+        for line in f:
+            csvValues = line.split(",") #[1]: Lumi,[2]: Event, [3]: Run, [4]: ZtoLL, [5]: TTallHad
+            checkEvents['Event'].append(int(csvValues[2]))
+            checkEvents['Lumi'].append( int(csvValues[1]))
+    
+    print(checkEvents['Event'])
+
+    for i,j in zip(checkEvents['Event'], checkEvents['Lumi']):
+        for k, eve in enumerate(event):
+            if (i == eve) and (j == lumi[k]):
+                print(eve)
+                print(IDs[k])
+                print(mothers[k])
+                print(pts[k])
+                print(phis[k])
+                print(etas[k])
+    
                     # check if Z decays to double l
 #                    IDsZllcut   = ((IDs[mothers] == 23) & ((abs(IDs) == 11) | (abs(IDs) == 13) | (abs(IDs) == 15)))
 #                    IDsZnunucut = ((IDs[mothers] == 23) & ((abs(IDs) == 12) | (abs(IDs) == 14) | (abs(IDs) == 16)))
