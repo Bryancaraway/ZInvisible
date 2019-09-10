@@ -496,25 +496,31 @@ int main(int argc, char* argv[])
       {"DY",                   "DYJetsToLL"},
       {"t#bar{t}Had_Z_ll",     "TTZToLLNuNu"},
       {"t#bar{t}Lep_Z_ll",     "TTZToLLNuNu"},
-      {"t#bar{t}Had_Z_nunu",   "TTZToLLNuNu"},
-      {"t#bar{t}Lep_Z_nunu",   "TTZToLLNuNu"},
-      {"t#bar{t}Z_qq",         "TTZToQQ"},
-      {"t#bar{t}W",            "TTW"},
-      {"tZq",                  "ST_tZq_ll"},
+      //{"t#bar{t}_Z_nunu",      "TTZToLLNuNu"},
+      //{"t#bar{t}Z_qq",         "TTZToQQ"},
+      //{"t#bar{t}W",            "TTW"},
+      //{"tZq",                  "ST_tZq_ll"},
       {"VVV",                  "Triboson"},
-      {"t#bar{t}H",            "ttH"},
-      {"t#bar{t}t#bar{t}",     "TTTT"},
-      {"WZ",                   "WZ_amcatnlo"},
+      //{"t#bar{t}H",            "ttH"},
+      //{"t#bar{t}t#bar{t}",     "TTTT"},
+      //{"WZ",                   "WZ_amcatnlo"},
       {"Diboson",              "Diboson"},
-      {"t",                    "SingleTop"},
-      {"t#bar{t}_2l",          "TTbarDiLep"},
-      {"t#bar{t}_1l",          "TTbarSingleLep"}};
+      {"t(#bar{t})X",          "TTX"},
+      //{"t",                    "SingleTop"},
+      //{"t#bar{t}_2l",          "TTbarDiLep"},
+      //{"t#bar{t}_1l",          "TTbarSingleLep"}
+      {"t#bar{t}",             "TTbar"}};
       
     std::vector<Variable> kenimatic_vars = { // Usage: label, variable, range, logScale? 
-      {"Z_ll_mass", "bestRecoZM",                                    0.0, 200.0,  false},
-      {"Z_ll_pt",   "bestRecoZPt",                   doZptCut? 300 : 0.0, 1000.0, !doZptCut},
-      {"TopPt",     "JetTLV_drLeptonCleaned[0](pt)",                 0.0, 1000.0, !doZptCut}};
-
+      {"Z_ll_mass", "bestRecoZM",                                    76.0,  106.0,  false},
+      {"Z_ll_pt",   "bestRecoZPt",                   doZptCut? 300 : 0.0,   1000.0, !doZptCut},
+      {"TopPt",     "ResolvedTopCandidate_pt[0]",                       0.0,   1000.0, !doZptCut},
+      {"TopM",      "ResolvedTopCandidate_mass[0]",                     123.0, 223.0,  !doZptCut},
+      {"TopM_in",   "ResolvedTopCandidate_mass[0]",                     0.0,   160.0,  !doZptCut},
+      {"TopM_out",  "ResolvedTopCandidate_mass[0]",                     190.0, 400.0,  !doZptCut},
+      //{"nRT",       "nResolvedTops_drLeptonCleaned",                    0.0,   7.0,    !doZptCut},
+      {"Bottom_dR", "b_dR",                                             0.0,   5.0,    !doZptCut}};
+    
     if (testSel) {                                                                 // validate selections
       kenimatic_vars.push_back({"nRTops",    "nResolvedTops_drLeptonCleaned", 0.0, 10.0,   true});
       kenimatic_vars.push_back({"nMTops",    "nMergedTops_drLeptonCleaned",   0.0, 10.0,   true});
@@ -522,7 +528,7 @@ int main(int argc, char* argv[])
     }
     std::string          Zpt_selection  = "bestRecoZPt>300";
     std::vector<StrPair> bot_selections = {
-      {"nb0",  "nBottoms_drLeptonCleaned=0"},//{"nb1","nb>=1"},
+      //{"nb0",  "nBottoms_drLeptonCleaned=0"},//{"nb1","nb>=1"},
       {"nbg0", "nBottoms_drLeptonCleaned>0"},
       {"nbg1", "nBottoms_drLeptonCleaned>1"}};
     //{"","NONE"}};{"nb2","nb>=2"}};
@@ -537,10 +543,10 @@ int main(int argc, char* argv[])
     std::vector<StrPair> topM_selections = {
       {"nMt0",  "nMergedTops_drLeptonCleaned=0"},
       {"nMtg0",  "nMergedTops_drLeptonCleaned>0"},
-      {"nMtg1", "nMergedTops_drLeptonCleaned>1"},
+      //{"nMtg1", "nMergedTops_drLeptonCleaned>1"},
       {"","NONE"}};
     std::vector<StrPair> topRM_selections = {
-      {"nRMtl3","(nResolvedTops_drLeptonCleaned+nMergedTops_drLeptonCleaned)<3"},
+      //{"nRMtl3","(nResolvedTops_drLeptonCleaned+nMergedTops_drLeptonCleaned)<3"},
       {"","NONE"}};
     std::vector<StrPair> top_selections;
     //
@@ -590,16 +596,16 @@ int main(int argc, char* argv[])
 	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";isZToLL;!isTAllHad",   "")});
 	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "isZToLL;!isTAllHad",                "")});
       }
-      else if (sample.first == "t#bar{t}Had_Z_nunu"){
-	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL;isTAllHad", "")});
-	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL;isTAllHad",   "")});
-	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL;isTAllHad",                "")});
+      else if (sample.first == "t#bar{t}_Z_nunu"){
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL", "")});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL",   "")});
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL",                "")});
       }
-      else if (sample.first == "t#bar{t}Lep_Z_nunu"){
-	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL;!isTAllHad", "")});
-	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL;!isTAllHad",   "")});
-	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL;!isTAllHad",                "")});
-      }
+      //else if (sample.first == "t#bar{t}Lep_Z_nunu"){
+      //	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL;!isTAllHad", "")});
+      //	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL;!isTAllHad",   "")});
+      //	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL;!isTAllHad",                "")});
+      //}
       else{
 	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts, "")});
 	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts, "")});
@@ -660,6 +666,10 @@ int main(int argc, char* argv[])
 	    sel_label = "_"+b_sel.first+"_"+top_sel.first;
 	    sel_cut   = b_sel.second+";"+top_sel.second;
 	    if (doZptCut) sel_cut = sel_cut + ";"+Zpt_selection;
+	  }
+	  if(std::get<0>(kenimatic_vars[i]) == "TopM_in"){
+	    
+	    sel_cut = sel_cut+";ResolvedTopCandidate_mass[0]<160";
 	  }
 	  ////
 	  if (addData){

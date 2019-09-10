@@ -78,6 +78,7 @@ namespace plotterFunctions
                 //if(muonsFlagIDVec[i])
                 //if(AnaFunctions::passMuon( muonsLVec[i], muonsMiniIso[i] / muonsLVec[i].Pt(), 0.0, muonsFlagIDVec[i], AnaConsts::muonsMiniIsoArr))
                 if(AnaFunctions::passMuon( muonsLVec[i], muonsMiniIso[i], 0.0, muonsFlagIDVec[i], AnaConsts::muonsMiniIsoArr))
+                //if(AnaFunctions::passMuon( muonsLVec[i], muonsMiniIso[i], 0.0, true, AnaConsts::muonsMiniIsoArr)) // true ---> loose ID
                 {
                     //if(AnaFunctions::passMuon( muonsLVec[i], muonsRelIso[i], 0.0, muonsFlagIDVec[i], AnaConsts::muonsMiniIsoArr))
                     //{
@@ -103,23 +104,24 @@ namespace plotterFunctions
             {
                 // Electron_cutBased    Int_t   cut-based ID Fall17 V2 (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
                 // Electron_cutBasedNoIso: Removed isolation requirement from eGamma ID;  Int_t  (0:fail, 1:veto, 2:loose, 3:medium, 4:tight)
-                bool passElectonID = (elesFlagIDVec[i] >= 3);
+	      bool passElectonID = (elesFlagIDVec[i] >= 3);
+	      //bool passElectonID = (elesFlagIDVec[i] >= 1); // veto ID 
                 //if(elesFlagIDVec[i])
-                if(AnaFunctions::passElectron(elesLVec[i], 0.0, -1, passElectonID, AnaConsts::elesMiniIsoArr)) // emulates electrons with pt but no iso requirements.
+	      if(AnaFunctions::passElectron(elesLVec[i], 0.0, -1, passElectonID, AnaConsts::elesMiniIsoArr)) // emulates electrons with pt but no iso requirements.
                 {
-                    cutElecVecRecoOnly->push_back(elesLVec[i]);
+		  cutElecVecRecoOnly->push_back(elesLVec[i]);
                 }
 
-                //if(elesFlagIDVec[i])
-                //if(AnaFunctions::passElectron(elesLVec[i], elesMiniIso[i] / elesLVec[i].Pt(), -1, passElectonID, AnaConsts::elesMiniIsoArr))
-                if(AnaFunctions::passElectron(elesLVec[i], elesMiniIso[i], -1, passElectonID, AnaConsts::elesMiniIsoArr))
+	      //if(elesFlagIDVec[i])
+	      //if(AnaFunctions::passElectron(elesLVec[i], elesMiniIso[i] / elesLVec[i].Pt(), -1, passElectonID, AnaConsts::elesMiniIsoArr))
+	      if(AnaFunctions::passElectron(elesLVec[i], elesMiniIso[i], -1, passElectonID, AnaConsts::elesMiniIsoArr))
                 {
-                    cutElecVec->push_back(elesLVec[i]);
-                    cutElecCharge->push_back(elesCharge[i]);
-                    cutElecJetIndex->push_back(elesJetIndex[i]);
-                    //cutElecActivity->push_back(elespfActivity[i]);
-                    if(elesCharge[i] > 0) cutElecSummedCharge++;
-                    else                  cutElecSummedCharge--;
+		  cutElecVec->push_back(elesLVec[i]);
+		  cutElecCharge->push_back(elesCharge[i]);
+		  cutElecJetIndex->push_back(elesJetIndex[i]);
+		  //cutElecActivity->push_back(elespfActivity[i]);
+		  if(elesCharge[i] > 0) cutElecSummedCharge++;
+		  else                  cutElecSummedCharge--;
                 }
             }
 
