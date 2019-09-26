@@ -27,6 +27,7 @@ class Plotter
 {
 private:
     class HistCutSummary;
+    class Cuttable;
 
     class VarName
     {
@@ -34,8 +35,9 @@ private:
         std::string name;
         std::string var;
         int index;
+        std::shared_ptr<Cuttable> cuts;
 
-        VarName() {index = -1;}
+        VarName() : cuts(nullptr) {index = -1;}
     };
 
     class Cut
@@ -48,10 +50,10 @@ private:
         bool inverted;
 
         Cut(std::string s, char t, bool inv, double v, double v2 = 0);
-        bool passCut(const NTupleReader& tr) const;
+        bool passCut(const NTupleReader& tr, const int index = -999) const;
     private:
         void parseName();
-        double translateVar(const NTupleReader& tr) const;
+        double translateVar(const NTupleReader& tr, const int index = -999) const;
         bool boolReturn(const NTupleReader& tr) const;
     };
 
@@ -60,7 +62,7 @@ private:
     public:
         Cuttable() {}
         Cuttable(const std::string& c);
-        bool passCuts(const NTupleReader& tr) const;
+        bool passCuts(const NTupleReader& tr, const int index = -999) const;
         void setCuts(const std::string& c);
         void extractCuts(std::set<std::string>& ab) const;
         const std::string& getCuts() const {return cuts_;}
@@ -94,7 +96,6 @@ public:
         double kfactor;
 
         DatasetSummary() {}
-//        DatasetSummary(std::string lab, std::string nam, std::string tree, std::string cuts, double xs, double l, double k, double n);
         DatasetSummary(std::string lab, std::vector<AnaSamples::FileSummary>& f, std::string cuts = "", std::string weights = "", double k = 1.0);
 
         double getWeight(const NTupleReader& tr) const;
@@ -284,19 +285,33 @@ private:
             else
             {
                 const auto& vec = tr.getVec<T>(name.name);
-                for(auto& var : vec) vectorFill(h, name, pointerDeref(var), weight);
+                if(name.cuts)
+                {
+                    //per object cuts are defined, so apply these explicitely here (maybe can be made more efficient later)
+                    for(int iObj = 0; iObj < vec.size(); ++iObj)
+                    {
+                        if(name.cuts->passCuts(tr, iObj)) vectorFill(h, name, pointerDeref(vec[iObj]), weight);
+                    }
+                }
+                else
+                {
+                    //no per object cuts are defined
+                    for(auto& var : vec) vectorFill(h, name, pointerDeref(var), weight);
+                }
             }
         }
     }
 
-    template<typename T, typename R = T> static const R& getVarFromVec(const VarName& name, const NTupleReader& tr)
+    template<typename T, typename R = T> static const R& getVarFromVec(const VarName& name, const NTupleReader& tr, const int index = -999)
     {
         const auto& vec = tr.getVec<T>(name.name);
 
         if(&vec != nullptr)
         {
-            const int& i = name.index;
-            if(i < vec.size()) return vec.at(i);
+            int i;
+            if(index >= 0) i = index;
+            else           i = name.index;
+            if(i < vec.size()) return vec[i];
             else return *static_cast<R*>(nullptr);
         }
         return *static_cast<R*>(nullptr);

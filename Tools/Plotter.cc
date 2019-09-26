@@ -2,16 +2,13 @@
 #include "tdrstyle.h"
 #include "MiniTupleMaker.h"
 #include "RegisterFunctions.h"
-
 #include "TypeDefinitions.h"
 #include "TROOT.h"
 #include "TCanvas.h"
 #include "TTree.h"
-//#include "TChain.h"
 #include "TF1.h"
 #include "THStack.h"
 #include "TLatex.h"
-
 #include <sstream>
 
 const int colors[] = {
@@ -29,12 +26,13 @@ const int NCOLORS = sizeof(colors)/sizeof(int);
 
 const int stackColors[] = {
     kAzure   + 2,
-    kOrange  - 3,
+    kRed     - 7,
     kSpring  - 5,
+    kOrange  - 3,
     kMagenta - 2,
     kAzure   - 4,
+    kRed     - 3,
     kTeal    - 7,
-    kRed     - 7,
     kAzure   + 0,
     kGreen   + 2,
     kMagenta - 1,
@@ -164,8 +162,12 @@ void Plotter::HistSummary::parseName(std::vector<Plotter::DataCollection>& ns)
             VarName var;
             Plotter::parseSingleVar(dataset.first, var);
 
-           //std::string histname = name + "__" + var.name + "__" + ((var.index >= 0)?(std::to_string(var.index)):("")) + "__" + var.var + "__" + dataset.first + "__" + dataset.second.front().label + "__" + n.type;
+            // WARNING: semicolons ";" should not be used in histogram names
+            // TH1* hist = static_cast<TH1*>(file->Get("h_the;name")); 
+            // does not work when semicolons ";" are in the histogram name... in those cases hist will be nullptr.
+            // https://stackoverflow.com/questions/2896600/how-to-replace-all-occurrences-of-a-character-in-string
             std::string histname = name +  var.name + ((var.index >= 0)?(std::to_string(var.index)):("")) + var.var + dataset.first + dataset.second.front().label + n.type;
+            std::replace(histname.begin(), histname.end(), ';', '_');
 
             tmphtp.push_back(std::shared_ptr<HistCutSummary>(new HistCutSummary(dataset.second.front().label, histname, var, nullptr, dataset.second)));
         }
@@ -179,6 +181,8 @@ void Plotter::parseSingleVar(const std::string& name, VarName& var)
     size_t a2 = name.find("]");
     size_t b1 = name.find("(");
     size_t b2 = name.find(")");
+    size_t c1 = name.find("{");
+    size_t c2 = name.find("}");
 
     if(a1 != std::string::npos && a2 != std::string::npos)
     {
@@ -188,9 +192,13 @@ void Plotter::parseSingleVar(const std::string& name, VarName& var)
     {
         var.var = name.substr(b1+1, b2 - b1 - 1);
     }
-    if(a1 != std::string::npos || b1 != std::string::npos)
+    if(c1 != std::string::npos && c2 != std::string::npos)
     {
-        var.name = name.substr(0, std::min(a1, b1));
+        var.cuts.reset(new Cuttable(name.substr(c1+1, c2 - c1 - 1)));
+    }
+    if(a1 != std::string::npos || b1 != std::string::npos || c1 != std::string::npos)
+    {
+        var.name = name.substr(0, std::min(a1, std::min(b1, c1)));
     }
     else
     {
@@ -307,10 +315,8 @@ Plotter::DataCollection::DataCollection(std::string type, std::string var, std::
 
 void Plotter::createHistsFromTuple()
 {
-    //std::cout << "Running createHistsFromTuple()" << std::endl;
     for(const AnaSamples::FileSummary& file : trees_)
     {
-        //std::cout << "FileSummary tag from trees_: " << file.tag << std::endl;
         std::set<std::string> activeBranches;
 
         //get file list 
@@ -320,7 +326,6 @@ void Plotter::createHistsFromTuple()
         std::map<std::pair<std::string, const DatasetSummary*>, std::pair<const HistSummary*, std::vector<std::shared_ptr<HistCutSummary>>>> histsToFill;
         for(HistSummary& hs : hists_)
         {
-            //std::cout << "HistSummary name = " << hs.name << std::endl;
             for(HistVecAndType& histvec : hs.hists)
             {
                 for(std::shared_ptr<HistCutSummary>& hist : histvec.hcsVec)
@@ -338,21 +343,10 @@ void Plotter::createHistsFromTuple()
                         hist->h->GetYaxis()->SetTitle(hs.yAxisLabel.c_str());
                     }
 
-                    //hist->dss.extractCuts(activeBranches);
-                    //for(const auto& dss : hist->dss)
-                    //{
-                    //    std::set<std::string> weights;
-                    //    dss.extractWeightNames(weights);
-                    //    for(const auto& weight : weights) std::cout << "Weight: " << weight << std::endl;
-                    //}
-                    //hist->hs->extractCuts(activeBranches);
-
                     for(const DatasetSummary& ds : hist->dss)
                     {
-                        //std::cout << "DatasetSummary label: " << ds.label << std::endl;
                         for(const AnaSamples::FileSummary& fileToComp : ds.files)
                         {
-                            //std::cout << "FileSummary tag from DatasetSummary: " << fileToComp.tag << std::endl;
                             if(file == fileToComp)
                             {
                                 hist->dssp = &ds;
@@ -374,7 +368,6 @@ void Plotter::createHistsFromTuple()
         }
 
         //make vector of cutflows to fill
-        //std::vector<std::shared_ptr<CutFlowSummary>> cutFlowsToFill;
         std::vector<CutFlowSummary*> cutFlowsToFill;
         for(CutFlowSummary& cfs : cutFlows_)
         {
@@ -386,7 +379,6 @@ void Plotter::createHistsFromTuple()
                     {
                         if(file == fileToComp)
                         {
-                            //cutFlowsToFill.push_back(std::shared_ptr<CutFlowSummary>(&cfs));
                             cutFlowsToFill.push_back(&cfs);
                             cutFlowsToFill.back()->setDSS(&ds);
                             cutFlowsToFill.back()->generateHist();
@@ -405,8 +397,6 @@ void Plotter::createHistsFromTuple()
             continue;
         }
 
-        //TChain *t = new TChain(file.treePath.c_str());
-        //file.addFilesToChain(t);
         std::cout << "Processing file(s): " << file.filePath << std::endl;
 
         //Set up mini tuple maker
@@ -461,12 +451,14 @@ void Plotter::createHistsFromTuple()
             std::cout << "\t" << fname << std::endl;
 
             registerfunc_->activateBranches(activeBranches);
-	    std::cout << "before try"<<std::endl;
+
             try
             {
                 NTupleReader tr(t, activeBranches);
                 tr.setReThrow(false);
+
                 registerfunc_->registerFunctions(tr);
+
                 while(tr.getNextEvent())
                 {
                     //Things to run only on first event
@@ -494,7 +486,6 @@ void Plotter::createHistsFromTuple()
                     if(doHists_)
                     {
                         double fileWgt = file.getWeight();
-                        //printf("In Plotter.cc: %s --- weight = %f; lumi = %f\n", file.tag.c_str(), fileWgt, file.lumi);
 
                         for(auto& histsToFillVec : histsToFill)
                         {
@@ -511,8 +502,6 @@ void Plotter::createHistsFromTuple()
 
                             // get the weight associated with the dataset
                             double weight = fileWgt * dss.getWeight(tr) * dss.kfactor;
-                            
-                            //printf("In Plotter.cc: %s final weight = %f\n", file.tag.c_str(), weight);
 
                             for(auto& hist : histsToFillVec.second.second)
                             {
@@ -580,7 +569,7 @@ void Plotter::createHistsFromFile()
 
                 if(fout_) hist->h = static_cast<TH1*>(fout_->Get( (dirname+"/"+histName).c_str() ) );
                 else std::cout << "Input file \"" << fout_ << "\" not found!!!!" << std::endl;
-                if(!hist->h) std::cout << "Histogram not found: \"" << hist->name << "\"!!!!!!" << "dirname/histname " << dirname+"/"+hist->name << std::endl;
+                if(!hist->h) std::cout << "Histogram not found: \"" << hist->name << "\"!!!!!! dirname/histname: " << dirname+"/"+hist->name << std::endl;
             }
         }
     }
@@ -609,10 +598,8 @@ void Plotter::Cuttable::parseCutString()
             tmp = tmp.substr(sepPos + 1, size_t(-1));
         }
         sepPos = 0;
-        if(     (sepPos = tmp.find('>'))  != std::string::npos) cutType = '>';
-        else if((sepPos = tmp.find('<'))  != std::string::npos) cutType = '<';
-        else if((sepPos = tmp.find('='))  != std::string::npos) cutType = '=';
-        else if((sepPos = tmp.find(">=")) != std::string::npos)
+        // important: check for ">=" and "<=" first 
+        if((sepPos = tmp.find(">=")) != std::string::npos)
         {
             cutType = 'G';
             sepLen = 2;
@@ -622,6 +609,10 @@ void Plotter::Cuttable::parseCutString()
             cutType = 'L';
             sepLen = 2;
         }
+        // important: check for ">" and "<" next
+        else if((sepPos = tmp.find(">"))  != std::string::npos) cutType = '>';
+        else if((sepPos = tmp.find("<"))  != std::string::npos) cutType = '<';
+        else if((sepPos = tmp.find("="))  != std::string::npos) cutType = '=';
         else
         {
             cutType = 'B';
@@ -641,16 +632,16 @@ void Plotter::Cuttable::parseCutString()
     }
 }
 
-bool Plotter::Cut::passCut(const NTupleReader& tr) const
+bool Plotter::Cut::passCut(const NTupleReader& tr, const int index) const
 {
     switch(type)
     {
-    case '<': return translateVar(tr) < val;
-    case '>': return translateVar(tr) > val;
-    case '=': return translateVar(tr) == val;
-    case 'G': return translateVar(tr) >= val;
-    case 'L': return translateVar(tr) <= val;
-    case '-': return translateVar(tr) > val && translateVar(tr) < val2;
+    case '<': return translateVar(tr, index) < val;
+    case '>': return translateVar(tr, index) > val;
+    case '=': return translateVar(tr, index) == val;
+    case 'G': return translateVar(tr, index) >= val;
+    case 'L': return translateVar(tr, index) <= val;
+    case '-': return translateVar(tr, index) > val && translateVar(tr, index) < val2;
     case 'B': return boolReturn(tr);
     default:
         printf("Unrecognized cut type, %c\n", type);
@@ -658,32 +649,34 @@ bool Plotter::Cut::passCut(const NTupleReader& tr) const
     }
 }
 
-template<> const double& Plotter::getVarFromVec<TLorentzVector, double>(const VarName& name, const NTupleReader& tr)
+template<> const double& Plotter::getVarFromVec<TLorentzVector, double>(const VarName& name, const NTupleReader& tr, const int index)
 {
     const auto& vec = tr.getVec<TLorentzVector>(name.name);
 
     if(&vec != nullptr)
     {
-        const int& i = name.index;
+        int i;
+        if(index >= 0) i = index;
+        else           i = name.index;
         if(i < vec.size()) return tlvGetValue(name.var, vec.at(i));
         else return *static_cast<double*>(nullptr);
     }
     return *static_cast<double*>(nullptr);
 }
 
-double Plotter::Cut::translateVar(const NTupleReader& tr) const
+double Plotter::Cut::translateVar(const NTupleReader& tr, const int index) const
 {
     std::string type;
     tr.getType(name.name, type);
 
     if(type.find("vector") != std::string::npos)
     {
-        if     (type.find("pair")           != std::string::npos) return Plotter::getVarFromVec<std::pair<double, double>>(name, tr).first;
-        else if(type.find("double")         != std::string::npos) return static_cast<double>(Plotter::getVarFromVec<double>(name, tr));
-        else if(type.find("float")         != std::string::npos) return static_cast<float>(Plotter::getVarFromVec<float>(name, tr));
-        else if(type.find("unsigned int")   != std::string::npos) return static_cast<double>(Plotter::getVarFromVec<unsigned int>(name, tr));
-        else if(type.find("int")            != std::string::npos) return static_cast<double>(Plotter::getVarFromVec<int>(name, tr));
-        else if(type.find("TLorentzVector") != std::string::npos) return Plotter::getVarFromVec<TLorentzVector, double>(name, tr);
+        if     (type.find("pair")           != std::string::npos) return Plotter::getVarFromVec<std::pair<double, double>>(name, tr, index).first;
+        else if(type.find("double")         != std::string::npos) return static_cast<double>(Plotter::getVarFromVec<double>(name, tr, index));
+        else if(type.find("float")          != std::string::npos) return static_cast<float>(Plotter::getVarFromVec<float>(name, tr, index));
+        else if(type.find("unsigned int")   != std::string::npos) return static_cast<double>(Plotter::getVarFromVec<unsigned int>(name, tr, index));
+        else if(type.find("int")            != std::string::npos) return static_cast<double>(Plotter::getVarFromVec<int>(name, tr, index));
+        else if(type.find("TLorentzVector") != std::string::npos) return Plotter::getVarFromVec<TLorentzVector, double>(name, tr, index);
     }
     else
     {
@@ -699,21 +692,15 @@ double Plotter::Cut::translateVar(const NTupleReader& tr) const
 
 bool Plotter::Cut::boolReturn(const NTupleReader& tr) const
 {
-    // Functions here
-
-    // Booleans here
     return tr.getVar<bool>(name.name);
 }
 
-bool Plotter::Cuttable::passCuts(const NTupleReader& tr) const
+bool Plotter::Cuttable::passCuts(const NTupleReader& tr, const int index) const
 {
     bool passCut = true;
     for(const Cut& cut : cutVec_)
     {
-        if(cut.name.var.size() == 0)
-        {
-            passCut = passCut && ((cut.inverted)?(!cut.passCut(tr)):(cut.passCut(tr)));
-        }
+        passCut = passCut && ((cut.inverted)?(!cut.passCut(tr, index)):(cut.passCut(tr, index)));
     }
     return passCut;
 }
@@ -736,7 +723,6 @@ void Plotter::saveHists()
                     TDirectory* mydir = fout_->GetDirectory(dirname.c_str());
                     if(mydir == 0)
                     {
-                        //std::cout << "Creating directory " << dirname << " in the root file" << std::endl;
                         mydir = fout_->mkdir(dirname.c_str(),dirname.c_str());
                     }
                     mydir->cd();
@@ -808,6 +794,8 @@ void Plotter::plot()
     // setTDRStyle() is defined in SusyAnaTools/Tools/tdrstyle.h
     setTDRStyle();
     //gROOT->SetStyle("Plain");
+    // make png files
+    bool make_png = true;
 
     for(HistSummary& hist : hists_)
     {
@@ -1005,7 +993,6 @@ void Plotter::plot()
         {
             if (hist.ymin_ > 0 && hist.ymax_ > 0)
             {
-                //std::cout << "In Plotter.cc: " << hist.name << " ymin, ymax = " << hist.ymin_ << ", " << hist.ymax_ << std::endl;
                 dummy->GetYaxis()->SetRangeUser(hist.ymin_, hist.ymax_);
             }
             else
@@ -1038,11 +1025,6 @@ void Plotter::plot()
             if(hist.hists.front().type.compare("ratio") == 0) 
             {
                 dummy->GetYaxis()->SetRangeUser(ratioMin, 2.0);
-                //dummy->GetYaxis()->SetRangeUser(ratioMin, max*1.2);
-                //if (max > 5)
-                //{
-                //    dummy->GetYaxis()->SetRangeUser(ratioMin, 5*1.2);
-                //}
             }
         }
         dummy->Draw();
@@ -1089,6 +1071,7 @@ void Plotter::plot()
             gPad->SetRightMargin(0.06);
             gPad->SetTopMargin(0.01);
             gPad->SetBottomMargin(0.37);
+            gPad->SetGridy();
 
             dummy2 = new TH1F("dummy2", "dummy2", 1000, hist.fhist()->GetBinLowEdge(1), hist.fhist()->GetBinLowEdge(hist.fhist()->GetNbinsX()) + hist.fhist()->GetBinWidth(hist.fhist()->GetNbinsX()));
             dummy2->GetXaxis()->SetTitle(hist.xAxisLabel.c_str());
@@ -1164,22 +1147,26 @@ void Plotter::plot()
                 {
                     fline->SetParameter(0, 1);
                     drawOptions = "same PE1";
+                    bool autoScale = false;
 
                     h1->Divide(h2);
-                    //h1->SetLineColor(kBlack);
                     h1->SetMarkerStyle(20);
                     h1->SetMarkerColor(h1->GetLineColor());
-                    double d2ymin = 0.0;
-                    double d2ymax = 1.5;
-                    for(int iBin = 1; iBin <= h1->GetNbinsX(); ++iBin)
+                    double d2ymin = 0.4;
+                    double d2ymax = 1.6;
+                    if (autoScale)
                     {
-                        if(h1->GetBinContent(iBin) < 2.1)
+                        d2ymin = -0.1;
+                        d2ymax =  1.1;
+                        for(int iBin = 1; iBin <= h1->GetNbinsX(); ++iBin)
                         {
-                            d2ymax = std::max(d2ymax, h1->GetBinContent(iBin));
+                            if(h1->GetBinContent(iBin) < 2.1)
+                            {
+                                d2ymax = std::max(d2ymax, h1->GetBinContent(iBin));
+                            }
                         }
                     }
-                    //dummy2->GetYaxis()->SetRangeUser(d2ymin, 1.5*d2ymax);
-                    dummy2->GetYaxis()->SetRangeUser(0.0, 2.1);
+                    dummy2->GetYaxis()->SetRangeUser(d2ymin, d2ymax);
                 }
                 else // pull distribution
                 {
@@ -1190,7 +1177,6 @@ void Plotter::plot()
                     h1->SetMarkerStyle(20);
                     h1->SetMarkerColor(h1->GetLineColor());
 
-                    //h1->Add(h2, -1.0);
                     const double absoluteMaxPull = 10.0;
                     double maxPull = 2.0;
                     double sumW2_1 = 0.0, sumW_1 = 0.0;
@@ -1204,8 +1190,6 @@ void Plotter::plot()
                     }
                     for(int iBin = 1; iBin <= h1->GetNbinsX(); ++iBin)
                     {
-                        //if(h1->GetBinError(iBin) > 0.00001) h1->SetBinContent(iBin, h1->GetBinContent(iBin)/h1->GetBinError(iBin));
-                        //else h1->SetBinContent(iBin, -999.9);
                         double binVal = binVal = h1->GetBinContent(iBin) - h2->GetBinContent(iBin);
                         double binErr = -999.9;
                         if(h1->GetBinContent(iBin) > 1e-10 && h2->GetBinContent(iBin) > 1e-10)
@@ -1253,7 +1237,6 @@ void Plotter::plot()
         c->cd(1);
         char lumistamp[128];
         sprintf(lumistamp, "%.1f fb^{-1} (13 TeV)", getLumi() / 1000.0);
-        //printf("Luminosity Label: %.1f fb^{-1} (13 TeV)\n", getLumi() / 1000.0);
 
         TLatex mark;
         mark.SetNDC(true);
@@ -1279,8 +1262,11 @@ void Plotter::plot()
         mark.DrawLatex(1 - gPad->GetRightMargin(), 1 - (gPad->GetTopMargin() - 0.017), lumistamp);
 
         fixOverlay();
-        c->Print((plotDir_ + hist.name+".png").c_str());
         c->Print((plotDir_ + hist.name+".pdf").c_str());
+        if (make_png)
+        {
+            c->Print((plotDir_ + hist.name+".png").c_str());
+        }
 
         delete leg;
         delete dummy;

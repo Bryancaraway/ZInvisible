@@ -488,8 +488,11 @@ int main(int argc, char* argv[])
     typedef std::tuple<std::string,std::string, float, float, bool> Variable;
     typedef std::pair<std::string,std::string>                      StrPair;
     /////// Validation of Selection Cuts ///////
+    // Config for plots
     bool testSel  = false;
     bool doZptCut = true; 
+    bool doJetSel = true; 
+    bool doData   = false;
     ///////
 
     std::vector<StrPair>  mc_samples = { 
@@ -512,12 +515,14 @@ int main(int argc, char* argv[])
       {"t#bar{t}",             "TTbar"}};
       
     std::vector<Variable> kenimatic_vars = { // Usage: label, variable, range, logScale? 
-      {"Z_ll_mass", "bestRecoZM",                                    76.0,  106.0,  false},
+      {"Z_ll_mass", "bestRecoZM",                                    60.0,  120.0,  false},
       {"Z_ll_pt",   "bestRecoZPt",                   doZptCut? 300 : 0.0,   1000.0, !doZptCut},
       {"TopPt",     "ResolvedTopCandidate_pt[0]",                       0.0,   1000.0, !doZptCut},
       {"TopM",      "ResolvedTopCandidate_mass[0]",                     123.0, 223.0,  !doZptCut},
-      {"TopM_in",   "ResolvedTopCandidate_mass[0]",                     0.0,   160.0,  !doZptCut},
-      {"TopM_out",  "ResolvedTopCandidate_mass[0]",                     190.0, 400.0,  !doZptCut},
+      {"TopM_in",   "ResolvedTopCandidate_mass[0]{ResolvedTopCandidate_mass[0]>160;ResolvedTopCandidate_mass[0]<190}",
+       155.0,   195.0,  !doZptCut},
+      {"TopM_out",  "ResolvedTopCandidate_mass[0]{ResolvedTopCandidate_mass[0]<160;ResolvedTopCandidate_mass[0]>190}",
+       0.0, 400.0,  !doZptCut},
       //{"nRT",       "nResolvedTops_drLeptonCleaned",                    0.0,   7.0,    !doZptCut},
       {"Bottom_dR", "b_dR",                                             0.0,   5.0,    !doZptCut}};
     
@@ -527,27 +532,33 @@ int main(int argc, char* argv[])
       kenimatic_vars.push_back({"nBot",      "nBottoms_drLeptonCleaned",      0.0, 10.0,   true});
     }
     std::string          Zpt_selection  = "bestRecoZPt>300";
+    std::string          jetpt_thresh   = "Jet_pt[0]>30;Jet_pt[1]>30;Jet_pt[2]>30";
     std::vector<StrPair> bot_selections = {
       //{"nb0",  "nBottoms_drLeptonCleaned=0"},//{"nb1","nb>=1"},
       {"nbg0", "nBottoms_drLeptonCleaned>0"},
-      {"nbg1", "nBottoms_drLeptonCleaned>1"}};
-    //{"","NONE"}};{"nb2","nb>=2"}};
+      {"nbg1", "nBottoms_drLeptonCleaned>1"},
+      {"","NONE"}};//{"nb2","nb>=2"}};
     if (testSel){  // validate selections
       bot_selections.push_back({"nbge2","nBottoms_drLeptonCleaned>=2"}); // really >= 1
     }
     std::vector<StrPair> topR_selections = {
       {"nRt0",  "nResolvedTops_drLeptonCleaned=0"},
-      {"nRtg0",  "nResolvedTops_drLeptonCleaned>0"},
+      {"nRtg0", "nResolvedTops_drLeptonCleaned>0"},
       {"nRtg1", "nResolvedTops_drLeptonCleaned>1"},
-      {"","NONE"}};
+      {"",      "NONE"}};
     std::vector<StrPair> topM_selections = {
       {"nMt0",  "nMergedTops_drLeptonCleaned=0"},
-      {"nMtg0",  "nMergedTops_drLeptonCleaned>0"},
-      //{"nMtg1", "nMergedTops_drLeptonCleaned>1"},
-      {"","NONE"}};
+      {"nMtg0", "nMergedTops_drLeptonCleaned>0"},
+      {"nMtg1", "nMergedTops_drLeptonCleaned>1"},
+      {""     , "NONE"}};
     std::vector<StrPair> topRM_selections = {
       //{"nRMtl3","(nResolvedTops_drLeptonCleaned+nMergedTops_drLeptonCleaned)<3"},
       {"","NONE"}};
+    std::vector<StrPair> nJet_selections = {
+      {"nJ23", "nJets>=2;nJets<=3"},
+      {"nJ45", "nJets>=4;nJets<=5"},
+      {"nJ6" , "nJets>=6"},
+      {""    , "NONE"}};
     std::vector<StrPair> top_selections;
     //
     for (StrPair& r : topR_selections){
@@ -642,14 +653,14 @@ int main(int argc, char* argv[])
     vh.push_back(PHS("MC_TTZ"+std::get<0>(kenimatic_vars[0])+eraTag,            {dsData_TTZ[0]},      {1,1}, "", 
 		     60, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
     // end test
-    
+    if (doJetSel) top_selections = nJet_selections; // super duper hacky (rewrite this Bryan!!!)
     // === PHS === //
     for(int i = 0 ; i < dsMC_DiLep_elec.size() ; i++){
       for(StrPair& b_sel : bot_selections){
 	for(StrPair& top_sel : top_selections){
 	  std::string sel_label, sel_cut;
 	  bool addData = false; // for viability tests, only add data for very loose selection requirements
-	  if (b_sel.second == "NONE" && top_sel.second == "NONE"){
+	  if ((b_sel.second == "NONE" && top_sel.second == "NONE") && doData){
 	    sel_label = "";
 	    sel_cut   = "";
 	    addData = true;
@@ -665,32 +676,29 @@ int main(int argc, char* argv[])
 	  else{
 	    sel_label = "_"+b_sel.first+"_"+top_sel.first;
 	    sel_cut   = b_sel.second+";"+top_sel.second;
-	    if (doZptCut) sel_cut = sel_cut + ";"+Zpt_selection;
 	  }
-	  if(std::get<0>(kenimatic_vars[i]) == "TopM_in"){
-	    
-	    sel_cut = sel_cut+";ResolvedTopCandidate_mass[0]<160";
-	  }
+	  if (doZptCut) sel_cut = sel_cut + ";"+Zpt_selection;
+	  if (doJetSel) sel_cut = sel_cut + ";"+jetpt_thresh; 
 	  ////
 	  if (addData){
 	    vh.push_back(PHS("MCData_DiLep_elec_"+std::get<0>(kenimatic_vars[i])+sel_label+eraTag,            {dsData_Elec[i], dsMC_DiLep_elec[i]},      {1,1}, sel_cut, 
-			     60, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
+			     30, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
 	    vh.push_back(PHS("MCData_DiLep_mu_"+std::get<0>(kenimatic_vars[i])+sel_label+eraTag,              {dsData_Mu[i], dsMC_DiLep_mu[i]},          {1,1}, sel_cut, 
-			     60, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
+			     30, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
 	    vh.push_back(PHS("MCData_DiLep_NoZMassCut_elec_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag, {dsData_Elec[i], dsMC_DiLepLoose_elec[0]}, {1,1}, sel_cut, 
-			     60, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+			     30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
 	    vh.push_back(PHS("MCData_DiLep_NoZMassCut_mu_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag,   {dsData_Mu[i],   dsMC_DiLepLoose_mu[0]},   {1,1}, sel_cut, 
-			     60, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+			     30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
 	  }
 	  else{
 	    vh.push_back(PHS("MC_DiLep_elec_"+std::get<0>(kenimatic_vars[i])+sel_label+eraTag,            {dsMC_DiLep_elec[i]},      {1,1}, sel_cut, 
-			     60, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
+			     30, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
 	    vh.push_back(PHS("MC_DiLep_mu_"+std::get<0>(kenimatic_vars[i])+sel_label+eraTag,              {dsMC_DiLep_mu[i]},        {1,1}, sel_cut, 
-			     60, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
+			     30, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
 	    vh.push_back(PHS("MC_DiLep_NoZMassCut_elec_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag, {dsMC_DiLepLoose_elec[0]}, {1,1}, sel_cut, 
-			     60, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+			     30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
 	    vh.push_back(PHS("MC_DiLep_NoZMassCut_mu_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag,   {dsMC_DiLepLoose_mu[0]},   {1,1}, sel_cut, 
-			     60, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+			     30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
 	  }
 	}
       }
