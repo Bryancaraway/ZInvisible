@@ -118,6 +118,9 @@ namespace plotterFunctions
             auto* genMuInAcc                = new std::vector<TLorentzVector>();
             auto* genMu                     = new std::vector<const TLorentzVector*>();
 
+	    // To store gen Top (primary, secondary) and respective W boson, size == 2
+	    //auto* genTops = new std::vector<TLorentzVector>();
+	    //auto* genWs   = new std::vector<TLorentzVector>();
             //mu45 non-iso trigger emulation
             const double effsnom2012ABC[] = {0.928,0.8302,0.8018};
             const double upedge2012ABC[] = { 0.9, 1.2, 2.1};
@@ -182,6 +185,26 @@ namespace plotterFunctions
 		      }
 		    }
 		  }
+		  // find and store top, antitop pt
+		  //if ((genDecayPdgIdVec[i] == 6) && (genDecayPdgIdVec[genMotherPdgIdVec[i]] != 6)){ 
+		  //  genTops->push_back(genDecayLVec[i]);
+		  //  // store its W
+		  //  for (int j = 0; j < genDecayPdgIdVec.size(); ++j) {
+		  //    //printf("GENTOPS GenPart:\t%d\t GenPartMom:\t%d\n",genDecayPdgIdVec[j],genDecayPdgIdVec[genMotherPdgIdVec[j]]);
+		  //    if ((genDecayPdgIdVec[j] == 24) && (genDecayPdgIdVec[genMotherPdgIdVec[j]] == 6)){
+		  //	genWs->push_back(genDecayLVec[j]);
+		  //    }
+		  //  }
+		  //}
+		  //if ((genDecayPdgIdVec[i] == -6) && (genDecayPdgIdVec[genMotherPdgIdVec[i]] != -6)){
+		  //  genTops->push_back(genDecayLVec[i]);
+		  //  // store the -W
+		  //  for (int j = 0; j < genDecayPdgIdVec.size(); ++j) {
+		  //    if ((genDecayPdgIdVec[j] == -24) && (genDecayPdgIdVec[genMotherPdgIdVec[j]] == -6)){
+		  //	genWs->push_back(genDecayLVec[j]);
+		  //    }
+		  //  }
+		  //}
 		  //////////////////////////////////////////////////////////////////////////
 		  //int i = W_emuVec[index];
 		  int maskedStatusFlag = (GenPart_statusFlags[i] & GENPARTMASK);
@@ -277,8 +300,19 @@ namespace plotterFunctions
 	    
 	    // Bryan: if W plus/mius hadronic daughters found then save as all had TT
 	    if (foundWPlus && foundWMinus) isTAllHad = true;
+	    // Loop over genTops and genWs
+	    //if (genWs->size() != 2 && genTops->size() != 2) printf("\nNumber of GENTOPS:\t%d\t Number pf genWs:\t%d\n",genTops->size(),genWs->size());
+	    //if ((genWs->size() == 2 && genTops->size() == 2) && genTops->at(0).Pt() < genTops->at(1).Pt()){
+	    //  TLorentzVector tempTLV; 
+	    //  tempTLV        = genTops->at(0);
+	    //  genTops->at(0) = genTops->at(1);
+	    //  genTops->at(1) = tempTLV;
+	    //  //
+	    //  tempTLV        = genWs->at(0);
+	    //  genWs->at(0)   = genWs->at(1);
+	    //  genWs->at(1)   = tempTLV;
+	    //}
 	    //
-
             bool debug = false;
 
             data_t genZPt = -999.9, genZEta = -999.9, genZmass = -999.9, genZPhi;
@@ -327,9 +361,9 @@ namespace plotterFunctions
 
             // the Z mass cut logic assumes that zMassMin < zMassLow
             const double zMassMin  =  50.0;
-            const double zMassLow  =  81.0;
+            const double zMassLow  =  76.0;
             const double zMass     =  91.0;
-            const double zMassHigh = 101.0;
+            const double zMassHigh = 106.0;
 
             double zMuMassCurrent = 1.0e300, zEff = 1.0e100, zAcc = 1.0e100;
             TLorentzVector bestRecoMuZ;
@@ -577,6 +611,7 @@ namespace plotterFunctions
 	    if ((sel_cuts && obj_cuts) && (isZToLL == true && isTAllHad == false)) {
 	      printf("Event,%i,%i,%i,%i,%i\n",lumi,event,run,isZToLL,isTAllHad); // Lumi,Event,Run,ZtoLL,TTallHad
 	    }
+	    // should create a new class/file to handle this gen analysis
 	    // ===========================================================================================
             tr.registerDerivedVar("bestRecoZPt", bestRecoZPt);
             tr.registerDerivedVar("bestRecoZM", bestRecoZ.M());
@@ -639,6 +674,8 @@ namespace plotterFunctions
             tr.registerDerivedVar("passElMuZinvSelOffZMassPeak", passElMuZinvSelOffZMassPeak);
             tr.registerDerivedVar("isZToLL", isZToLL);
             tr.registerDerivedVar("isTAllHad", isTAllHad);
+	    //tr.registerDerivedVec("genTops", genTops);
+	    //tr.registerDerivedVec("genWs"  , genWs);
             tr.registerDerivedVar("Zrecopt", Zrecoptpt);
         }
 

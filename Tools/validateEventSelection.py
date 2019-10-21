@@ -10,6 +10,7 @@
 import optparse
 import ROOT
 from ROOT import TLorentzVector
+from ROOT import TProfile, TFile
 
 import uproot
 import sys
@@ -54,7 +55,8 @@ def main():
 
     # Return datasets, with MC weights
     sampleDict = getDataWeights(datasets,sampleSetsFile,sampleCollectionsFile,lumiYearDict[year])
-    doAnalyzer(sampleDict, options.nEvents, options.inputFile)
+    AnalyzeWs(sampleDict, options.nEvents, options.inputFile)
+    #doAnalyzer(sampleDict, options.nEvents, options.inputFile)
 
     
 def getDataWeights(datasets,sampleSetsFile,sampleCollectionsFile,lumi):
@@ -262,53 +264,62 @@ def checkEvents(t):
                 print(phis[k])
                 print(etas[k])
     
-                    # check if Z decays to double l
-#                    IDsZllcut   = ((IDs[mothers] == 23) & ((abs(IDs) == 11) | (abs(IDs) == 13) | (abs(IDs) == 15)))
-#                    IDsZnunucut = ((IDs[mothers] == 23) & ((abs(IDs) == 12) | (abs(IDs) == 14) | (abs(IDs) == 16)))
-#                    isZToLL = IDsZllcut.sum().astype(bool)
-#                    isZToNuNu = IDsZnunucut.sum().astype(bool)
-#                    print(IDs[IDsZllcut | IDsZnunucut])
-#                    for ID, mother in zip(IDs,mothers):
-#                        print(ID)
-#                        print(mother),
-#                        print("\n")
-#                    for event, moms in zip(IDs[(IDsZllcut == False) & (IDsZnunucut == False)], mothers[(IDsZllcut == False) & (IDsZnunucut == False)]):
-#                        print(event)
-#                        print(moms),
-#                        print('\n')
-#                    for f,i in zip(flag,IDs):
-#
-#                        for j,k in zip(f,i):
-#                            print("Particle:  ",k),
-#                            print('\t'),
-#                            print(format(j,'016b'))
-#                        exit()
-#                    
-                ## Store isZToLL in root file and safe to eos space ##
-#                tfile   = ROOT.TFile.Open(fname,"READ")
-#                outname = fname.split('/')
-#                if not os.path.exists(outputDir+outname[-2]):
-#                    os.makedirs(outputDir+outname[-2])
-#                
-#                print('Cloning file')
-#                treeNames = tfile.GetListOfKeys()
-#                treeCopies = []
-#                for treeName in treeNames:
-#                    treeCopy = treeName.ReadObj().Clone()
-#                    treeCopies.append(treeCopy)
-#                outfile = ROOT.TFile(outputDir+outname[-2]+'/'+outname[-1], 'RECREATE')
-#                ###### Create new Branch in Events ####
-#                for t in treeCopies:
-#                    if ('Events' in t.GetName()):
-#                        newBranch = t.Branch('isZToLL',isZToLL,'isZToLL/B')
-#                    print('Writing to File')
-#                    t.Write()
-#
-#                print('Closing File:\t'+outfile.GetName())
-#                outfile.Close()
-#                tfile.Close()
-#                
 
-                    
+def AnalyzeWs(sampleDict , nmax, inputFile):
+    trees = []
+    weightName    = 'genWeight'
+    Wdict = {'isBoostedWs':[],'Wpts':[]}
+    hfile = TFile( 'WBoostedeff.root', 'RECREATE', 'Demo ROOT file with histograms')
+    hprof = TProfile('hprof', 'Efficiency of Boosted W vs W Pt', 80, 0.0, 1000.0)
+    massDict = {'1': .0022, '2': .0047, '3': 1.28, '4': .096, '24': 80.39}
+    for sample in sampleDict:
+        n_ = 0 # count the events 
+
+        with open(sample["file"]) as listfile:
+            for line in listfile: # open individual root files in sample.txt
+                if ((nmax != -1) and (n_ >= nmax)):
+                    break
+                fname = line.split()[0]
+                isZToLL = None ## new branch in tree
+                if (inputFile): 
+                    fname = inputFile
+                with uproot.open(fname) as f:
+                    print(fname)
+                    #print('HERE')
+                    t = f.get('Events')
+
+                    IDs        = t.array('GenPart_pdgId')
+                    masses     = t.array('GenPart_mass')
+                    pts        = t.array('GenPart_pt')
+                    phis       = t.array('GenPart_phi')
+                    etas       = t.array('GenPart_eta')
+                    mothers    = t.array('GenPart_genPartIdxMother')
+                    genWeight = t.array(weightName)
+                    #print(genWeight)
+                    WPquarksCut = (((IDs[mothers] ==  24) | (IDs[mothers] ==  6)) & (abs(IDs) < 5))
+                    WMquarksCut = (((IDs[mothers] == -24) | (IDs[mothers] == -6)) & (abs(IDs) < 5))
+
+                    def loopForCut(cut):
+                    	for Id, mass, pt, eta, phi in zip(IDs[cut], masses[cut], pts[cut], etas[cut], phis[cut]):
+                    	    if (len(Id) == 2):
+                    	        part1 , part2, partSum = TLorentzVector(), TLorentzVector(), TLorentzVector()
+                    	        part1.SetPtEtaPhiM(pt[0],eta[0],phi[0],massDict[str(abs(Id[0]))])
+                    	        part2.SetPtEtaPhiM(pt[1],eta[1],phi[1],massDict[str(abs(Id[1]))])
+                    	        partSum = part1 + part2                            
+                    	        Wdr1, Wdr2, = partSum.DeltaR(part1), partSum.DeltaR(part2)
+                                isWboosted = 0
+                    	        if (Wdr1 < 0.8 and Wdr2 < 0.8):
+                                    isWboosted = 1
+                                hprof.Fill(partSum.Pt(),isWboosted)
+
+                    loopForCut(WPquarksCut)
+                    loopForCut(WMquarksCut)
+                    n_ += len(genWeight)
+                ##
+            ##
+        ##
+    ##
+    hfile.Write()
+                                    
 if __name__ == "__main__":
     main()

@@ -490,25 +490,31 @@ int main(int argc, char* argv[])
     /////// Validation of Selection Cuts ///////
     // Config for plots
     bool testSel  = false;
-    bool doZptCut = true; 
-    bool doJetSel = true; 
+
+    bool doZptCut = false;
+ 
+    bool doJetSel = false; 
+    bool dolooseZ = false;
     bool doData   = false;
+    bool doZqq    = false;
+    //
+    //bool analyzeGen = false; // if true, dont use Z selection cuts
     ///////
 
     std::vector<StrPair>  mc_samples = { 
       {"DY",                   "DYJetsToLL"},
       {"t#bar{t}Had_Z_ll",     "TTZToLLNuNu"},
       {"t#bar{t}Lep_Z_ll",     "TTZToLLNuNu"},
-      //{"t#bar{t}_Z_nunu",      "TTZToLLNuNu"},
-      //{"t#bar{t}Z_qq",         "TTZToQQ"},
+      {"t#bar{t}_Z_nunu",      "TTZToLLNuNu"},
+      {"t#bar{t}Z_qq",         "TTZToQQ"},
       //{"t#bar{t}W",            "TTW"},
       //{"tZq",                  "ST_tZq_ll"},
       {"VVV",                  "Triboson"},
       //{"t#bar{t}H",            "ttH"},
       //{"t#bar{t}t#bar{t}",     "TTTT"},
       //{"WZ",                   "WZ_amcatnlo"},
-      {"Diboson",              "Diboson"},
-      {"t(#bar{t})X",          "TTX"},
+      {"Diboson",              "Diboson"}, //    bck
+      {"t(#bar{t})X",          "TTX"},     //    bck
       //{"t",                    "SingleTop"},
       //{"t#bar{t}_2l",          "TTbarDiLep"},
       //{"t#bar{t}_1l",          "TTbarSingleLep"}
@@ -516,15 +522,33 @@ int main(int argc, char* argv[])
       
     std::vector<Variable> kenimatic_vars = { // Usage: label, variable, range, logScale? 
       {"Z_ll_mass", "bestRecoZM",                                    60.0,  120.0,  false},
-      {"Z_ll_pt",   "bestRecoZPt",                   doZptCut? 300 : 0.0,   1000.0, !doZptCut},
-      {"TopPt",     "ResolvedTopCandidate_pt[0]",                       0.0,   1000.0, !doZptCut},
-      {"TopM",      "ResolvedTopCandidate_mass[0]",                     123.0, 223.0,  !doZptCut},
-      {"TopM_in",   "ResolvedTopCandidate_mass[0]{ResolvedTopCandidate_mass[0]>160;ResolvedTopCandidate_mass[0]<190}",
-       155.0,   195.0,  !doZptCut},
-      {"TopM_out",  "ResolvedTopCandidate_mass[0]{ResolvedTopCandidate_mass[0]<160;ResolvedTopCandidate_mass[0]>190}",
-       0.0, 400.0,  !doZptCut},
+      {"Z_ll_pt",   "bestRecoZPt",                   doZptCut? 300.0 : 0.0,   1000.0, false},
+      //{"Z_qq_mass", "bestRecoZqqM",                                    60.0,  120.0,  false},
+      //{"Z_qq_pt",   "bestRecoZqqPt",                                  200.0,   1000.0, true},
+      //{"first_GenTopPt",     "genTops(pt)[0]",                           0.0, 1000.0,  true},
+      //{"second_GenTopPt",    "genTops(pt)[1]",                           0.0, 1000.0,  true},
+      //{"first_GenWPt",       "genWs(pt)[0]",                             0.0, 1000.0,  true},
+      //{"second_GenWPt",       "genWs(pt)[1]",                            0.0, 1000.0,  true}};
+      //{"NWs",       "nWs_drLeptonCleaned",                           0.0,   5.0   , true}};
+      //{"NWs_qcd",       "nWs_qcd",                           0.0,   5.0   , true},
+      //{"NWs_tau",       "nWs_tau",                           0.0,   5.0   , true},
+      //{"NZs_qcd",       "nZs_qcd",                           0.0,   5.0   , true},
+      //{"NZs_tau",       "nZs_tau",                           0.0,   5.0   , true},
+      {"TopDisc",     "ResolvedTopsDisc",                     0.7,   1.0,   false},
+      {"nRt_ttz",       "nRt_ttz",                            0.0,   7.0   , true}};
+      //{"TopPt",     "ResolvedTopCandidate_pt[0]",                       0.0,   1000.0, !doZptCut},
+      //{"TopM",      "ResolvedTopCandidate_mass[0]",                     123.0, 223.0,  !doZptCut},
+      //{"GenW",      "genWeight",                                      -1.5,   1.5,    true},
+      //{"TopM_in",   "ResolvedTopCandidate_mass[0]{ResolvedTopCandidate_mass[0]>160;ResolvedTopCandidate_mass[0]<190}",
+      // 155.0,   195.0,  !doZptCut},
+      //{"TopM_out",  "ResolvedTopCandidate_mass[0]{ResolvedTopCandidate_mass[0]<160;ResolvedTopCandidate_mass[0]>190}",
+      //0.0, 400.0,  !doZptCut},
       //{"nRT",       "nResolvedTops_drLeptonCleaned",                    0.0,   7.0,    !doZptCut},
-      {"Bottom_dR", "b_dR",                                             0.0,   5.0,    !doZptCut}};
+      //{"NJets",                  "nJets",                               0.0,   10.0,    false},
+      //{"NJets_LepCleaned",       "nJets_drLeptonCleaned",               0.0,   10.0,    false},
+      //{"NJets30",                "nJets30",                             0.0,   10.0,    false},
+      //{"NJets30_LepCleaned",     "nJets30_drLeptonCleaned",             0.0,   10.0,    false},
+      //{"Bottom_dR", "b_dR_drLeptonCleaned",                             0.0,   5.0,    !doZptCut}};
     
     if (testSel) {                                                                 // validate selections
       kenimatic_vars.push_back({"nRTops",    "nResolvedTops_drLeptonCleaned", 0.0, 10.0,   true});
@@ -532,10 +556,9 @@ int main(int argc, char* argv[])
       kenimatic_vars.push_back({"nBot",      "nBottoms_drLeptonCleaned",      0.0, 10.0,   true});
     }
     std::string          Zpt_selection  = "bestRecoZPt>300";
-    std::string          jetpt_thresh   = "Jet_pt[0]>30;Jet_pt[1]>30;Jet_pt[2]>30";
     std::vector<StrPair> bot_selections = {
-      //{"nb0",  "nBottoms_drLeptonCleaned=0"},//{"nb1","nb>=1"},
-      {"nbg0", "nBottoms_drLeptonCleaned>0"},
+      {"nb0",  "nBottoms_drLeptonCleaned=0"},//{"nb1","nb>=1"},
+      {"nb1", "nBottoms_drLeptonCleaned=1"},
       {"nbg1", "nBottoms_drLeptonCleaned>1"},
       {"","NONE"}};//{"nb2","nb>=2"}};
     if (testSel){  // validate selections
@@ -543,21 +566,32 @@ int main(int argc, char* argv[])
     }
     std::vector<StrPair> topR_selections = {
       {"nRt0",  "nResolvedTops_drLeptonCleaned=0"},
-      {"nRtg0", "nResolvedTops_drLeptonCleaned>0"},
-      {"nRtg1", "nResolvedTops_drLeptonCleaned>1"},
+      {"nRt1", "nResolvedTops_drLeptonCleaned=1"},
+      {"nRt2", "nResolvedTops_drLeptonCleaned=2"},
+      {"nRtg2", "nResolvedTops_drLeptonCleaned>2"},
+      //{"nRt0",  "nRt_ttz=0"},
+      //{"nRt1", "nRt_ttz=1"},
+      //{"nRt2", "nRt_ttz=2"},
+      //{"nRtg2", "nRt_ttz>2"},
       {"",      "NONE"}};
     std::vector<StrPair> topM_selections = {
-      {"nMt0",  "nMergedTops_drLeptonCleaned=0"},
-      {"nMtg0", "nMergedTops_drLeptonCleaned>0"},
-      {"nMtg1", "nMergedTops_drLeptonCleaned>1"},
+      //{"nMt0",  "nMergedTops_drLeptonCleaned=0"},
+      //{"nMtg0", "nMergedTops_drLeptonCleaned>0"},
+      //{"nMtg1", "nMergedTops_drLeptonCleaned>1"},
+      //{"nZq0",     "nZs_qcd=0"},
+      //{"nZq1",     "nZs_qcd=1"},
+      //{"nZqg1",    "nZs_qcd>1"},
+      //{"nZt0",     "nZs_tau=0"},
+      //{"nZt1",     "nZs_tau=1"},
+      //{"nZtg1",    "nZs_tau>1"},
       {""     , "NONE"}};
     std::vector<StrPair> topRM_selections = {
       //{"nRMtl3","(nResolvedTops_drLeptonCleaned+nMergedTops_drLeptonCleaned)<3"},
       {"","NONE"}};
     std::vector<StrPair> nJet_selections = {
-      {"nJ23", "nJets>=2;nJets<=3"},
-      {"nJ45", "nJets>=4;nJets<=5"},
-      {"nJ6" , "nJets>=6"},
+      {"nJ23", "nJets30_drLeptonCleaned>=2;nJets30_drLeptonCleaned<=3"},
+      {"nJ45", "nJets30_drLeptonCleaned>=4;nJets30_drLeptonCleaned<=5"},
+      {"nJ6" , "nJets30_drLeptonCleaned>=6"},
       {""    , "NONE"}};
     std::vector<StrPair> top_selections;
     //
@@ -585,60 +619,105 @@ int main(int argc, char* argv[])
       top_selections.push_back({"nMt2","nMergedTops_drLeptonCleaned=2"});      // works
       }
     // === PDS === // 
+    // Baseline Cuts
     std::string ttz_elec_cuts      = "passElecZinvSelOnZMassPeak";//"passDiElecSel";
     std::string ttz_mu_cuts        = "passMuZinvSelOnZMassPeak";//"passDiMuSel";
+    if (doZqq){
+      ttz_elec_cuts      = "passElecZinvSelOffZMassPeak";
+      ttz_mu_cuts        = "passMuZinvSelOffZMassPeak";
+    }
+    std::string ttz_elmu_cuts      = "passElMuZinvSelOffZMassPeak";
     std::string ttz_elec_diLepCuts = "passDiElecSel";
     std::string ttz_mu_diLepCuts   = "passDiMuSel";
+    //if (analyzeGen){
+    //  ttz_elec_cuts      = "";
+    //  ttz_mu_cuts        = "";
+    //  ttz_elec_diLepCuts = "";
+    //  ttz_mu_diLepCuts   = "";
+    //}
+    // Baseline Weights
+    std::string weight             = "genWeight"; 
     //
     std::vector<std::vector<PDS>> dsTTZ_elec_stack ;
     std::vector<std::vector<PDS>> dsTTZ_mu_stack ;
+    std::vector<std::vector<PDS>> dsTTZ_elmu_stack ;
     std::vector<std::vector<PDS>> dsTTZ_elec_loose_stack ;
     std::vector<std::vector<PDS>> dsTTZ_mu_loose_stack ;
     std::vector<std::vector<PDS>> TTZ_stack;
+    std::vector<std::vector<PDS>> TTZ_noGenW_stack;
     //
     for ( StrPair& sample : mc_samples){
       if      (sample.first == "t#bar{t}Had_Z_ll"){
-	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";isZToLL;isTAllHad", "")});
-	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";isZToLL;isTAllHad",   "")});
-	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "isZToLL;isTAllHad",                "")});
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";isZToLL;isTAllHad", weight)});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";isZToLL;isTAllHad",   weight)});
+	if (doZqq) dsTTZ_elmu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_elmu_cuts+";isZToLL;isTAllHad",   weight)});
+	if (dolooseZ){
+	  dsTTZ_elec_loose_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_diLepCuts+";isZToLL;isTAllHad", weight)});
+	  dsTTZ_mu_loose_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_diLepCuts+";isZToLL;isTAllHad", weight)}); 
+	}
+	//
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "isZToLL;isTAllHad",                weight)});
+	TTZ_noGenW_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "isZToLL;isTAllHad",                "")});
       }
       else if (sample.first == "t#bar{t}Lep_Z_ll"){
-	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";isZToLL;!isTAllHad", "")});
-	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";isZToLL;!isTAllHad",   "")});
-	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "isZToLL;!isTAllHad",                "")});
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";isZToLL;!isTAllHad", weight)});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";isZToLL;!isTAllHad",   weight)});
+	if (doZqq) dsTTZ_elmu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_elmu_cuts+";isZToLL;!isTAllHad",   weight)});
+	if (dolooseZ){
+	  dsTTZ_elec_loose_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_diLepCuts+";isZToLL;!isTAllHad", weight)});
+	  dsTTZ_mu_loose_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_diLepCuts+";isZToLL;!isTAllHad", weight)}); 
+	}
+	//
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "isZToLL;!isTAllHad",                weight)});
+	TTZ_noGenW_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "isZToLL;!isTAllHad",                "")});
       }
       else if (sample.first == "t#bar{t}_Z_nunu"){
-	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL", "")});
-	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL",   "")});
-	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL",                "")});
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL", weight)});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL",   weight)});
+	if (doZqq) dsTTZ_elmu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_elmu_cuts+";!isZToLL",   weight)});
+	if (dolooseZ){
+	  dsTTZ_elec_loose_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_diLepCuts+";!isZToLL", weight)});
+	  dsTTZ_mu_loose_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_diLepCuts+";!isZToLL", weight)});
+	}
+	//
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL",                weight)});
+	TTZ_noGenW_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL",                "")});
       }
       //else if (sample.first == "t#bar{t}Lep_Z_nunu"){
-      //	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL;!isTAllHad", "")});
-      //	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL;!isTAllHad",   "")});
-      //	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL;!isTAllHad",                "")});
+      //	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!isZToLL;!isTAllHad", weight)});
+      //	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL;!isTAllHad",   weight)});
+      //	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL;!isTAllHad",                weight)});
       //}
       else{
-	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts, "")});
-	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts, "")});
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts, weight)});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts, weight)});
+	if (doZqq) dsTTZ_elmu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_elmu_cuts, weight)});
+	if (dolooseZ){
+	  dsTTZ_elec_loose_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_diLepCuts, weight)});
+	  dsTTZ_mu_loose_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_diLepCuts, weight)}); 
+	}
+	//
+	TTZ_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], "", weight)});
+	TTZ_noGenW_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], "", "")});
       }
-      //
-      dsTTZ_elec_loose_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_diLepCuts, "")});
-      dsTTZ_mu_loose_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_diLepCuts, "")});
     }
     PDS dsElectronData("Data", fileMap[ElectronDataset],  ttz_elec_cuts, "");
     PDS dsMuonData(    "Data", fileMap[MuonDataset],      ttz_mu_cuts, "");
     // === PDC === //
     std::vector<PDC> dsMC_DiLep_elec;
     std::vector<PDC> dsMC_DiLep_mu;
+    std::vector<PDC> dsMC_DiLep_elmu;
     std::vector<PDC> dsMC_DiLepLoose_elec;
     std::vector<PDC> dsMC_DiLepLoose_mu;
     std::vector<PDC> dsData_Elec;
     std::vector<PDC> dsData_Mu;
     std::vector<PDC> dsData_TTZ;
+    std::vector<PDC> dsData_TTZ_noGenW;
     //
     for ( Variable& var : kenimatic_vars ){
       dsMC_DiLep_elec.push_back(PDC(     "stack", std::get<1>(var), dsTTZ_elec_stack));
       dsMC_DiLep_mu.push_back(PDC(       "stack", std::get<1>(var), dsTTZ_mu_stack));
+      if (doZqq) dsMC_DiLep_elmu.push_back(PDC(       "stack", std::get<1>(var), dsTTZ_elmu_stack));
       //
       //dsMC_DiLepLoose_elec.push_back(PDC("stack", std::get<1>(var), dsTTZ_elec_loose_stack));
       //dsMC_DiLepLoose_mu.push_back(PDC(  "stack", std::get<1>(var), dsTTZ_mu_loose_stack));
@@ -646,12 +725,17 @@ int main(int argc, char* argv[])
       dsData_Elec.push_back(PDC(         "data",  std::get<1>(var), {dsElectronData}));
       dsData_Mu.push_back(PDC(           "data",  std::get<1>(var), {dsMuonData}));
     }
-    dsMC_DiLepLoose_elec.push_back(PDC("stack", "bestRecoZM", dsTTZ_elec_loose_stack));
-    dsMC_DiLepLoose_mu.push_back(PDC(  "stack", "bestRecoZM", dsTTZ_mu_loose_stack));
+    if (dolooseZ){
+      dsMC_DiLepLoose_elec.push_back(PDC("stack", "bestRecoZM", dsTTZ_elec_loose_stack));
+      dsMC_DiLepLoose_mu.push_back(PDC(  "stack", "bestRecoZM", dsTTZ_mu_loose_stack));
+    }
     // test
-    dsData_TTZ.push_back(PDC(           "stack", "bestRecoZM", TTZ_stack));
-    vh.push_back(PHS("MC_TTZ"+std::get<0>(kenimatic_vars[0])+eraTag,            {dsData_TTZ[0]},      {1,1}, "", 
-		     60, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+    dsData_TTZ.push_back(PDC(           "stack", "genWeight", TTZ_stack));
+    vh.push_back(PHS("MC_TTZ_GenW"+eraTag,            {dsData_TTZ[0]},      {1,1}, "", 
+		     60, -3.0, 3.0, true, false, "GenW", "Events"));
+    dsData_TTZ_noGenW.push_back(PDC(           "stack", "genWeight", TTZ_noGenW_stack));
+    vh.push_back(PHS("MC_TTZ_noGenW_GenW"+eraTag,            {dsData_TTZ_noGenW[0]},      {1,1}, "", 
+		     60, -3.0, 3.0, true, false, "GenW", "Events"));
     // end test
     if (doJetSel) top_selections = nJet_selections; // super duper hacky (rewrite this Bryan!!!)
     // === PHS === //
@@ -660,10 +744,10 @@ int main(int argc, char* argv[])
 	for(StrPair& top_sel : top_selections){
 	  std::string sel_label, sel_cut;
 	  bool addData = false; // for viability tests, only add data for very loose selection requirements
-	  if ((b_sel.second == "NONE" && top_sel.second == "NONE") && doData){
+	  if (b_sel.second == "NONE" && top_sel.second == "NONE"){
 	    sel_label = "";
 	    sel_cut   = "";
-	    addData = true;
+	    if (doData) addData = true;
 	  }
 	  else if (b_sel.second == "NONE" && top_sel.second != "NONE"){ 
 	    sel_label = "_"+top_sel.first; 
@@ -677,28 +761,37 @@ int main(int argc, char* argv[])
 	    sel_label = "_"+b_sel.first+"_"+top_sel.first;
 	    sel_cut   = b_sel.second+";"+top_sel.second;
 	  }
-	  if (doZptCut) sel_cut = sel_cut + ";"+Zpt_selection;
-	  if (doJetSel) sel_cut = sel_cut + ";"+jetpt_thresh; 
+	  if (doZptCut){
+	    if (sel_cut == "" || sel_cut == ";") sel_cut = Zpt_selection;
+	    else sel_cut = sel_cut+";"+Zpt_selection;
+	  }
+	  //printf("SELCUT:\t%s\n",sel_cut.c_str());
 	  ////
 	  if (addData){
 	    vh.push_back(PHS("MCData_DiLep_elec_"+std::get<0>(kenimatic_vars[i])+sel_label+eraTag,            {dsData_Elec[i], dsMC_DiLep_elec[i]},      {1,1}, sel_cut, 
 			     30, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
 	    vh.push_back(PHS("MCData_DiLep_mu_"+std::get<0>(kenimatic_vars[i])+sel_label+eraTag,              {dsData_Mu[i], dsMC_DiLep_mu[i]},          {1,1}, sel_cut, 
 			     30, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
-	    vh.push_back(PHS("MCData_DiLep_NoZMassCut_elec_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag, {dsData_Elec[i], dsMC_DiLepLoose_elec[0]}, {1,1}, sel_cut, 
-			     30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
-	    vh.push_back(PHS("MCData_DiLep_NoZMassCut_mu_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag,   {dsData_Mu[i],   dsMC_DiLepLoose_mu[0]},   {1,1}, sel_cut, 
-			     30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+	    if (dolooseZ){
+	      vh.push_back(PHS("MCData_DiLep_NoZMassCut_elec_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag, {dsData_Elec[i], dsMC_DiLepLoose_elec[0]}, {1,1}, sel_cut, 
+			       30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+	      vh.push_back(PHS("MCData_DiLep_NoZMassCut_mu_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag,   {dsData_Mu[i],   dsMC_DiLepLoose_mu[0]},   {1,1}, sel_cut, 
+			       30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+	    }
 	  }
 	  else{
 	    vh.push_back(PHS("MC_DiLep_elec_"+std::get<0>(kenimatic_vars[i])+sel_label+eraTag,            {dsMC_DiLep_elec[i]},      {1,1}, sel_cut, 
 			     30, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
 	    vh.push_back(PHS("MC_DiLep_mu_"+std::get<0>(kenimatic_vars[i])+sel_label+eraTag,              {dsMC_DiLep_mu[i]},        {1,1}, sel_cut, 
 			     30, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
-	    vh.push_back(PHS("MC_DiLep_NoZMassCut_elec_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag, {dsMC_DiLepLoose_elec[0]}, {1,1}, sel_cut, 
-			     30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
-	    vh.push_back(PHS("MC_DiLep_NoZMassCut_mu_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag,   {dsMC_DiLepLoose_mu[0]},   {1,1}, sel_cut, 
-			     30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+	    if (doZqq) vh.push_back(PHS("MC_DiLep_elmu_"+std::get<0>(kenimatic_vars[i])+sel_label+eraTag,              {dsMC_DiLep_elmu[i]},        {1,1}, sel_cut, 
+					30, std::get<2>(kenimatic_vars[i]), std::get<3>(kenimatic_vars[i]), std::get<4>(kenimatic_vars[i]), false, std::get<0>(kenimatic_vars[i]), "Events"));
+	    if (dolooseZ){
+	      vh.push_back(PHS("MC_DiLep_NoZMassCut_elec_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag, {dsMC_DiLepLoose_elec[0]}, {1,1}, sel_cut, 
+			       30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+	      vh.push_back(PHS("MC_DiLep_NoZMassCut_mu_"+std::get<0>(kenimatic_vars[0])+sel_label+eraTag,   {dsMC_DiLepLoose_mu[0]},   {1,1}, sel_cut, 
+			       30, std::get<2>(kenimatic_vars[0]), std::get<3>(kenimatic_vars[0]), std::get<4>(kenimatic_vars[0]), false, std::get<0>(kenimatic_vars[0]), "Events"));
+	    }
 	  }
 	}
       }
@@ -710,7 +803,7 @@ int main(int argc, char* argv[])
 
     set<AFS> vvf;
     for(auto& fsVec : fileMap) for(auto& fs : fsVec.second) vvf.insert(fs);
-
+    
     RegisterFunctions* rf = new RegisterFunctionsNTuple(runOnCondor, sbEra, year);
 
     if (verbose)

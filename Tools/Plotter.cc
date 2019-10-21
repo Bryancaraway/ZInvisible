@@ -269,7 +269,15 @@ double Plotter::DatasetSummary::getWeight(const NTupleReader& tr) const
             if(weight < 1e6)
             {
                 if(weight > 2700.0) std::cout << weightName << "\t" << weight << std::endl;
-                retval *= weight;
+		if (weightName == "genWeight")
+		  {
+		    const double genWeight = weight / fabs(weight);
+		    retval *= genWeight;
+		  }
+		else
+		  {
+		    retval *= weight;
+		  }
             }
         }
         else
