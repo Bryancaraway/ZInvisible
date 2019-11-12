@@ -105,7 +105,7 @@ def getData():
                 #
                 reduceDF(dfs)
                 #df_ = pd.concat([df_,dfs], ignore_index=True)
-                dfs.to_pickle(file_+'_'+sample+'.pkl')
+                dfs.to_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')
                 del dfs
                 #
             #
@@ -116,9 +116,9 @@ def interpData():
     files = getFiles()
     for file_ in files:
         for sample in cfg.MCsamples:
-            if not os.path.exists(file_+'_'+sample+'.pkl') : continue
+            if not os.path.exists(cfg.skim_dir+file_+'_'+sample+'.pkl') : continue
             df = pd.DataFrame()
-            df = pd.read_pickle(file_+'_'+sample+'.pkl')
+            df = pd.read_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')
             #
             def computeCombs(df_):
                 # DO THE CALCS BY HAND SO THAT IS IS DONE IN PARALLEL
@@ -141,7 +141,7 @@ def interpData():
                 #
             #
             df = computeCombs(df)
-            df.to_pickle(file_+'_'+sample+'.pkl')
+            df.to_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')
             del df
             #
         #
@@ -152,21 +152,47 @@ def preProcess():
     files = getFiles()
     for file_ in files:
         for sample in cfg.MCsamples:
-            if not os.path.exists(file_+'_'+sample+'.pkl') : continue
-            df = pd.concat([df,pd.read_pickle(file_+'_'+sample+'.pkl')], ignore_index = True)
+            if not os.path.exists(cfg.skim_dir+file_+'_'+sample+'.pkl') : continue
+            df = pd.concat([df,pd.read_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')], ignore_index = True)
     #
     ##### Seperate DF diffinitively #######
-    trainDF = df.sample(frac=float(7/10),random_state=1)
-    testDF  = df.drop(trainDF.index)
-    valDF   = train.sample(frac=float(2/7),random_state=1)
-    trainDF = trainDF.drop(valDF.index)
+    trainX = df.sample(frac=0.70,random_state=1)
+    testX  = df.drop(trainX.index).copy()
+    valX   = trainX.sample(frac=0.30,random_state=1)
+    trainDF = trainX.drop(valX.index).copy()
     del df
     #
     #### Get Labels for val,train,test ####
-    trainLabel = trainDF[cfg.label]
-    valLabel = valDF[cfg.label]
-    testLabel = testDF[cfg.label]
-
+    for label in cfg.label:
+        trainY = trainX[label].copy()
+        del trainX[label]
+        valY = valX[label].copy()
+        del valX[label]
+        testY = testX[label].copy()
+        del testX[label]
+    #
+    def resetIndex(df_):
+        return df_.reset_index(drop=True).copy()
+    #
+    trainX = resetIndex(trainX)
+    trainY = resetIndex(trainY)
+    #
+    valX = resetIndex(valX)
+    valY = resetIndex(valY)
+    #
+    testX = resetIndex(testX)
+    testY = resetIndex(testY)
+    ### Store ###
+    trainX.to_pickle(cfg.train_dir+'X.pkl')
+    trainY.to_pickle(cfg.train_dir+'Y.pkl')
+    #
+    valX.to_pickle(cfg.val_dir+'X.pkl')
+    valY.to_pickle(cfg.val_dir+'Y.pkl')
+    #
+    testX.to_pickle(cfg.test_dir+'X.pkl')
+    testY.to_pickle(cfg.test_dir+'Y.pkl')
+    #
+    del testX, testY, trainX, trainY, valX, valY
 
 class ProcessData:
     # parse data from input files getten from config

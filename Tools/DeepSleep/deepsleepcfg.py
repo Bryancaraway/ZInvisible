@@ -8,10 +8,11 @@ file_path = '/uscms/home/bcaraway/nobackup/analysis/CMSSW_10_2_9/src/ZInvisible/
 files     = ['result_2016','result_2017','result_2018_AB','result_2018_CD']
 tree_dir  = 'Training'
 MCsamples = ['TTZ','DY','TTX','DiBoson','TTBarLep']
+skim_dir  = '/uscms/home/bcaraway/nobackup/analysis/CMSSW_10_2_9/src/ZInvisible/Tools/DeepSleep/skim/'
 # Train Overhead #
-train_dir = '/uscms/home/bcaraway/nobackup/analysis/CMSSW_10_2_9/src/ZInvisible/Tools/DeepSleep/train'
-test_dir  = '/uscms/home/bcaraway/nobackup/analysis/CMSSW_10_2_9/src/ZInvisible/Tools/DeepSleep/test'
-val_dir   = '/uscms/home/bcaraway/nobackup/analysis/CMSSW_10_2_9/src/ZInvisible/Tools/DeepSleep/val'
+train_dir = '/uscms/home/bcaraway/nobackup/analysis/CMSSW_10_2_9/src/ZInvisible/Tools/DeepSleep/train/'
+test_dir  = '/uscms/home/bcaraway/nobackup/analysis/CMSSW_10_2_9/src/ZInvisible/Tools/DeepSleep/test/'
+val_dir   = '/uscms/home/bcaraway/nobackup/analysis/CMSSW_10_2_9/src/ZInvisible/Tools/DeepSleep/val/'
 ###################
 # Input Variables #
 ak4vars = ['Jet_btagCSVV2_drLeptonCleaned','Jet_btagDeepB_drLeptonCleaned','Jet_qgl_drLeptonCleaned']
@@ -24,5 +25,10 @@ label   = ['isTAllHad']
 # Derived Varialbes #
 ak4comb = 'true'
 ak8comb = 'true'
-# Model Hyperparams]
-hiddenl = 3 
+# Model Hyperparams #
+epochs        = 100
+alpha         = 0.0001
+batch_size    = 32768
+hiddenl       = 3 
+NNoutputDir   = '/uscms/home/bcaraway/nobackup/analysis/CMSSW_10_2_9/src/ZInvisible/Tools/DeepSleep/NN_ouput/'
+NNoutputName  = 'first_try.h5' 
