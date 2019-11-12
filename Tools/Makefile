@@ -48,7 +48,7 @@ LIBS       = $(shell root-config --glibs) -lASImage
 MT2LIB     = -L$(shell $(PYTHONCFG) --prefix)/lib $(shell $(PYTHONCFG) --libs) -L$(TTTDIR) -lTopTagger
 LHAPDFLIB  = -L$(LHAPDF_DATA_PATH)/../../lib -lLHAPDF
 
-PROGRAMS = calcEff calcEffPhoton harvestHists makePlots moneyplot scalefactorplot systplot makeTopPlots makeDataMCplots makeDYPlots makePhotonPlots simpleAnalyzer
+PROGRAMS = makePlots moneyplot 
 
 all: mkobj PyWraps $(PROGRAMS)
 
@@ -125,7 +125,7 @@ calcEffPhoton: $(ODIR)/NTupleReader.o $(ODIR)/SATException.o $(ODIR)/samples.o $
 harvestHists: $(ODIR)/harvestHists.o
 	$(LD) $^ $(LIBS) -o $@
 
-makePlots: $(ODIR)/NTupleReader.o $(ODIR)/SATException.o $(ODIR)/samples.o $(ODIR)/Plotter.o $(ODIR)/MakePlots.o $(ODIR)/MiniTupleMaker.o $(ODIR)/PDFUncertainty.o $(ODIR)/RegisterFunctions.o $(ODIR)/Systematic.o $(ODIR)/searchBins.o $(ODIR)/BTagCalibrationStandalone.o $(ODIR)/TaggerUtility.o $(ODIR)/PlotUtility.o $(ODIR)/SusyUtility.o $(ODIR)/baselineDef.o $(ODIR)/customize.o $(ODIR)/ISRCorrector.o 
+makePlots: $(ODIR)/NTupleReader.o $(ODIR)/SATException.o $(ODIR)/samples.o $(ODIR)/Plotter.o $(ODIR)/MakePlots.o $(ODIR)/MiniTupleMaker.o $(ODIR)/PDFUncertainty.o $(ODIR)/RegisterFunctions.o $(ODIR)/Systematic.o $(ODIR)/searchBins.o $(ODIR)/BTagCalibrationStandalone.o $(ODIR)/TaggerUtility.o $(ODIR)/PlotUtility.o $(ODIR)/SusyUtility.o $(ODIR)/baselineDef.o $(ODIR)/customize.o $(ODIR)/ISRCorrector.o $(ODIR)/rootdict.o
 	$(LD) $^ $(LIBS) $(MT2LIB) $(LHAPDFLIB) -o $@
 
 makeTopPlots: $(ODIR)/NTupleReader.o $(ODIR)/SATException.o $(ODIR)/samples.o $(ODIR)/Plotter.o $(ODIR)/MakeTopPlots.o $(ODIR)/MiniTupleMaker.o $(ODIR)/PDFUncertainty.o $(ODIR)/RegisterFunctions.o $(ODIR)/Systematic.o $(ODIR)/searchBins.o $(ODIR)/BTagCalibrationStandalone.o $(ODIR)/TaggerUtility.o $(ODIR)/PlotUtility.o $(ODIR)/SusyUtility.o $(ODIR)/baselineDef.o $(ODIR)/customize.o $(ODIR)/ISRCorrector.o 

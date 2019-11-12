@@ -480,7 +480,32 @@ int main(int argc, char* argv[])
     //vector<Plotter::HistSummary> vh;
     vector<PHS> vh;
     
-
+    std::vector<Plotter::Scanner> scanners;
+    std::string tag = "Training";
+    std::string lClean = "_drLeptonCleaned";
+    std::set<std::string> vars = {
+      "passGenCuts", "isZToLL", "isTAllHad",                                                                                 // gen validation                
+      "nResolvedTops"+lClean, "nMergedTops"+lClean, "nBottoms"+lClean, "nJets30"+lClean,                                     // validation
+      "bestRecoZPt", "passElecZinvSelOnZMassPeak", "passMuZinvSelOnZMassPeak", "genWeight",                                  // validation
+      "Jet_btagCSVV2"+lClean, "Jet_btagDeepB"+lClean, "Jet_qgl"+lClean, "JetTLV"+lClean,                                     // training 1 (AK4)
+      "FatJetTLV"+lClean, "FatJet_msoftdrop"+lClean, "FatJet_mass"+lClean,                                                   // training 2 (AK8)
+      "FatJet_tau1"+lClean, "FatJet_tau2"+lClean, "FatJet_tau3"+lClean, "FatJet_tau4"+lClean,                                // training 2 (AK8) 
+      "FatJet_deepTag_WvsQCD"+lClean, "FatJet_deepTag_TvsQCD"+lClean, "FatJet_deepTag_ZvsQCD"+lClean                         // training 2 (AK8) 
+    };
+    //// fill in PDS here (DataSets to train on) 
+    std::vector< std::pair<std::string,std::string> > lepTags = {
+      {tag,"passElecZinvSelOnZMassPeak"},
+      {tag,"passMuZinvSelOnZMassPeak"}};
+    for ( std::pair<std::string,std::string> lepType : lepTags) {
+      PDS dsDY    = PDS("DY",        fileMap["DYJetsToLL"+eraTag], lepType.second,              "");
+      PDS dsTTZ   = PDS("TTZ",       fileMap["TTZ"+eraTag],        lepType.second,              "");
+      PDS dsTTHad = PDS("TTBarHad",  fileMap["TTbarInc"+eraTag],   lepType.second+";isTAllHad", "");
+      PDS dsTTLep = PDS("TTBarLep",  fileMap["TTbar"+eraTag],      lepType.second,              "");
+      PDS dsVV    = PDS("DiBoson",   fileMap["Diboson"+eraTag],    lepType.second,              "");
+      PDS dsVVV   = PDS("TriBoson",  fileMap["TriBoson"+eraTag],   lepType.second,              "");
+      PDS dsTTX   = PDS("TTX",       fileMap["TTX"+eraTag],        lepType.second,              "");
+      scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsDY, dsTTZ, dsTTHad, dsTTLep, dsVV, dsVVV, dsTTX}));
+    }
     //////// TESTING SOMETHING ADDED BY BRYAN //////////////
     //////// CUTS :: DiLepton Cut ("passDiElecSel","passDiMuSel") , Tagged Top ("nMergedTops_drLeptonCleaned>0")
     //////// Kenimatics: diLeption Mass spectrum (invariant mass). Z(ll) pt spectrum of the two leptons, Resolved top pt, up to 1TeV, n_Tops
@@ -489,24 +514,28 @@ int main(int argc, char* argv[])
     typedef std::pair<std::string,std::string>                      StrPair;
     /////// Validation of Selection Cuts ///////
     // Config for plots
-    bool testSel  = false;
+    bool testSel    = false;
 
-    bool doZptCut = false;
+    bool doZptCut   = true;
  
-    bool doJetSel = false; 
-    bool dolooseZ = false;
-    bool doData   = false;
-    bool doZqq    = false;
+    bool doJetSel   = false; 
+    bool dolooseZ   = false;
+    bool doData     = false;
+    bool doFakeData = true;
+    bool doZqq      = false;
+
     //
     //bool analyzeGen = false; // if true, dont use Z selection cuts
     ///////
 
     std::vector<StrPair>  mc_samples = { 
       {"DY",                   "DYJetsToLL"},
-      {"t#bar{t}Had_Z_ll",     "TTZToLLNuNu"},
-      {"t#bar{t}Lep_Z_ll",     "TTZToLLNuNu"},
-      {"t#bar{t}_Z_nunu",      "TTZToLLNuNu"},
-      {"t#bar{t}Z_qq",         "TTZToQQ"},
+      //{"t#bar{t}Had_Z_ll",     "TTZToLLNuNu"},
+      //{"t#bar{t}Lep_Z_ll",     "TTZToLLNuNu"},
+      //{"t#bar{t}_Z_nunu",      "TTZToLLNuNu"},
+      //{"t#bar{t}Z_qq",         "TTZToQQ"},
+      {"t#bar{t}Z_pass",         "TTZ"},
+      {"t#bar{t}Z_fail",         "TTZ"},
       //{"t#bar{t}W",            "TTW"},
       //{"tZq",                  "ST_tZq_ll"},
       {"VVV",                  "Triboson"},
@@ -557,18 +586,20 @@ int main(int argc, char* argv[])
     }
     std::string          Zpt_selection  = "bestRecoZPt>300";
     std::vector<StrPair> bot_selections = {
-      {"nb0",  "nBottoms_drLeptonCleaned=0"},//{"nb1","nb>=1"},
-      {"nb1", "nBottoms_drLeptonCleaned=1"},
+      //{"nb0",  "nBottoms_drLeptonCleaned=0"},//{"nb1","nb>=1"},
+      //{"nb1", "nBottoms_drLeptonCleaned=1"},
+      {"nb2", "nBottoms_drLeptonCleaned=2"},
       {"nbg1", "nBottoms_drLeptonCleaned>1"},
       {"","NONE"}};//{"nb2","nb>=2"}};
     if (testSel){  // validate selections
       bot_selections.push_back({"nbge2","nBottoms_drLeptonCleaned>=2"}); // really >= 1
     }
     std::vector<StrPair> topR_selections = {
-      {"nRt0",  "nResolvedTops_drLeptonCleaned=0"},
-      {"nRt1", "nResolvedTops_drLeptonCleaned=1"},
-      {"nRt2", "nResolvedTops_drLeptonCleaned=2"},
-      {"nRtg2", "nResolvedTops_drLeptonCleaned>2"},
+      //{"nRt0",  "nResolvedTops_drLeptonCleaned=0"},
+      //{"nRt1", "nResolvedTops_drLeptonCleaned=1"},
+      {"nRtg0", "nResolvedTops_drLeptonCleaned>=1"},
+      //{"nRt2", "nResolvedTops_drLeptonCleaned=2"},
+      //{"nRtg2", "nResolvedTops_drLeptonCleaned>2"},
       //{"nRt0",  "nRt_ttz=0"},
       //{"nRt1", "nRt_ttz=1"},
       //{"nRt2", "nRt_ttz=2"},
@@ -688,6 +719,20 @@ int main(int argc, char* argv[])
       //	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!isZToLL;!isTAllHad",   weight)});
       //	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!isZToLL;!isTAllHad",                weight)});
       //}
+      else if (sample.first == "t#bar{t}Z_pass"){
+ 	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";passGenCutsEE", weight)});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";passGenCutsMuMu", weight)});
+	//
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "passGenCuts",                weight)});
+	TTZ_noGenW_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "passGenCuts",             "")});
+      }
+      else if (sample.first == "t#bar{t}Z_fail"){
+	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts+";!passGenCutsEE", weight)});
+	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts+";!passGenCutsMuMu", weight)});
+	//
+	TTZ_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!passGenCuts",                weight)});
+	TTZ_noGenW_stack.push_back({PDS(        sample.first, fileMap[sample.second + yearTag], "!passGenCuts",             "")});
+      }
       else{
 	dsTTZ_elec_stack.push_back({PDS( sample.first, fileMap[sample.second + yearTag], ttz_elec_cuts, weight)});
 	dsTTZ_mu_stack.push_back({PDS(   sample.first, fileMap[sample.second + yearTag], ttz_mu_cuts, weight)});
@@ -703,6 +748,10 @@ int main(int argc, char* argv[])
     }
     PDS dsElectronData("Data", fileMap[ElectronDataset],  ttz_elec_cuts, "");
     PDS dsMuonData(    "Data", fileMap[MuonDataset],      ttz_mu_cuts, "");
+    if (doFakeData){
+      PDS dsElectronData("Data", fileMap["TTZ"+yearTag],    ttz_elec_cuts+";passGenCuts", weight);
+      PDS dsMuonData(    "Data", fileMap["TTZ"+yearTag],      ttz_mu_cuts+";passGenCuts", weight);
+    }
     // === PDC === //
     std::vector<PDC> dsMC_DiLep_elec;
     std::vector<PDC> dsMC_DiLep_mu;
@@ -711,8 +760,8 @@ int main(int argc, char* argv[])
     std::vector<PDC> dsMC_DiLepLoose_mu;
     std::vector<PDC> dsData_Elec;
     std::vector<PDC> dsData_Mu;
-    std::vector<PDC> dsData_TTZ;
-    std::vector<PDC> dsData_TTZ_noGenW;
+    std::vector<PDC> dsMC_TTZ;
+    std::vector<PDC> dsMC_TTZ_noGenW;
     //
     for ( Variable& var : kenimatic_vars ){
       dsMC_DiLep_elec.push_back(PDC(     "stack", std::get<1>(var), dsTTZ_elec_stack));
@@ -730,11 +779,11 @@ int main(int argc, char* argv[])
       dsMC_DiLepLoose_mu.push_back(PDC(  "stack", "bestRecoZM", dsTTZ_mu_loose_stack));
     }
     // test
-    dsData_TTZ.push_back(PDC(           "stack", "genWeight", TTZ_stack));
-    vh.push_back(PHS("MC_TTZ_GenW"+eraTag,            {dsData_TTZ[0]},      {1,1}, "", 
+    dsMC_TTZ.push_back(PDC(           "stack", "genWeight", TTZ_stack));
+    vh.push_back(PHS("MC_TTZ_GenW"+eraTag,        {dsMC_TTZ[0]},        {1,1}, "", 
 		     60, -3.0, 3.0, true, false, "GenW", "Events"));
-    dsData_TTZ_noGenW.push_back(PDC(           "stack", "genWeight", TTZ_noGenW_stack));
-    vh.push_back(PHS("MC_TTZ_noGenW_GenW"+eraTag,            {dsData_TTZ_noGenW[0]},      {1,1}, "", 
+    dsMC_TTZ_noGenW.push_back(PDC(           "stack", "genWeight", TTZ_noGenW_stack));
+    vh.push_back(PHS("MC_TTZ_noGenW_GenW"+eraTag, {dsMC_TTZ_noGenW[0]}, {1,1}, "", 
 		     60, -3.0, 3.0, true, false, "GenW", "Events"));
     // end test
     if (doJetSel) top_selections = nJet_selections; // super duper hacky (rewrite this Bryan!!!)
@@ -744,6 +793,7 @@ int main(int argc, char* argv[])
 	for(StrPair& top_sel : top_selections){
 	  std::string sel_label, sel_cut;
 	  bool addData = false; // for viability tests, only add data for very loose selection requirements
+	  if (doFakeData) addData = true;
 	  if (b_sel.second == "NONE" && top_sel.second == "NONE"){
 	    sel_label = "";
 	    sel_cut   = "";
@@ -817,12 +867,13 @@ int main(int argc, char* argv[])
     }
   
     Plotter plotter(vh, vvf, fromTuple, filename, nFiles, startFile, nEvts);
+    plotter.setScanners(scanners);
     plotter.setLumi(lumi);
     plotter.setPlotDir(plotDir);
-    plotter.setDoHists(doSave || doPlots);
+    //plotter.setDoHists(doSave || doPlots);
     plotter.setDoTuple(doTuple);
     plotter.setRegisterFunction(rf);
     plotter.read();
-    if(doSave && fromTuple)  plotter.saveHists();
-    if(doPlots)              plotter.plot();
+    //if(doSave && fromTuple)  plotter.saveHists();
+    //if(doPlots)              plotter.plot();
 }

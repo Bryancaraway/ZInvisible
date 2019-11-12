@@ -55,8 +55,8 @@ def main():
 
     # Return datasets, with MC weights
     sampleDict = getDataWeights(datasets,sampleSetsFile,sampleCollectionsFile,lumiYearDict[year])
-    AnalyzeWs(sampleDict, options.nEvents, options.inputFile)
-    #doAnalyzer(sampleDict, options.nEvents, options.inputFile)
+    #AnalyzeWs(sampleDict, options.nEvents, options.inputFile)
+    doAnalyzer(sampleDict, options.nEvents, options.inputFile)
 
     
 def getDataWeights(datasets,sampleSetsFile,sampleCollectionsFile,lumi):
@@ -98,7 +98,7 @@ def doAnalyzer(sampleDict , nmax, inputFile):
                 with uproot.open(fname) as f:
                     print(fname)
                     t = f.get('Events')
-                    checkEvents(t)
+                    #checkEvents(t)
 
                     IDs     = t.array('GenPart_pdgId')
                     masses  = t.array('GenPart_mass')
@@ -116,6 +116,9 @@ def doAnalyzer(sampleDict , nmax, inputFile):
 
                     fromZDict         = {"nZEvents" : len(isFromZ.sum()), "nZTwoDaughters": 0, "nZMassDaughters": 0, "TTLep": 0, "TTHad": 0}
                     
+                    for Id in IDs[IDs[mothers] == 23]:
+                        #if (23 not in Id): print(Id)
+                        if (5 in Id): print(Id)
                     # find if T decays semileptonically or all hadronically
                     
                     IDcut = (((IDs[mothers] == 6) | (IDs[mothers] == 24) |

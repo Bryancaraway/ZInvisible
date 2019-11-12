@@ -89,8 +89,15 @@ namespace plotterFunctions
 
             bool Pass_MuonVeto = false;
             bool Pass_ElecVeto = false;
-	    bool isZToLL       = false;
-	    bool isTAllHad     = false;
+	    // Generator level cuts
+	    bool isZToLL         = false;
+	    bool isZToee         = false;
+	    bool isZTomumu       = false;
+	    bool isTAllHad       = false;
+	    bool isZptg300       = false;
+	    bool passGenCutsEE   = false;
+	    bool passGenCutsMuMu = false;
+	    bool passGenCuts     = false;
             
             try
 	      {
@@ -159,16 +166,33 @@ namespace plotterFunctions
 		{
 		  ///// added by Bryan to check if Z goes to ll or nunu in ttztollnunu /////
 		  /// Check if we can directly identify a leptonic daughter from the Z
-		  if ((genDecayPdgIdVec[genMotherPdgIdVec[i]] == 23) && ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15))) { 
-		    isZToLL = true;
+		  if ((genDecayPdgIdVec[genMotherPdgIdVec[i]] == 23) && ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15) ||
+									 (abs(genDecayPdgIdVec[i]) == 12) || (abs(genDecayPdgIdVec[i]) == 14) || (abs(genDecayPdgIdVec[i]) == 16))) {
+		    if ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15)){ 
+		      isZToLL = true;
+		      if      ((abs(genDecayPdgIdVec[i]) == 11)) isZToee   = true;
+		      else if ((abs(genDecayPdgIdVec[i]) == 13)) isZTomumu = true;
+		    }
+		    if (genDecayLVec[genMotherPdgIdVec[i]].Pt() > 300) isZptg300 = true;
+		  }
+		  // account for Zpt > 300 for Z to QQ. Note: All MC Z to QQ samples have the Z info stored at generator level. 
+		  // No need to analyze noZ case. All quark daughters < 6 (all but top quark)
+		  else if ((genDecayPdgIdVec[genMotherPdgIdVec[i]] == 23) && (abs(genDecayPdgIdVec[i]) < 6)){
+		    if (genDecayLVec[genMotherPdgIdVec[i]].Pt() > 300) isZptg300 = true;
 		  }
 		  /// If no direct daughter is found, check to see if the lepton in the event is from the main interaction + has a OSSF partner with the same mother
-		  else if ((genDecayPdgIdVec[genMotherPdgIdVec[i]] != 23) && ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15))) {
+		  else if ((genDecayPdgIdVec[genMotherPdgIdVec[i]] != 23) && ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15) ||
+									      (abs(genDecayPdgIdVec[i]) == 12) || (abs(genDecayPdgIdVec[i]) == 14) || (abs(genDecayPdgIdVec[i]) == 16))) {
 		    if (((genMotherPdgIdVec[i] == -1) || (genMotherPdgIdVec[i] == 0)) || 
 			((abs(genDecayPdgIdVec[genMotherPdgIdVec[i]]) == 1) || (abs(genDecayPdgIdVec[genMotherPdgIdVec[i]]) == 2) || (genDecayPdgIdVec[genMotherPdgIdVec[i]] == 21))) {
 		      for (int j = i; j < genDecayPdgIdVec.size(); ++j){
 			if ((genMotherPdgIdVec[i] == genMotherPdgIdVec[j]) && (genDecayPdgIdVec[i] == (-1*genDecayPdgIdVec[j]))){
-			  isZToLL = true ;
+			  if ((abs(genDecayPdgIdVec[i]) == 11) || (abs(genDecayPdgIdVec[i]) == 13) || (abs(genDecayPdgIdVec[i]) == 15)){ 
+			    isZToLL = true;
+			    if      ((abs(genDecayPdgIdVec[i]) == 11)) isZToee   = true;
+			    else if ((abs(genDecayPdgIdVec[i]) == 13)) isZTomumu = true;
+			  }
+			  if ((genDecayLVec[i]+genDecayLVec[j]).Pt() > 300) isZptg300 = true;
 			}
 		      }
 		    }		    
@@ -300,6 +324,11 @@ namespace plotterFunctions
 	    
 	    // Bryan: if W plus/mius hadronic daughters found then save as all had TT
 	    if (foundWPlus && foundWMinus) isTAllHad = true;
+	    // if all gencuts are satisfied, pass the event
+	    
+	    if (isZToee   && isTAllHad && isZptg300) passGenCutsEE   = true;
+	    if (isZTomumu && isTAllHad && isZptg300) passGenCutsMuMu = true;
+	    if (passGenCutsEE || passGenCutsMuMu)    passGenCuts     = true;
 	    // Loop over genTops and genWs
 	    //if (genWs->size() != 2 && genTops->size() != 2) printf("\nNumber of GENTOPS:\t%d\t Number pf genWs:\t%d\n",genTops->size(),genWs->size());
 	    //if ((genWs->size() == 2 && genTops->size() == 2) && genTops->at(0).Pt() < genTops->at(1).Pt()){
@@ -672,8 +701,15 @@ namespace plotterFunctions
             tr.registerDerivedVar("passElMuZinvSel",             passElMuZinvSel);
             tr.registerDerivedVar("passElMuZinvSelOnZMassPeak",  passElMuZinvSelOnZMassPeak);
             tr.registerDerivedVar("passElMuZinvSelOffZMassPeak", passElMuZinvSelOffZMassPeak);
-            tr.registerDerivedVar("isZToLL", isZToLL);
-            tr.registerDerivedVar("isTAllHad", isTAllHad);
+            tr.registerDerivedVar("isZToLL",         isZToLL);
+            tr.registerDerivedVar("isZToee",         isZToee);
+            tr.registerDerivedVar("isZTomumu",       isZTomumu);
+            tr.registerDerivedVar("isZptg300",       isZptg300);
+            tr.registerDerivedVar("isTAllHad",       isTAllHad);
+	    tr.registerDerivedVar("passGenCutsEE",   passGenCutsEE);
+	    tr.registerDerivedVar("passGenCutsMuMu", passGenCutsMuMu);
+	    tr.registerDerivedVar("passGenCuts",     passGenCuts);
+	    
 	    //tr.registerDerivedVec("genTops", genTops);
 	    //tr.registerDerivedVec("genWs"  , genWs);
             tr.registerDerivedVar("Zrecopt", Zrecoptpt);
