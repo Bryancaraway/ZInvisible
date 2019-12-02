@@ -18,16 +18,14 @@ import pandas as pd
 from itertools import combinations
 ##
 
-def getFiles():
-    return cfg.files
-
 def getData():
-    files = getFiles()
+    files = ['result_2017']     
     for file_ in files:
         if not os.path.exists(cfg.file_path+file_+'.root') : continue
         with uproot.open(cfg.file_path+file_+'.root') as f_:
             print('Opening File:\t{}'.format(file_))
-            for sample in cfg.MCsamples:
+            samples = ['TTZ','DY']
+            for sample in samples:
                 print(sample)
                 t = f_.get(cfg.tree_dir+'/'+sample)
                 ak4vars = {}
@@ -44,7 +42,6 @@ def getData():
                         else : 
                             dict_[key] = t.array(key)[(selvar['nJets'] >= 3)]
                 #
-                defineKeys(ak4vars,cfg.ak4vars)
                 defineKeys(ak4lvec,cfg.ak4lvec)
                 defineKeys(valvars,cfg.valvars)
                 defineKeys(label,  cfg.label)
@@ -63,8 +60,7 @@ def getData():
                 # Cuts for initial round of training #
                 # Ak4 Jet Pt > 30, Ak4 Jet Eta < 2.6 #
                 # after which nJet = 6               #
-                ak4_cuts = ((ak4lvec['Pt'] > 30) & (abs(ak4lvec['Eta']) < 2.6) 
-                             & (abs(ak4vars['Jet_btagCSVV2']) <= 1) & (abs(ak4vars['Jet_btagDeepB']) <= 1) & (abs(ak4vars['Jet_qg']) <= 1))
+                ak4_cuts = ((ak4lvec['Pt'] > 30) & (abs(ak4lvec['Eta']) < 2.6) )
                 #
                 def applyAK4Cuts(dict_, cuts_):
                     for key in dict_.keys():
@@ -98,8 +94,6 @@ def getData():
                 dfs     = pd.DataFrame()
                 val_dfs = pd.DataFrame()
                 #
-                dfs     = addToDF(ak4vars, dfs)
-                del ak4vars
                 dfs     = addToDF(ak4lvec, dfs)
                 del ak4lvec
                 val_dfs = addToDF(valvars, val_dfs)
@@ -119,37 +113,33 @@ def getData():
                 val_dfs = reduceDF(val_dfs)
                 print(dfs)
                 print(val_dfs)
-                dfs.to_pickle(    cfg.skim_dir+file_+'_'    +sample+'.pkl')
-                val_dfs.to_pickle(cfg.skim_dir+file_+'_'+sample+'_val.pkl')
+                dfs.to_pickle(    cfg.skim_test_dir+file_+'_'    +sample+'.pkl')
+                val_dfs.to_pickle(cfg.skim_test_dir+file_+'_'+sample+'_val.pkl')
                 del dfs
                 del val_dfs
                 #
             #
         #
     #
-#   
+#
 def interpData():
-    files = getFiles()
+    files = ['result_2017']
     for file_ in files:
-        for sample in cfg.MCsamples:
-            if not os.path.exists(cfg.skim_dir+file_+'_'+sample+'.pkl') : continue
+        samples = ['TTZ','DY']
+        for sample in samples:
+            if not os.path.exists(cfg.skim_test_dir+file_+'_'+sample+'.pkl') : continue
             df = pd.DataFrame()
-            df = pd.read_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')
+            df = pd.read_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
             #
             def computeCombs(df_):
                 # DO THE CALCS BY HAND SO THAT IS IS DONE IN PARALLEL
-                dr_combs   = list(combinations(range(1,6+1),2))
                 invTM_combs = list(combinations(range(1,6+1),3))                
-                for comb in dr_combs:
-                    deta = df_['Eta_'+str(comb[0])] - df_['Eta_'+str(comb[1])]
-                    dphi = df_['Phi_'+str(comb[0])] - df_['Phi_'+str(comb[1])]
-                    df_['dR_'+str(comb[0])+str(comb[1])] = np.sqrt(np.power(deta,2)+np.power(dphi,2))
-                    del det, dphi
-                    #
-                    2pt1pt2  = 2 * df_['Pt_'+str(comb[0])] * df_['Pt_'+str(comb[1])]  
-                    cosheta  = np.cosh(df_['Eta_'+str(comb[0])] - df_['Eta_'+str(comb[1])])
-                    cosphi   = np.cos( df_['Phi_'+str(comb[0])] - df_['Phi_'+str(comb[1])])
-                    df['InvWM_'+str(comb[0])+str(comb[1])] = np.sqrt(2pt1pt2 * (cosheta - coshphi))
+                invWM_combs = list(combinations(range(1,6+1),2))
+                for comb in invWM_combs:
+                    pt1pt2  = 2 * df_['Pt_'+str(comb[0])] * df_['Pt_'+str(comb[1])]  
+                    cosheta = np.cosh(df_['Eta_'+str(comb[0])] - df_['Eta_'+str(comb[1])])
+                    cosphi  = np.cos( df_['Phi_'+str(comb[0])] - df_['Phi_'+str(comb[1])])
+                    df['InvWM_'+str(comb[0])+str(comb[1])] = np.sqrt(pt1pt2 * (cosheta - cosphi))
                 #
                 for comb in invTM_combs:
                     E_sum2  = np.power(df_['E_'+str(comb[0])] + df_['E_'+str(comb[1])] + df_['E_'+str(comb[2])],2)
@@ -163,86 +153,115 @@ def interpData():
                 #
             #
             df = computeCombs(df)
-            df.to_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')
+            df.to_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
             del df
             #
         #
     #
 #
-def preProcess():
-    df = pd.DataFrame()
-    files = getFiles()
+def computeChi2():
+    T_mass = 173.2
+    W_mass = 80.4
+    files = ['result_2017']
     for file_ in files:
-        for sample in cfg.MCsamples:
-            if not os.path.exists(cfg.skim_dir+file_+'_'+sample+'.pkl') : continue
-            df = pd.concat([df,pd.read_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')], axis=1)
+        samples = ['TTZ','DY']
+        for sample in samples:
+            if not os.path.exists(cfg.skim_test_dir+file_+'_'+sample+'.pkl') : continue
+            df = pd.DataFrame()
+            df = pd.read_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
+            chi2_df = pd.DataFrame()
+            #
+            invTM_combs = list(combinations(range(1,6+1),3))
+            for i, combi in enumerate(invTM_combs):
+                combt1 = str(combi[0])+str(combi[1])+str(combi[2])
+                for combj in invTM_combs[i+1:]:
+                    combt2 = str(combj[0])+str(combj[1])+str(combj[2])
+                    for _ in combt1: combt2=combt2.replace(_,"")
+                    if (len(combt2.strip(combt1)) != 3) : continue
+                    W1_combs = list(combinations(combt1,2))
+                    W2_combs = list(combinations(combt2,2))
+                    for combwi  in W1_combs:
+                        combw1 = str(combwi[0])+str(combwi[1])
+                        for combwj in W2_combs:
+                            combw2 = str(combwj[0])+str(combwj[1])
+                            #
+                            massT1 =  df['InvTM_'+combt1] 
+                            massT2 =  df['InvTM_'+combt2]
+                            massW1 =  df['InvWM_'+combw1]
+                            massW2 =  df['InvWM_'+combw2]
+                            chi2 =  (np.power((massT1 - T_mass),2)/(pow(40,2)) + np.power((massT2 - T_mass),2)/(pow(40,2)) + 
+                                     np.power((massW1 - W_mass),2)/(pow(30,2)) + np.power((massW2 - W_mass),2)/(pow(30,2)))
+                            chi2_df['Chi2_'+combt1+'_'+combw1+'_'+combt2+'_'+combw2] = chi2
+                            #
+                        #
+                    #
+                #
+            #
+            df['Chi2']      = chi2_df.min(axis=1)
+            df['Chi2_Comb'] = chi2_df.idxmin(axis=1)
+            df.to_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
+            del df, chi2_df
+            #
+        #
     #
-    ##### Seperate DF diffinitively #######
-    trainX = df.sample(frac=0.70,random_state=1)      ## make sure these lengths make sense 
-    testX  = df.drop(trainX.index).copy()             ## between drops: 
-    print(('Test:\t{}\n').format(len(testX)))
-    valX   = trainX.sample(frac=0.30,random_state=1)  ## need to fix!!!!!!!!!!!!!!!
-    print(('Val:\t{}\n').format(len(valX)))
-    trainX = trainX.drop(valX.index).copy()          ##
-    print(('Train:\t{}\n').format(len(trainX)))
-    print(('Total:\t{}\n').format(len(trainX)+len(valX)+len(testX)))
-    del df
-    #
-    #### Get Labels for val,train,test ####
-    for label in cfg.label:
-        trainY = trainX[label].copy()
-        del trainX[label]
-        valY = valX[label].copy()
-        del valX[label]
-        testY = testX[label].copy()
-        del testX[label]
-    #
-    trainX = resetIndex(trainX)
-    trainY = resetIndex(trainY)
-    #
-    valX = resetIndex(valX)
-    valY = resetIndex(valY)
-    #
-    testX = resetIndex(testX)
-    testY = resetIndex(testY)
-    ### Store ###
-    trainX.to_pickle(cfg.train_dir+'X.pkl')
-    trainY.to_pickle(cfg.train_dir+'Y.pkl')
-    #
-    valX.to_pickle(cfg.val_dir+'X.pkl')
-    valY.to_pickle(cfg.val_dir+'Y.pkl')
-    #
-    testX.to_pickle(cfg.test_dir+'X.pkl')
-    testY.to_pickle(cfg.test_dir+'Y.pkl')
-    #
-    del testX, testY, trainX, trainY, valX, valY
 #
-def doOverSampling():
-    from imblearn.over_sampling import SMOTE
-    from sklearn.ensemble import RandomForestClassifier
-    from sklearn.metrics import recall_score
+def evaluateChi2():
+    import matplotlib.pyplot as plt
+    df = {}
+    files = ['result_2017']
+    for file_ in files:
+        samples = ['TTZ','DY']
+        for sample in samples:
+            if not os.path.exists(cfg.skim_test_dir+file_+'_'+sample+'.pkl') : continue
+            df_ = pd.DataFrame()
+            val_df_ = pd.DataFrame()
+            df_ = pd.read_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
+            val_df_ = pd.read_pickle(cfg.skim_test_dir+file_+'_'+sample+'_val.pkl')
+            df[sample+file_.strip('result')] = {'df':df_, 'val':val_df_}
+            #
+        #
     #
-    sm = SMOTE(random_state=10, ratio=0.35)
-    trainX = pd.read_pickle(cfg.train_dir+'X.pkl')
-    trainY = pd.read_pickle(cfg.train_dir+'Y.pkl')
+    def plotChi2(df_,cut_):
+        plt.figure()
+        for key in df_.keys():
+            cut    = (df_[key]['val']['bestRecoZPt'] > cut_)
+            weight = df_[key]['val']['weight'][cut] * np.sign(df_[key]['val']['genWeight'][cut])
+            plt.hist(x = df_[key]['df']['Chi2'][cut], bins=20, range=(0,2000), histtype= 'step', 
+                     weights= weight, density=True, label= key)
+            #
+        #
+        plt.title('Z pt > '+str(cut_))
+        plt.grid(True)
+        #plt.xscale('log')
+        #plt.yscale('log')
+        plt.xlabel('${\chi^2}$')
+        plt.legend()
+        plt.show()
+        plt.close
+        #
+    #        
+    def plotChi2Comb(df_):
+        fig, axs = plt.subplots(1, len(df_.keys()), figsize=(16,10))
+        fig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95, hspace=0.3, wspace=0.25)
+        for key,ax in zip(df_.keys(), axs):
+            combs = pd.Series(df[key]['df']['Chi2_Comb']).value_counts()
+            ax.pie(combs.values/combs.values.sum(), labels=combs.index, 
+                   autopct='%1.1f%%', textprops={'size': 'xx-small'})
+            ax.set_title(key)
+            #
+        plt.show()
+        plt.close()
+        #
     #
-    trainX_ndarray, trainY_ndarray = sm.fit_sample(trainX, trainY)
+    plotChi2(df, 0)
+    plotChi2(df, 100)
+    plotChi2(df, 200)
+    plotChi2(df, 300)
+    plotChi2Comb(df)
     #
-    trainX = pd.DataFrame(trainX_ndarray, columns = list(trainX.keys()))
-    print(trainX)
-
-    trainY = pd.Series(trainY_ndarray, name = trainY.name)
-    print(trainY)
-    trainX.to_pickle(cfg.train_over_dir+'X.pkl')
-    trainY.to_pickle(cfg.train_over_dir+'Y.pkl')
-    #
-    del trainX, trainY
 #
-def resetIndex(df_):
-    return df_.reset_index(drop=True).copy()
-
 if __name__ == '__main__':
     #getData()
     #interpData()
-    #preProcess()
-    doOverSampling()
+    #computeChi2()
+    evaluateChi2()
