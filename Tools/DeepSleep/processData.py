@@ -242,7 +242,7 @@ def resetIndex(df_):
     return df_.reset_index(drop=True).copy()
 
 if __name__ == '__main__':
-    #getData()
-    #interpData()
-    #preProcess()
+    getData()
+    interpData()
+    preProcess()
     doOverSampling()

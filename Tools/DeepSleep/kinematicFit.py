@@ -113,8 +113,8 @@ def getData():
                 val_dfs = reduceDF(val_dfs)
                 print(dfs)
                 print(val_dfs)
-                dfs.to_pickle(    cfg.skim_test_dir+file_+'_'    +sample+'.pkl')
-                val_dfs.to_pickle(cfg.skim_test_dir+file_+'_'+sample+'_val.pkl')
+                dfs.to_pickle(    cfg.skim_kinemFit_dir+file_+'_'    +sample+'.pkl')
+                val_dfs.to_pickle(cfg.skim_kinemFit_dir+file_+'_'+sample+'_val.pkl')
                 del dfs
                 del val_dfs
                 #
@@ -127,9 +127,9 @@ def interpData():
     for file_ in files:
         samples = ['TTZ','DY']
         for sample in samples:
-            if not os.path.exists(cfg.skim_test_dir+file_+'_'+sample+'.pkl') : continue
+            if not os.path.exists(cfg.skim_kinemFit_dir+file_+'_'+sample+'.pkl') : continue
             df = pd.DataFrame()
-            df = pd.read_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
+            df = pd.read_pickle(cfg.skim_kinemFit_dir+file_+'_'+sample+'.pkl')
             #
             def computeCombs(df_):
                 # DO THE CALCS BY HAND SO THAT IS IS DONE IN PARALLEL
@@ -153,7 +153,7 @@ def interpData():
                 #
             #
             df = computeCombs(df)
-            df.to_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
+            df.to_pickle(cfg.skim_kinemFit_dir+file_+'_'+sample+'.pkl')
             del df
             #
         #
@@ -166,9 +166,9 @@ def computeChi2():
     for file_ in files:
         samples = ['TTZ','DY']
         for sample in samples:
-            if not os.path.exists(cfg.skim_test_dir+file_+'_'+sample+'.pkl') : continue
+            if not os.path.exists(cfg.skim_kinemFit_dir+file_+'_'+sample+'.pkl') : continue
             df = pd.DataFrame()
-            df = pd.read_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
+            df = pd.read_pickle(cfg.skim_kinemFit_dir+file_+'_'+sample+'.pkl')
             chi2_df = pd.DataFrame()
             #
             invTM_combs = list(combinations(range(1,6+1),3))
@@ -199,7 +199,7 @@ def computeChi2():
             #
             df['Chi2']      = chi2_df.min(axis=1)
             df['Chi2_Comb'] = chi2_df.idxmin(axis=1)
-            df.to_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
+            df.to_pickle(cfg.skim_kinemFit_dir+file_+'_'+sample+'.pkl')
             del df, chi2_df
             #
         #
@@ -212,11 +212,11 @@ def evaluateChi2():
     for file_ in files:
         samples = ['TTZ','DY']
         for sample in samples:
-            if not os.path.exists(cfg.skim_test_dir+file_+'_'+sample+'.pkl') : continue
+            if not os.path.exists(cfg.skim_kinemFit_dir+file_+'_'+sample+'.pkl') : continue
             df_ = pd.DataFrame()
             val_df_ = pd.DataFrame()
-            df_ = pd.read_pickle(cfg.skim_test_dir+file_+'_'+sample+'.pkl')
-            val_df_ = pd.read_pickle(cfg.skim_test_dir+file_+'_'+sample+'_val.pkl')
+            df_ = pd.read_pickle(cfg.skim_kinemFit_dir+file_+'_'+sample+'.pkl')
+            val_df_ = pd.read_pickle(cfg.skim_kinemFit_dir+file_+'_'+sample+'_val.pkl')
             df[sample+file_.strip('result')] = {'df':df_, 'val':val_df_}
             #
         #
@@ -261,7 +261,7 @@ def evaluateChi2():
     #
 #
 if __name__ == '__main__':
-    #getData()
-    #interpData()
-    #computeChi2()
+    getData()
+    interpData()
+    computeChi2()
     evaluateChi2()

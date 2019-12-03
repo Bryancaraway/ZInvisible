@@ -3,18 +3,19 @@
 ## Deep Sleep ##
 ################
 
+master_file_path  = './files/'
 # Overhead #
-file_path     = './root/'
-files         = ['result_2016','result_2017','result_2018_AB','result_2018_CD']
-tree_dir      = 'Training'
-MCsamples     = ['TTZ','DY','TTX','DiBoson','TTBarLep']
-skim_dir      = './skim/'
-skim_test_dir = './skim_test/'
+file_path         = master_file_path+'root/'
+files             = ['result_2016','result_2017','result_2018_AB','result_2018_CD']
+tree_dir          = 'Training'
+MCsamples         = ['TTZ','DY','TTX','DiBoson','TTBarLep']
+skim_dir          = master_file_path+'skim/'
+skim_kinemFit_dir = master_file_path+'skim_kinemFit/'
 # Train Overhead #
-train_dir     = './train/'
-train_over_dir = './train_over/'
-test_dir      = './test/'
-val_dir       = './val/'
+train_dir      = master_file_path+'train/'
+train_over_dir = master_file_path+'train_overSample/'
+test_dir       = master_file_path+'test/'
+val_dir        = master_file_path+'val/'
 ###################
 # Input Variables #
 ak4vars = ['Jet_btagCSVV2_drLeptonCleaned','Jet_btagDeepB_drLeptonCleaned','Jet_qgl_drLeptonCleaned']
