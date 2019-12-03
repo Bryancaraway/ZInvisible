@@ -1,6 +1,14 @@
 
-
-mkdir NN_ouput val test train train_overSample skim skim_kinemFit root  pdf 
+mkdir files
+mkdir NN_ouput 
+mkdir files/val 
+mkdir files/test 
+mkdir files/train 
+mkdir files/train_overSample 
+mkdir files/skim 
+mkdir files/skim_kinemFit 
+mkdir files/root  
+mkdir pdf 
 
 voms-proxy-init --rfc --voms cms
 
