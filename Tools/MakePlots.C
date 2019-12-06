@@ -485,10 +485,21 @@ int main(int argc, char* argv[])
     std::string lClean = "_drLeptonCleaned";
     std::set<std::string> vars = {
       "passGenCuts", "isZToLL", "isTAllHad",                                                                                 // gen validation                
+      "GenPart_pdgId", "GenPart_genPartIdxMother", "GenPart_status" ,                                                        // gen validation
+      "GenPart_pt", "GenPart_eta", "GenPart_phi", "GenPart_E",                                                               // gen validation
+
       "nResolvedTops"+lClean, "nMergedTops"+lClean, "nBottoms"+lClean, "nJets30"+lClean,                                     // validation
       "bestRecoZPt", "passElecZinvSelOnZMassPeak", "passMuZinvSelOnZMassPeak", "genWeight",                                  // validation
-      "Jet_btagCSVV2"+lClean, "Jet_btagDeepB"+lClean, "Jet_qgl"+lClean, "JetTLV"+lClean,                                     // training 1 (AK4)
-      "FatJetTLV"+lClean, "FatJet_msoftdrop"+lClean, "FatJet_mass"+lClean,                                                   // training 2 (AK8)
+      "ResolvedTopCandidate_discriminator",                                                                                  // validation
+      "ResolvedTopCandidate_j1Idx", "ResolvedTopCandidate_j2Idx", "ResolvedTopCandidate_j3Idx",                              // validation
+
+      "Jet_btagCSVV2"+lClean, "Jet_btagDeepB"+lClean, "Jet_qgl"+lClean,                                                      // training 1 (AK4)
+      "Jet_pt"+lClean, "Jet_eta"+lClean, "Jet_phi"+lClean, "Jet_E"+lClean,                                                   // training 1 (AK4)
+      "Jet_pt", "Jet_eta", "Jet_phi", "Jet_E",                                                                               // training 1 (AK4)
+
+      "FatJet_pt"+lClean, "FatJet_eta"+lClean, "FatJet_phi"+lClean, "FatJet_E"+lClean,                                       // training 2 (AK8)
+      "FatJet_pt", "FatJet_eta", "FatJet_phi", "FatJet_E",                                                                   // training 2 (AK8)
+      "FatJet_msoftdrop"+lClean, "FatJet_mass"+lClean,                                                                       // training 2 (AK8)
       "FatJet_tau1"+lClean, "FatJet_tau2"+lClean, "FatJet_tau3"+lClean, "FatJet_tau4"+lClean,                                // training 2 (AK8) 
       "FatJet_deepTag_WvsQCD"+lClean, "FatJet_deepTag_TvsQCD"+lClean, "FatJet_deepTag_ZvsQCD"+lClean                         // training 2 (AK8) 
     };
@@ -563,8 +574,8 @@ int main(int argc, char* argv[])
       //{"NWs_tau",       "nWs_tau",                           0.0,   5.0   , true},
       //{"NZs_qcd",       "nZs_qcd",                           0.0,   5.0   , true},
       //{"NZs_tau",       "nZs_tau",                           0.0,   5.0   , true},
-      {"TopDisc",     "ResolvedTopsDisc",                     0.7,   1.0,   false},
-      {"nRt_ttz",       "nRt_ttz",                            0.0,   7.0   , true}};
+      {"TopDisc",     "ResolvedTopsDisc",                       0.7,   1.0,   false},
+      {"nRt_ttz",       "nRt_ttz",                              0.0,   7.0,   true}};
       //{"TopPt",     "ResolvedTopCandidate_pt[0]",                       0.0,   1000.0, !doZptCut},
       //{"TopM",      "ResolvedTopCandidate_mass[0]",                     123.0, 223.0,  !doZptCut},
       //{"GenW",      "genWeight",                                      -1.5,   1.5,    true},
@@ -870,10 +881,10 @@ int main(int argc, char* argv[])
     plotter.setScanners(scanners);
     plotter.setLumi(lumi);
     plotter.setPlotDir(plotDir);
-    //plotter.setDoHists(doSave || doPlots);
+        //plotter.setDoHists(doSave || doPlots);
     plotter.setDoTuple(doTuple);
     plotter.setRegisterFunction(rf);
     plotter.read();
-    //if(doSave && fromTuple)  plotter.saveHists();
-    //if(doPlots)              plotter.plot();
+        //if(doSave && fromTuple)  plotter.saveHists();
+        //if(doPlots)              plotter.plot();
 }
