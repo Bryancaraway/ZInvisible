@@ -10,6 +10,7 @@
 import uproot
 import sys
 import os
+import math
 import deepsleepcfg as cfg
 #
 import numpy as np
@@ -18,16 +19,13 @@ import pandas as pd
 from itertools import combinations
 ##
 
-def getFiles():
-    return cfg.files
-
-def getData():
-    files = getFiles()
+def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir):
+    files = files_
     for file_ in files:
         if not os.path.exists(cfg.file_path+file_+'.root') : continue
         with uproot.open(cfg.file_path+file_+'.root') as f_:
             print('Opening File:\t{}'.format(file_))
-            for sample in cfg.MCsamples:
+            for sample in samples_:
                 print(sample)
                 t = f_.get(cfg.tree_dir+'/'+sample)
                 ak4vars = {}
@@ -45,7 +43,7 @@ def getData():
                             dict_[key] = t.array(key)[(selvar['nJets'] >= 3)]
                 #
                 defineKeys(ak4vars,cfg.ak4vars)
-                defineKeys(ak4lvec,cfg.ak4lvec)
+                defineKeys(ak4lvec,cfg.ak4lvec['TLV'])
                 defineKeys(valvars,cfg.valvars)
                 defineKeys(label,  cfg.label)
                 # Extract LVec info
@@ -119,8 +117,8 @@ def getData():
                 val_dfs = reduceDF(val_dfs)
                 print(dfs)
                 print(val_dfs)
-                dfs.to_pickle(    cfg.skim_dir+file_+'_'    +sample+'.pkl')
-                val_dfs.to_pickle(cfg.skim_dir+file_+'_'+sample+'_val.pkl')
+                dfs.to_pickle(    outDir_+file_+'_'    +sample+'.pkl')
+                val_dfs.to_pickle(outDir_+file_+'_'+sample+'_val.pkl')
                 del dfs
                 del val_dfs
                 #
@@ -128,13 +126,13 @@ def getData():
         #
     #
 #   
-def interpData():
-    files = getFiles()
+def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir):
+    files = files_
     for file_ in files:
-        for sample in cfg.MCsamples:
-            if not os.path.exists(cfg.skim_dir+file_+'_'+sample+'.pkl') : continue
+        for sample in samples_:
+            if not os.path.exists(outDir_+file_+'_'+sample+'.pkl') : continue
             df = pd.DataFrame()
-            df = pd.read_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')
+            df = pd.read_pickle(outDir_+file_+'_'+sample+'.pkl')
             #
             def computeCombs(df_):
                 # DO THE CALCS BY HAND SO THAT IS IS DONE IN PARALLEL
@@ -143,13 +141,16 @@ def interpData():
                 for comb in dr_combs:
                     deta = df_['Eta_'+str(comb[0])] - df_['Eta_'+str(comb[1])]
                     dphi = df_['Phi_'+str(comb[0])] - df_['Phi_'+str(comb[1])]
+                    dphi = pd.concat([dphi.loc[dphi > math.pi] - 2*math.pi, 
+                                      dphi.loc[dphi <= -math.pi] + 2*math.pi, 
+                                      dphi.loc[(dphi <= math.pi) & (dphi > -math.pi)]]).sort_index()
                     df_['dR_'+str(comb[0])+str(comb[1])] = np.sqrt(np.power(deta,2)+np.power(dphi,2))
-                    del det, dphi
+                    del deta, dphi
                     #
-                    2pt1pt2  = 2 * df_['Pt_'+str(comb[0])] * df_['Pt_'+str(comb[1])]  
+                    pt1pt2   = 2 * df_['Pt_'+str(comb[0])] * df_['Pt_'+str(comb[1])]  
                     cosheta  = np.cosh(df_['Eta_'+str(comb[0])] - df_['Eta_'+str(comb[1])])
                     cosphi   = np.cos( df_['Phi_'+str(comb[0])] - df_['Phi_'+str(comb[1])])
-                    df['InvWM_'+str(comb[0])+str(comb[1])] = np.sqrt(2pt1pt2 * (cosheta - coshphi))
+                    df['InvWM_'+str(comb[0])+str(comb[1])] = np.sqrt(pt1pt2 * (cosheta - cosphi))
                 #
                 for comb in invTM_combs:
                     E_sum2  = np.power(df_['E_'+str(comb[0])] + df_['E_'+str(comb[1])] + df_['E_'+str(comb[2])],2)
@@ -163,19 +164,19 @@ def interpData():
                 #
             #
             df = computeCombs(df)
-            df.to_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')
+            df.to_pickle(outDir_+file_+'_'+sample+'.pkl')
             del df
             #
         #
     #
 #
-def preProcess():
+def preProcess(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir):
     df = pd.DataFrame()
-    files = getFiles()
+    files = files_
     for file_ in files:
-        for sample in cfg.MCsamples:
-            if not os.path.exists(cfg.skim_dir+file_+'_'+sample+'.pkl') : continue
-            df = pd.concat([df,pd.read_pickle(cfg.skim_dir+file_+'_'+sample+'.pkl')], axis=1)
+        for sample in samples_:
+            if not os.path.exists(outDir_+file_+'_'+sample+'.pkl') : continue
+            df = pd.concat([df,pd.read_pickle(outDir_+file_+'_'+sample+'.pkl')], ignore_index = True)
     #
     ##### Seperate DF diffinitively #######
     trainX = df.sample(frac=0.70,random_state=1)      ## make sure these lengths make sense 
@@ -225,6 +226,8 @@ def doOverSampling():
     sm = SMOTE(random_state=10, ratio=0.35)
     trainX = pd.read_pickle(cfg.train_dir+'X.pkl')
     trainY = pd.read_pickle(cfg.train_dir+'Y.pkl')
+    print(trainX)
+    print(trainY)
     #
     trainX_ndarray, trainY_ndarray = sm.fit_sample(trainX, trainY)
     #
