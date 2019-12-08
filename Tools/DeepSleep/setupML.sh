@@ -1,6 +1,6 @@
 
 mkdir files
-mkdir NN_ouput 
+mkdir NN_output 
 mkdir files/val 
 mkdir files/test 
 mkdir files/train 
