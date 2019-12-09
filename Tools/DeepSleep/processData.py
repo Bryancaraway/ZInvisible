@@ -35,34 +35,42 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 selvar  = {'nJets':t.array('nJets30_drLeptonCleaned')} ##### temporary, only train on 6 ak4 jet events
                 valvars  = {}
                 label   = {}
-                def defineKeys(dict_,keys):
-                    for key in keys:
+                def defineKeys(dict_,keys_):
+                    for key_ in keys_:
+                        key = key_ 
                         if ('_drLeptonCleaned' in key) : 
-                            dict_[key.strip('_drLeptonCleaned')] = t.array(key)[(selvar['nJets'] >= 3)]
-                        else : 
-                            dict_[key] = t.array(key)[(selvar['nJets'] >= 3)]
+                            key = key.replace('_drLeptonCleaned','')
+                        if ('Jet_' in key) :
+                            key = key.replace('Jet_', '')
+                        dict_[key] = t.array(key_)[(selvar['nJets'] >= 3)]
+                        #
+                    #
                 #
-                defineKeys(ak4vars,cfg.ak4vars)
-                defineKeys(ak4lvec,cfg.ak4lvec['TLV'])
-                defineKeys(valvars,cfg.valvars)
-                defineKeys(label,  cfg.label)
                 # Extract LVec info
                 def extractLVecInfo(lvecdict):
                     keys = list(lvecdict.keys())
                     for key in keys:
-                        lvecdict['Pt']  = lvecdict[key].pt
-                        lvecdict['Eta'] = lvecdict[key].eta
-                        lvecdict['Phi'] = lvecdict[key].phi
+                        lvecdict['pt']  = lvecdict[key].pt
+                        lvecdict['eta'] = lvecdict[key].eta
+                        lvecdict['phi'] = lvecdict[key].phi
                         lvecdict['E']   = lvecdict[key].E
                         
                     del lvecdict[key]
                 #
-                extractLVecInfo(ak4lvec)
+                try:
+                    defineKeys(ak4lvec,cfg.ak4lvec['TLV'])
+                    extractLVecInfo(ak4lvec)
+                except:
+                    defineKeys(ak4lvec,cfg.ak4lvec['TLVarsLC'])
+                defineKeys(ak4vars,cfg.ak4vars)
+                defineKeys(valvars,cfg.valvars)
+                defineKeys(label,  cfg.label)
+
                 # Cuts for initial round of training #
                 # Ak4 Jet Pt > 30, Ak4 Jet Eta < 2.6 #
                 # after which nJet = 6               #
-                ak4_cuts = ((ak4lvec['Pt'] > 30) & (abs(ak4lvec['Eta']) < 2.6) 
-                             & (abs(ak4vars['Jet_btagCSVV2']) <= 1) & (abs(ak4vars['Jet_btagDeepB']) <= 1) & (abs(ak4vars['Jet_qg']) <= 1))
+                ak4_cuts = ((ak4lvec['pt'] > 30) & (abs(ak4lvec['eta']) < 2.6) 
+                             & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
                 #
                 def applyAK4Cuts(dict_, cuts_):
                     for key in dict_.keys():
@@ -139,24 +147,24 @@ def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
                 dr_combs   = list(combinations(range(1,6+1),2))
                 invTM_combs = list(combinations(range(1,6+1),3))                
                 for comb in dr_combs:
-                    deta = df_['Eta_'+str(comb[0])] - df_['Eta_'+str(comb[1])]
-                    dphi = df_['Phi_'+str(comb[0])] - df_['Phi_'+str(comb[1])]
+                    deta = df_['eta_'+str(comb[0])] - df_['eta_'+str(comb[1])]
+                    dphi = df_['phi_'+str(comb[0])] - df_['phi_'+str(comb[1])]
                     dphi = pd.concat([dphi.loc[dphi > math.pi] - 2*math.pi, 
                                       dphi.loc[dphi <= -math.pi] + 2*math.pi, 
                                       dphi.loc[(dphi <= math.pi) & (dphi > -math.pi)]]).sort_index()
                     df_['dR_'+str(comb[0])+str(comb[1])] = np.sqrt(np.power(deta,2)+np.power(dphi,2))
                     del deta, dphi
                     #
-                    pt1pt2   = 2 * df_['Pt_'+str(comb[0])] * df_['Pt_'+str(comb[1])]  
-                    cosheta  = np.cosh(df_['Eta_'+str(comb[0])] - df_['Eta_'+str(comb[1])])
-                    cosphi   = np.cos( df_['Phi_'+str(comb[0])] - df_['Phi_'+str(comb[1])])
+                    pt1pt2   = 2 * df_['pt_'+str(comb[0])] * df_['pt_'+str(comb[1])]  
+                    cosheta  = np.cosh(df_['eta_'+str(comb[0])] - df_['eta_'+str(comb[1])])
+                    cosphi   = np.cos( df_['phi_'+str(comb[0])] - df_['phi_'+str(comb[1])])
                     df['InvWM_'+str(comb[0])+str(comb[1])] = np.sqrt(pt1pt2 * (cosheta - cosphi))
                 #
                 for comb in invTM_combs:
                     E_sum2  = np.power(df_['E_'+str(comb[0])] + df_['E_'+str(comb[1])] + df_['E_'+str(comb[2])],2)
-                    p_xmag2 = np.power((df_['Pt_'+str(comb[0])]*np.cos(df_['Phi_'+str(comb[0])]))+(df_['Pt_'+str(comb[1])]*np.cos(df_['Phi_'+str(comb[1])]))+(df_['Pt_'+str(comb[2])]*np.cos(df_['Phi_'+str(comb[2])])),2)
-                    p_ymag2 = np.power((df_['Pt_'+str(comb[0])]*np.sin(df_['Phi_'+str(comb[0])]))+(df_['Pt_'+str(comb[1])]*np.sin(df_['Phi_'+str(comb[1])]))+(df_['Pt_'+str(comb[2])]*np.sin(df_['Phi_'+str(comb[2])])),2)
-                    p_zmag2 = np.power((df_['Pt_'+str(comb[0])]*np.sinh(df_['Eta_'+str(comb[0])]))+(df_['Pt_'+str(comb[1])]*np.sinh(df_['Eta_'+str(comb[1])]))+(df_['Pt_'+str(comb[2])]*np.sinh(df_['Eta_'+str(comb[2])])),2)
+                    p_xmag2 = np.power((df_['pt_'+str(comb[0])]*np.cos(df_['phi_'+str(comb[0])]))+(df_['pt_'+str(comb[1])]*np.cos(df_['phi_'+str(comb[1])]))+(df_['pt_'+str(comb[2])]*np.cos(df_['phi_'+str(comb[2])])),2)
+                    p_ymag2 = np.power((df_['pt_'+str(comb[0])]*np.sin(df_['phi_'+str(comb[0])]))+(df_['pt_'+str(comb[1])]*np.sin(df_['phi_'+str(comb[1])]))+(df_['pt_'+str(comb[2])]*np.sin(df_['phi_'+str(comb[2])])),2)
+                    p_zmag2 = np.power((df_['pt_'+str(comb[0])]*np.sinh(df_['eta_'+str(comb[0])]))+(df_['pt_'+str(comb[1])]*np.sinh(df_['eta_'+str(comb[1])]))+(df_['pt_'+str(comb[2])]*np.sinh(df_['eta_'+str(comb[2])])),2)
                     p_mag2 = p_xmag2 + p_ymag2 + p_zmag2
                     del  p_xmag2,p_ymag2,p_zmag2
                     df_['InvTM_'+str(comb[0])+str(comb[1])+str(comb[2])] = np.sqrt(E_sum2 - p_mag2)

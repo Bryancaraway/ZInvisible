@@ -25,14 +25,14 @@ val_dir        = master_file_path+'val/'
 LC = '_drLeptonCleaned'
 #
 ak4vars = ['Jet_btagCSVV2'+LC,'Jet_btagDeepB'+LC,'Jet_qgl'+LC]
-ak4lvec = {'TLV'    :['JetTLV'+LC],
-           'VarsLC' :['Jet_pt'+LC, 'Jet_eta'+LC, 'Jet_phi'+LC, 'Jet_E'+LC],
-           'TLVars' :['Jet_pt', 'Jet_eta', 'Jet_phi', 'Jet_E']}
+ak4lvec = {'TLV'      :['JetTLV'+LC],
+           'TLVarsLC' :['Jet_pt'+LC, 'Jet_eta'+LC, 'Jet_phi'+LC, 'Jet_E'+LC],
+           'TLVars'   :['Jet_pt', 'Jet_eta', 'Jet_phi', 'Jet_E']}
 #
 ak8vars = ['FatJet_tau1'+LC,'FatJet_tau2'+LC,'FatJet_tau3'+LC,'FatJet_tau4'+LC,'FatJet_deepTag_WvsQCD'+LC,'FatJet_deepTag_TvsQCD'+LC,'FatJet_deepTag_ZvsQCD'+LC,'FatJet_msoftdrop'+LC,'FatJet_mass'+LC]
-ak8lvec = {'TLV'    :['FatJetTLV'+LC],
-           'VarsLC' :['FatJet_pt'+LC, 'FatJet_eta'+LC, 'FatJet_phi'+LC, 'FatJet_E'+LC],
-           'TLVars' :['FatJet_pt', 'FatJet_eta', 'FatJet_phi', 'FatJet_E']}
+ak8lvec = {'TLV'      :['FatJetTLV'+LC],
+           'TLVarsLC' :['FatJet_pt'+LC, 'FatJet_eta'+LC, 'FatJet_phi'+LC, 'FatJet_E'+LC],
+           'TLVars'   :['FatJet_pt', 'FatJet_eta', 'FatJet_phi', 'FatJet_E']}
 #
 genpvars   = ['GenPart_pt', 'GenPart_eta', 'GenPart_phi', 'GenPart_E', 'GenPart_status', 'GenPart_pdgID', 'GenPart_genPartIdxMother']
 genLevCuts = ['passGenCuts','isZToLL']
