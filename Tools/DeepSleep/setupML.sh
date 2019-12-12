@@ -15,3 +15,4 @@ voms-proxy-init --rfc --voms cms
 
 xrdcp -v root://cmseos.fnal.gov//store/user/bcaraway/skimAnaSamples/result_2016.root files/root/.
 xrdcp -v root://cmseos.fnal.gov//store/user/bcaraway/skimAnaSamples/result_2017.root files/root/.
+xrdcp -v root://cmseos.fnal.gov//store/user/bcaraway/skimAnaSamples/result_2018.root files/root/.

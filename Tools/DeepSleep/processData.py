@@ -11,6 +11,8 @@ import uproot
 import sys
 import os
 import math
+import pickle
+import operator
 import deepsleepcfg as cfg
 #
 import numpy as np
@@ -19,7 +21,7 @@ import pandas as pd
 from itertools import combinations
 ##
 
-def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir):
+def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6):
     files = files_
     for file_ in files:
         if not os.path.exists(cfg.file_path+file_+'.root') : continue
@@ -33,6 +35,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 #ak8vars = {}
                 #ak8lvec = {}
                 selvar  = {'nJets':t.array('nJets30_drLeptonCleaned')} ##### temporary, only train on 6 ak4 jet events
+                valRCvars = {}
                 valvars  = {}
                 label   = {}
                 def defineKeys(dict_,keys_):
@@ -62,13 +65,14 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                     extractLVecInfo(ak4lvec)
                 except:
                     defineKeys(ak4lvec,cfg.ak4lvec['TLVarsLC'])
+                    defineKeys(valRCvars, cfg.ak4lvec['TLVars'] + cfg.valRCvars)
                 defineKeys(ak4vars,cfg.ak4vars)
                 defineKeys(valvars,cfg.valvars)
                 defineKeys(label,  cfg.label)
 
                 # Cuts for initial round of training #
                 # Ak4 Jet Pt > 30, Ak4 Jet Eta < 2.6 #
-                # after which nJet = 6               #
+                # after which nJet cut, check cfg    #
                 ak4_cuts = ((ak4lvec['pt'] > 30) & (abs(ak4lvec['eta']) < 2.6) 
                              & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
                 #
@@ -78,20 +82,65 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                             dict_[key] = dict_[key][cuts_] ## bool switch might work better with try! statement
                         except:
                             pass
-                        dict_[key]  = dict_[key][(cuts_).sum() == 6]
+                        dict_[key]  = dict_[key][blOps_((cuts_).sum(), njets_)]
                 #
-                applyAK4Cuts(ak4vars, ak4_cuts)
-                applyAK4Cuts(ak4lvec, ak4_cuts)
-                applyAK4Cuts(valvars, ak4_cuts)
-                applyAK4Cuts(label,   ak4_cuts)
+                applyAK4Cuts(ak4vars,   ak4_cuts)
+                applyAK4Cuts(ak4lvec,   ak4_cuts)
+                applyAK4Cuts(valRCvars, ak4_cuts)
+                applyAK4Cuts(valvars,   ak4_cuts)
+                applyAK4Cuts(label,     ak4_cuts)
                 del ak4_cuts
+                ##
+                ##
+                def CleanRTCJetIdx(RC_, LC_, RC_j1, RC_j2, RC_j3):
+                    RC_j1j2j3 = []
+                    def tryLVar(i,j,k,idx_,rcvar_,lcvar_):
+                        RC_j1j2j3_ = []
+                        inter, rc_ind, lc_ind = np.intersect1d(rcvar_,lcvar_, return_indices=True)
+                        if len(rcvar_) != len(set(rcvar_)): 
+                            raise ValueError('At index {}'.format(idx_))
+                        rc_ind = np.sort(rc_ind)
+                        lc_ind = np.sort(lc_ind)
+                        for idx2_, (i_,j_,k_) in enumerate(zip(i, j, k)):
+                            string_ = ''
+                            if (len(np.where(rc_ind == i_)[0]) == 0 or len(np.where(rc_ind == j_)[0]) == 0 or len(np.where(rc_ind == k_)[0]) == 0):
+                                string_ = '000'
+                            else:
+                                string_ = str(np.where(rc_ind == i_)[0].item()+1)+str(np.where(rc_ind == j_)[0].item()+1)+str(np.where(rc_ind == k_)[0].item()+1)
+                            RC_j1j2j3_.append(string_)
+                            #
+                        return RC_j1j2j3_
+                            
+                    for idx1_, (j1_, j2_, j3_) in enumerate(zip(RC_j1, RC_j2, RC_j3)):
+                        var_ = ['pt', 'eta', 'phi', 'E']
+                        for v_ in var_: 
+                            try:
+                                RC_j1j2j3.append(tryLVar(j1_,j2_,j3_,idx1_,
+                                                         RC_[v_][idx1_],LC_[v_][idx1_]))
+                                break
+                            except ValueError:
+                                if (v_ == var_[-1]) :
+                                    print('Matched value in {0}. Worst case scinario (throwing away event at index {1})'.format(var_,idx1_))
+                                    RC_j1j2j3.append([])
+                                    continue
+                                    #raise ValueError('Matched value in {}. Worst case scinario (throw away event?)'.format(var_))
+                                else : continue
+                            #
+                        #
+                    #
+                    return RC_j1j2j3
+                #
+                valRCvars['ResolvedTopCandidate_j1j2j3Idx'] = CleanRTCJetIdx(
+                    valRCvars, ak4lvec, valRCvars['ResolvedTopCandidate_j1Idx'], valRCvars['ResolvedTopCandidate_j2Idx'], valRCvars['ResolvedTopCandidate_j3Idx'])
+                del valRCvars['ResolvedTopCandidate_j1Idx'], valRCvars['ResolvedTopCandidate_j2Idx'], valRCvars['ResolvedTopCandidate_j3Idx'], valRCvars['pt'], valRCvars['eta'], valRCvars['phi'], valRCvars['E']
+
                 # Add to dataframe #
                 def addToDF(dict_, df_):
                     for key in dict_.keys():
                         df_temp = pd.DataFrame.from_dict(dict_)
                         key_list = []
                         try:
-                            nVarPerKey = len(df_temp[key][0])
+                            nVarPerKey = maxJets_ #len(df_temp[key][0])
                             for i in range(0,nVarPerKey):
                                 key_list.append(key+'_'+str(i+1))
                             df_temp = pd.DataFrame(df_temp[key].values.tolist(), columns = key_list )
@@ -101,8 +150,8 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
 
                     return df_
                 #
-                dfs     = pd.DataFrame()
-                val_dfs = pd.DataFrame()
+                dfs       = pd.DataFrame()
+                val_dfs   = pd.DataFrame()
                 #
                 dfs     = addToDF(ak4vars, dfs)
                 del ak4vars
@@ -112,8 +161,6 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 del valvars
                 dfs     = addToDF(label,   dfs)
                 del label
-                dfs     = dfs.dropna()
-                val_dfs = val_dfs.dropna()
                 #reduce memory usage of DF by converting float64 to float32
                 def reduceDF(df_):
                     for key in df_.keys():
@@ -125,16 +172,19 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 val_dfs = reduceDF(val_dfs)
                 print(dfs)
                 print(val_dfs)
-                dfs.to_pickle(    outDir_+file_+'_'    +sample+'.pkl')
-                val_dfs.to_pickle(outDir_+file_+'_'+sample+'_val.pkl')
+                dfs.to_pickle(      outDir_+file_+'_'+sample+'.pkl')
+                val_dfs.to_pickle(  outDir_+file_+'_'+sample+'_val.pkl')
+                with open(outDir_+file_+'_'+sample+'_valRC.pkl', 'wb') as handle:
+                    pickle.dump(valRCvars, handle, protocol=pickle.HIGHEST_PROTOCOL)
                 del dfs
                 del val_dfs
+                del valRCvars
                 #
             #
         #
     #
 #   
-def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir):
+def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, njets_ = 6):
     files = files_
     for file_ in files:
         for sample in samples_:
@@ -144,8 +194,9 @@ def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
             #
             def computeCombs(df_):
                 # DO THE CALCS BY HAND SO THAT IS IS DONE IN PARALLEL
-                dr_combs   = list(combinations(range(1,6+1),2))
-                invTM_combs = list(combinations(range(1,6+1),3))                
+                dr_combs   = list(combinations(range(1,njets_+1),2))
+                invTM_combs = list(combinations(range(1,njets_+1),3))                
+               
                 for comb in dr_combs:
                     deta = df_['eta_'+str(comb[0])] - df_['eta_'+str(comb[1])]
                     dphi = df_['phi_'+str(comb[0])] - df_['phi_'+str(comb[1])]
@@ -172,6 +223,7 @@ def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
                 #
             #
             df = computeCombs(df)
+            print(df)
             df.to_pickle(outDir_+file_+'_'+sample+'.pkl')
             del df
             #
@@ -256,4 +308,4 @@ if __name__ == '__main__':
     getData()
     interpData()
     preProcess()
-    doOverSampling()
+    #doOverSampling()

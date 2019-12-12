@@ -2,11 +2,12 @@
 ## Config for ##
 ## Deep Sleep ##
 ################
-
+import operator
+#
 master_file_path  = './files/'
 # Overhead #
 file_path         = master_file_path+'root/'
-files             = ['result_2016','result_2017','result_2018_AB','result_2018_CD']
+files             = ['result_2016','result_2017','result_2018_AB','result_2018_CD', 'result_2018']
 tree_dir          = 'Training'
 MCsamples         = ['TTZ','DY','TTX','DiBoson','TTBarLep']
 skim_dir          = master_file_path+'skim/'
@@ -15,6 +16,8 @@ skim_kinemFit_dir = master_file_path+'skim_kinemFit/'
 kinemFitCfg    = (['result_2017'], 
                   ['TTZ','DY'], 
                   skim_kinemFit_dir)
+kinemFitCut    = (operator.ge, 5)
+kinemFitMaxJets= 14
 # Train Overhead #
 train_dir      = master_file_path+'train/'
 train_over_dir = master_file_path+'train_overSample/'
@@ -37,6 +40,7 @@ ak8lvec = {'TLV'      :['FatJetTLV'+LC],
 genpvars   = ['GenPart_pt', 'GenPart_eta', 'GenPart_phi', 'GenPart_E', 'GenPart_status', 'GenPart_pdgID', 'GenPart_genPartIdxMother']
 genLevCuts = ['passGenCuts','isZToLL']
 valvars    = ['nResolvedTops'+LC,'nMergedTops'+LC,'nBottoms'+LC,'nJets30'+LC,'bestRecoZPt','passElecZinvSelOnZMassPeak','passMuZinvSelOnZMassPeak','genWeight','weight']
+valRCvars  = ['ResolvedTopCandidate_discriminator', 'ResolvedTopCandidate_j1Idx', 'ResolvedTopCandidate_j2Idx', 'ResolvedTopCandidate_j3Idx']
 label      = ['isTAllHad']
 # Derived Varialbes #
 ak4comb = 'true'
