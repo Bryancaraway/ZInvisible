@@ -104,9 +104,9 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                         for idx2_, (i_,j_,k_) in enumerate(zip(i, j, k)):
                             string_ = ''
                             if (len(np.where(rc_ind == i_)[0]) == 0 or len(np.where(rc_ind == j_)[0]) == 0 or len(np.where(rc_ind == k_)[0]) == 0):
-                                string_ = '000'
+                                string_ = '0.0.0'
                             else:
-                                string_ = str(np.where(rc_ind == i_)[0].item()+1)+str(np.where(rc_ind == j_)[0].item()+1)+str(np.where(rc_ind == k_)[0].item()+1)
+                                string_ = str(np.where(rc_ind == i_)[0].item()+1)+'.'+str(np.where(rc_ind == j_)[0].item()+1)+'.'+str(np.where(rc_ind == k_)[0].item()+1)
                             RC_j1j2j3_.append(string_)
                             #
                         return RC_j1j2j3_
@@ -203,13 +203,13 @@ def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
                     dphi = pd.concat([dphi.loc[dphi > math.pi] - 2*math.pi, 
                                       dphi.loc[dphi <= -math.pi] + 2*math.pi, 
                                       dphi.loc[(dphi <= math.pi) & (dphi > -math.pi)]]).sort_index()
-                    df_['dR_'+str(comb[0])+str(comb[1])] = np.sqrt(np.power(deta,2)+np.power(dphi,2))
+                    df_['dR_'+str(comb[0])+'.'+str(comb[1])] = np.sqrt(np.power(deta,2)+np.power(dphi,2))
                     del deta, dphi
                     #
                     pt1pt2   = 2 * df_['pt_'+str(comb[0])] * df_['pt_'+str(comb[1])]  
                     cosheta  = np.cosh(df_['eta_'+str(comb[0])] - df_['eta_'+str(comb[1])])
                     cosphi   = np.cos( df_['phi_'+str(comb[0])] - df_['phi_'+str(comb[1])])
-                    df['InvWM_'+str(comb[0])+str(comb[1])] = np.sqrt(pt1pt2 * (cosheta - cosphi))
+                    df['InvWM_'+str(comb[0])+'.'+str(comb[1])] = np.sqrt(pt1pt2 * (cosheta - cosphi))
                 #
                 for comb in invTM_combs:
                     E_sum2  = np.power(df_['E_'+str(comb[0])] + df_['E_'+str(comb[1])] + df_['E_'+str(comb[2])],2)
@@ -218,7 +218,7 @@ def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
                     p_zmag2 = np.power((df_['pt_'+str(comb[0])]*np.sinh(df_['eta_'+str(comb[0])]))+(df_['pt_'+str(comb[1])]*np.sinh(df_['eta_'+str(comb[1])]))+(df_['pt_'+str(comb[2])]*np.sinh(df_['eta_'+str(comb[2])])),2)
                     p_mag2 = p_xmag2 + p_ymag2 + p_zmag2
                     del  p_xmag2,p_ymag2,p_zmag2
-                    df_['InvTM_'+str(comb[0])+str(comb[1])+str(comb[2])] = np.sqrt(E_sum2 - p_mag2)
+                    df_['InvTM_'+str(comb[0])+'.'+str(comb[1])+'.'+str(comb[2])] = np.sqrt(E_sum2 - p_mag2)
                 return df_
                 #
             #

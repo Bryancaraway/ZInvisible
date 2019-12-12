@@ -35,22 +35,19 @@ def computeChi2(files_, samples_, outDir_, njets_):
             invTM_combs = list(combinations(range(1,njets_+1),3))
             for i, combi in enumerate(invTM_combs):
                 #
-                if i == 5 : exit()
-                #
-                combt1 = str(combi[0])+str(combi[1])+str(combi[2])
+                combt1 = str(combi[0])+'.'+str(combi[1])+'.'+str(combi[2])
                 for combj in invTM_combs[i+1:]:
                     
-                    combt2 = str(combj[0])+str(combj[1])+str(combj[2])
-                    for _ in combt1: combt2=combt2.replace(_,"")
-                    # CODE BREAKS HERE
+                    combt2 = str(combj[0])+'.'+str(combj[1])+'.'+str(combj[2])
+                    # >= 2 --> only have one repetitous jet in calculation 
+                    if (len(combi+combj)-len(set(combi+combj)) >= 1): continue 
                     print(combt1,combt2)
-                    if (len(combt2.strip(combt1)) != 3) : continue
-                    W1_combs = list(combinations(combt1,2))
-                    W2_combs = list(combinations(combt2,2))
+                    W1_combs = list(combinations(combi,2))
+                    W2_combs = list(combinations(combj,2))
                     for combwi  in W1_combs:
-                        combw1 = str(combwi[0])+str(combwi[1])
+                        combw1 = str(combwi[0])+'.'+str(combwi[1])
                         for combwj in W2_combs:
-                            combw2 = str(combwj[0])+str(combwj[1])
+                            combw2 = str(combwj[0])+'.'+ str(combwj[1])
                             #
                             massT1 =  df['InvTM_'+combt1] 
                             massT2 =  df['InvTM_'+combt2]
@@ -68,13 +65,14 @@ def computeChi2(files_, samples_, outDir_, njets_):
             #
             df['Chi2']      = chi2_df.min(axis=1)
             df['Chi2_Comb'] = chi2_df.idxmin(axis=1)
+            print(df['Chi2'])
             df.to_pickle(outDir_+file_+'_'+sample+'.pkl')
             del df, chi2_df
             #
         #
     #
 #
-def evaluateChi2(files_, samples_, outDir_):
+def evaluateScore(files_, samples_, outDir_):
     import matplotlib.pyplot as plt
     df = {}
     files = files_
@@ -91,6 +89,65 @@ def evaluateChi2(files_, samples_, outDir_):
             #
         #
     #
+    def calcQscore(df_, overlap_ = cfg.kinemFitoverlap):
+        for key_ in df.keys():
+            Q_dict = {'Q':[],'Q_comb':[]}
+            #
+            rtopd_  = df_[key_]['valRC']['ResolvedTopCandidate_discriminator']
+            rtidx_  = df_[key_]['valRC']['ResolvedTopCandidate_j1j2j3Idx']
+            #
+            for idx_, (rtopd, rtidx) in enumerate(zip(rtopd_,rtidx_)):
+                q_score = []
+                q_index = []
+                tcombs_ = list(combinations(rtidx,2))
+                #print(rtidx)
+                for i_ in tcombs_:
+                    if ('0.0.0' in i_): continue
+                    # Dont consider combos with repeating jets
+                    #print(i_[0], i_[1])
+                    full_comb = i_[0].split('.')+i_[1].split('.')
+                    ####
+                    if ( (len(full_comb) - len(set(full_comb))) > overlap_) : 
+                        continue
+                    #### Dont count if overlap is from likely b
+                    if ( ((len(full_comb) - len(set(full_comb))) == overlap_) and (overlap_ > 0) ) : 
+                        jetid_ = np.array(full_comb[0:3])[np.in1d(full_comb[0:3],full_comb[3:])].item()
+                        bscore_ = df_[key_]['df']['btagDeepB_'+str(jetid_)].iloc[idx_]
+                        if ( bscore_ > .90) :
+                            continue
+                    #
+                    #print(rtopd[np.in1d(rtidx,i_[0])].item())
+                    #print(rtopd[np.in1d(rtidx,i_[1])].item())
+                    #temp_df[i_[0]+'_'+i_[1]] = sum(rtopd[np.in1d(rtidx,i_[0])], rtopd[np.in1d(rtidx,i_[1])])
+                    q_score.append(rtopd[np.in1d(rtidx,i_[0])].item() + rtopd[np.in1d(rtidx,i_[1])].item())
+                    q_index.append(i_[0]+'_'+i_[1])
+                    #
+                #  print(temp_df)
+                if (len(q_score) > 0) :
+                    #print(q_score)
+                    #print(q_index)
+                    #print(max(q_score))
+                    #print(np.array(q_index)[np.in1d(q_score,max(q_score))])
+                    Q_dict['Q'].append(     max(q_score))
+                    if (len(np.array(q_index)[np.in1d(q_score,max(q_score))]) == 1 ) :
+                        Q_dict['Q_comb'].append(np.array(q_index)[np.in1d(q_score,max(q_score))].item())
+                    else:
+                        Q_dict['Q_comb'].append(np.array(q_index)[np.in1d(q_score,max(q_score))][0].item())
+                        #print(np.array(q_index)[np.in1d(q_score,max(q_score))])
+                        #print(max(q_score))
+                else:
+                    Q_dict['Q'].append(0)
+                    Q_dict['Q_comb'].append('0.0.0_0.0.0')
+                #
+                del q_score, q_index
+                #
+            #
+            df[key_]['df']['Q']      = Q_dict['Q']
+            df[key_]['df']['Q_comb'] = Q_dict['Q_comb']
+            #
+        #
+    #
+            
     def getCombRTDisc(df_):
         for key_ in df_.keys():
             top1_  = []
@@ -120,30 +177,26 @@ def evaluateChi2(files_, samples_, outDir_):
                         	    
             df_[key_]['df']['Top1_disc'] = top1_
             df_[key_]['df']['Top2_disc'] = top2_
-    #
-    getCombRTDisc(df)
-    for key in df.keys():
-        cut    = (df[key]['val']['bestRecoZPt'] > 300)
-        print(key, len(df[key]['df'].dropna()), len(df[key]['df']['Top1_disc'].dropna()), len(df[key]['df']['Top2_disc'].dropna()))
-        print(key, len(df[key]['df'][cut].dropna()), len(df[key]['df']['Top1_disc'][cut].dropna()), len(df[key]['df']['Top2_disc'][cut].dropna()))
-    exit()
-    #
-    def plotChi2(df_,cut_):
+    #####################
+    #getCombRTDisc(df)
+    calcQscore(df)
+    #####################
+    def plotScore(df_, cut_, score_, range_, xlabel_, norm_=True):
         plt.figure()
         for key in df_.keys():
             cut    = (df_[key]['val']['bestRecoZPt'] > cut_)
             weight = df_[key]['val']['weight'][cut] * np.sign(df_[key]['val']['genWeight'][cut])
-            plt.hist(x = df_[key]['df']['Chi2'][cut], bins=20, 
-                     range=(0,20), 
+            plt.hist(x = df_[key]['df'][score_][cut], bins=20, 
+                     range=range_, 
                      histtype= 'step', 
-                     weights= weight, density=True, label= key)
+                     weights= weight, density=norm_, label= key)
             #
         #
         plt.title('Z pt > '+str(cut_))
         plt.grid(True)
         #plt.xscale('log')
         #plt.yscale('log')
-        plt.xlabel('${\chi^2}$')
+        plt.xlabel(xlabel_)
         plt.legend()
         plt.show()
         plt.close
@@ -162,11 +215,16 @@ def evaluateChi2(files_, samples_, outDir_):
         plt.close()
         #
     #
-    plotChi2(df, 0)
-    plotChi2(df, 100)
-    plotChi2(df, 200)
-    plotChi2(df, 300)
-    plotChi2Comb(df)
+    Q_args = ('Q', (0,2), 'Q_score', False)
+    plotScore(df, 0,   *Q_args)
+    plotScore(df, 100, *Q_args)
+    plotScore(df, 200, *Q_args)
+    plotScore(df, 300, *Q_args)
+    #plotScore(df, 0,  'Chi2', (0,20), '${\chi^2}$)
+    #plotScore(df, 100,'Chi2', (0,20), '${\chi^2}$)
+    #plotScore(df, 200,'Chi2', (0,20), '${\chi^2}$)
+    #plotScore(df, 300,'Chi2', (0,20), '${\chi^2}$)
+    #plotChi2Comb(df)
     #
 #
 if __name__ == '__main__':
@@ -175,5 +233,5 @@ if __name__ == '__main__':
     #prD.getData(   *files_samples_outDir, *cfg.kinemFitCut, cfg.kinemFitMaxJets)
     #prD.interpData(*files_samples_outDir, cfg.kinemFitMaxJets)
     #
-    computeChi2(   *files_samples_outDir, cfg.kinemFitMaxJets)
-    #evaluateChi2(  *files_samples_outDir)
+    #computeChi2(   *files_samples_outDir, cfg.kinemFitMaxJets)
+    evaluateScore(  *files_samples_outDir)
