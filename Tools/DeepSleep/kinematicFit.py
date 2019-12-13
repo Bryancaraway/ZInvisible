@@ -181,16 +181,22 @@ def evaluateScore(files_, samples_, outDir_):
     #getCombRTDisc(df)
     calcQscore(df)
     #####################
-    def plotScore(df_, cut_, score_, range_, xlabel_, norm_=True):
+    def plotScore(df_, cut_, score_, range_, xlabel_, int_range = None, norm_=True, n_bins=20):
         plt.figure()
         for key in df_.keys():
             cut    = (df_[key]['val']['bestRecoZPt'] > cut_)
             weight = df_[key]['val']['weight'][cut] * np.sign(df_[key]['val']['genWeight'][cut])
-            plt.hist(x = df_[key]['df'][score_][cut], bins=20, 
-                     range=range_, 
-                     histtype= 'step', 
-                     weights= weight, density=norm_, label= key)
+            n_, bins_, _ = plt.hist(x = df_[key]['df'][score_][cut], bins=n_bins, 
+                                    range=range_, 
+                                    histtype= 'step', 
+                                    weights= weight, density=norm_, label= key)
             #
+            #Calculate integral in interesting region
+            if (int_range) :
+                integral = sum(n_[int(int_range[0]/(range_[1]/n_bins)):int(int_range[1]/(range_[1]/n_bins))])
+                print('{0} with Zpt cut > {1}: {2} score integral between {3} = {4:4.3f}'.format(key, cut_, score_, int_range, integral))
+            #
+        print()
         #
         plt.title('Z pt > '+str(cut_))
         plt.grid(True)
@@ -198,7 +204,7 @@ def evaluateScore(files_, samples_, outDir_):
         #plt.yscale('log')
         plt.xlabel(xlabel_)
         plt.legend()
-        plt.show()
+        #plt.show()
         plt.close
         #
     #        
@@ -215,12 +221,14 @@ def evaluateScore(files_, samples_, outDir_):
         plt.close()
         #
     #
-    Q_args = ('Q', (0,2), 'Q_score', False)
-    plotScore(df, 0,   *Q_args)
-    plotScore(df, 100, *Q_args)
-    plotScore(df, 200, *Q_args)
-    plotScore(df, 300, *Q_args)
-    #plotScore(df, 0,  'Chi2', (0,20), '${\chi^2}$)
+    for i_ in range(15,19):
+        x_lower = i_/10
+        Q_args = ('Q', (0,2), 'Q_score', (x_lower,2), False)
+        #plotScore(df, 0,   *Q_args)
+        #plotScore(df, 100, *Q_args)
+        #plotScore(df, 200, *Q_args)
+        plotScore(df, 300, *Q_args)
+    #plotScore(df, 0,  'Chi2', (0,20), '${\chi^2}$)\
     #plotScore(df, 100,'Chi2', (0,20), '${\chi^2}$)
     #plotScore(df, 200,'Chi2', (0,20), '${\chi^2}$)
     #plotScore(df, 300,'Chi2', (0,20), '${\chi^2}$)
@@ -230,8 +238,8 @@ def evaluateScore(files_, samples_, outDir_):
 if __name__ == '__main__':
     files_samples_outDir = cfg.kinemFitCfg
     #
-    #prD.getData(   *files_samples_outDir, *cfg.kinemFitCut, cfg.kinemFitMaxJets)
+    prD.getData(   *files_samples_outDir, *cfg.kinemFitCut, cfg.kinemFitMaxJets)
     #prD.interpData(*files_samples_outDir, cfg.kinemFitMaxJets)
     #
     #computeChi2(   *files_samples_outDir, cfg.kinemFitMaxJets)
-    evaluateScore(  *files_samples_outDir)
+    #evaluateScore(  *files_samples_outDir)
