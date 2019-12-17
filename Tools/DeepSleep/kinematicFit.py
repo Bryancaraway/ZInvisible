@@ -1,6 +1,6 @@
 ########################
 ### Process data     ###
-### for training     ###
+# for score computation#
 ########################
 ### written by:      ###
 ### Bryan Caraway    ###
@@ -243,3 +243,4 @@ if __name__ == '__main__':
     #
     #computeChi2(   *files_samples_outDir, cfg.kinemFitMaxJets)
     #evaluateScore(  *files_samples_outDir)
+

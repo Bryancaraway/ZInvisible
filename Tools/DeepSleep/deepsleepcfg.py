@@ -48,7 +48,7 @@ ak4comb = 'true'
 ak8comb = 'true'
 # Model Hyperparams #
 epochs        = 300
-alpha         = 0.0001
+alpha         = 0.001
 batch_size    = int(32768/4)
 hiddenl       = 3 
 NNoutputDir   = './NN_ouput/'
@@ -58,3 +58,15 @@ NNmodel1Name  = 'sixth_model.h5'
 #NNmodel1Name  = 'fifth_model.h5'
 useWeights    = True
 plotHist      = True
+
+##### CNN backend prep #####
+skim_cnn_dir  = master_file_path+'skim_cnn/'
+cnn_data_dir  = (master_file_path+'train_cnn/', master_file_path+'test_cnn/', master_file_path+'val_cnn/')
+cnnCut        = (operator.ge, 5)
+cnnMaxJets    = 11
+cnnProcessCfg = (files, MCsamples, skim_cnn_dir)
+cnn_vars = ['btagCSVV2','btagDeepB', 'qgl', 'pt', 'eta', 'phi', 'E']
+#
+cnn_alpha = 0.001
+cnn_batch_size = 100000
+cnn_epochs = 30

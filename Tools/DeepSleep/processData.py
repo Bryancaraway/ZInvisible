@@ -82,7 +82,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                             dict_[key] = dict_[key][cuts_] ## bool switch might work better with try! statement
                         except:
                             pass
-                        dict_[key]  = dict_[key][blOps_((cuts_).sum(), njets_)]
+                        dict_[key]  = dict_[key][(blOps_((cuts_).sum(), njets_)) & (cuts_.sum() <= maxJets_)]
                 #
                 applyAK4Cuts(ak4vars,   ak4_cuts)
                 applyAK4Cuts(ak4lvec,   ak4_cuts)
@@ -230,7 +230,8 @@ def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
         #
     #
 #
-def preProcess(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir):
+def preProcess(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir,
+               trainDir_ = cfg.train_dir, testDir_ = cfg.test_dir, valDir_ = cfg.val_dir):
     df = pd.DataFrame()
     files = files_
     for file_ in files:
@@ -266,15 +267,16 @@ def preProcess(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
     #
     testX = resetIndex(testX)
     testY = resetIndex(testY)
+
     ### Store ###
-    trainX.to_pickle(cfg.train_dir+'X.pkl')
-    trainY.to_pickle(cfg.train_dir+'Y.pkl')
+    trainX.to_pickle(trainDir_+'X.pkl')
+    trainY.to_pickle(trainDir_+'Y.pkl')
     #
-    valX.to_pickle(cfg.val_dir+'X.pkl')
-    valY.to_pickle(cfg.val_dir+'Y.pkl')
+    valX.to_pickle(valDir_+'X.pkl')
+    valY.to_pickle(valDir_+'Y.pkl')
     #
-    testX.to_pickle(cfg.test_dir+'X.pkl')
-    testY.to_pickle(cfg.test_dir+'Y.pkl')
+    testX.to_pickle(testDir_+'X.pkl')
+    testY.to_pickle(testDir_+'Y.pkl')
     #
     del testX, testY, trainX, trainY, valX, valY
 #
@@ -307,5 +309,5 @@ def resetIndex(df_):
 if __name__ == '__main__':
     getData()
     interpData()
-    preProcess()
+    #preProcess()
     #doOverSampling()
