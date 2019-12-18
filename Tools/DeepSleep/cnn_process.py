@@ -120,9 +120,9 @@ def reshapeInput(trainDir_, testDir_, valDir_, maxJets_):
 if __name__ == '__main__':
     files_samples_outDir = cfg.cnnProcessCfg
     #    
-    #prD.getData(   *files_samples_outDir, *cfg.cnnCut, cfg.cnnMaxJets, ZptCut_ = 200)
+    prD.getData(   *files_samples_outDir, *cfg.cnnCut, cfg.cnnMaxJets, ZptCut_ = 200)
     ##prD.interpData(*files_samples_outDir, cfg.cnnMaxJets)
-    #featureEng(*files_samples_outDir)
+    featureEng(*files_samples_outDir)
     prD.preProcess(*files_samples_outDir, *cfg.cnn_data_dir)
     #
     reshapeInput(*cfg.cnn_data_dir, cfg.cnnMaxJets)

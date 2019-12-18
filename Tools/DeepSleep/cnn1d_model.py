@@ -210,6 +210,6 @@ def plot_roc(fpr_,tpr_):
 
 
 if __name__ == '__main__':
-    #doTraining(      *cfg.cnn_data_dir)
+    doTraining(      *cfg.cnn_data_dir)
     validateTraining(*cfg.cnn_data_dir)
     
