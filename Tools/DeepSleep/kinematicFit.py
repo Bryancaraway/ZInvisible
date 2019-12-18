@@ -73,7 +73,7 @@ def computeChi2(files_, samples_, outDir_, njets_):
     #
 #
 def evaluateScore(files_, samples_, outDir_):
-    import matplotlib.pyplot as plt
+
     df = {}
     files = files_
     for file_ in files:
@@ -181,6 +181,7 @@ def evaluateScore(files_, samples_, outDir_):
     #getCombRTDisc(df)
     calcQscore(df)
     #####################
+    import matplotlib.pyplot as plt
     def plotScore(df_, cut_, score_, range_, xlabel_, int_range = None, norm_=True, n_bins=20):
         plt.figure()
         for key in df_.keys():

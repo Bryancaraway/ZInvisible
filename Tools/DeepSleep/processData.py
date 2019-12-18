@@ -21,7 +21,7 @@ import pandas as pd
 from itertools import combinations
 ##
 
-def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6):
+def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6 , ZptCut_ = 0):
     files = files_
     for file_ in files:
         if not os.path.exists(cfg.file_path+file_+'.root') : continue
@@ -75,21 +75,22 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 # after which nJet cut, check cfg    #
                 ak4_cuts = ((ak4lvec['pt'] > 30) & (abs(ak4lvec['eta']) < 2.6) 
                              & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
+                zptcut = (valvars['bestRecoZPt'] > ZptCut_)
                 #
-                def applyAK4Cuts(dict_, cuts_):
+                def applyAK4Cuts(dict_, cuts_, zptcut_):
                     for key in dict_.keys():
                         try : 
                             dict_[key] = dict_[key][cuts_] ## bool switch might work better with try! statement
                         except:
                             pass
-                        dict_[key]  = dict_[key][(blOps_((cuts_).sum(), njets_)) & (cuts_.sum() <= maxJets_)]
+                        dict_[key]  = dict_[key][(blOps_((cuts_).sum(), njets_)) & (cuts_.sum() <= maxJets_) & (zptcut_)]
                 #
-                applyAK4Cuts(ak4vars,   ak4_cuts)
-                applyAK4Cuts(ak4lvec,   ak4_cuts)
-                applyAK4Cuts(valRCvars, ak4_cuts)
-                applyAK4Cuts(valvars,   ak4_cuts)
-                applyAK4Cuts(label,     ak4_cuts)
-                del ak4_cuts
+                applyAK4Cuts(ak4vars,   ak4_cuts, zptcut)
+                applyAK4Cuts(ak4lvec,   ak4_cuts, zptcut)
+                applyAK4Cuts(valRCvars, ak4_cuts, zptcut)
+                applyAK4Cuts(valvars,   ak4_cuts, zptcut)
+                applyAK4Cuts(label,     ak4_cuts, zptcut)
+                del ak4_cuts, zptcut
                 ##
                 ##
                 def CleanRTCJetIdx(RC_, LC_, RC_j1, RC_j2, RC_j3):
@@ -232,12 +233,21 @@ def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
 #
 def preProcess(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir,
                trainDir_ = cfg.train_dir, testDir_ = cfg.test_dir, valDir_ = cfg.val_dir):
-    df = pd.DataFrame()
+    df     = pd.DataFrame()
+    df_val = pd.DataFrame()
+    df_aux = pd.DataFrame()
     files = files_
     for file_ in files:
         for sample in samples_:
             if not os.path.exists(outDir_+file_+'_'+sample+'.pkl') : continue
-            df = pd.concat([df,pd.read_pickle(outDir_+file_+'_'+sample+'.pkl')], ignore_index = True)
+            df     = pd.concat([df,pd.read_pickle(outDir_+file_+'_'+sample+'.pkl')],     ignore_index = True, sort=False)
+            df_val = pd.concat([df_val,pd.read_pickle(outDir_+file_+'_'+sample+'_val.pkl')], ignore_index = True, sort=False)
+            #
+            temp_ = pd.concat([df, df_val], axis=1, sort = False)
+            temp_['Sample'] = sample
+            temp_['Year']   = file_.strip('result_')
+            df_aux          = pd.concat([df_aux,temp_], ignore_index = True, sort=False)
+            
     #
     ##### Seperate DF diffinitively #######
     trainX = df.sample(frac=0.70,random_state=1)      ## make sure these lengths make sense 
@@ -250,6 +260,16 @@ def preProcess(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
     print(('Total:\t{}\n').format(len(trainX)+len(valX)+len(testX)))
     del df
     #
+    df_val = df_val.drop(columns=['genWeight' ,'weight']).copy()
+    #
+    trainX_val = df_val.iloc[trainX.index]
+    testX_val = df_val.iloc[testX.index]
+    valX_val = df_val.iloc[valX.index]
+    #
+    train_aux = df_aux.iloc[trainX.index]
+    test_aux = df_aux.iloc[testX.index]
+    val_aux = df_aux.iloc[valX.index]
+    #
     #### Get Labels for val,train,test ####
     for label in cfg.label:
         trainY = trainX[label].copy()
@@ -260,23 +280,35 @@ def preProcess(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
         del testX[label]
     #
     trainX = resetIndex(trainX)
+    trainX_val = resetIndex(trainX_val)
     trainY = resetIndex(trainY)
+    train_aux = resetIndex(train_aux)
     #
     valX = resetIndex(valX)
+    valX_val = resetIndex(valX_val)
     valY = resetIndex(valY)
+    val_aux = resetIndex(val_aux)
     #
     testX = resetIndex(testX)
+    testX_val = resetIndex(testX_val)
     testY = resetIndex(testY)
-
+    test_aux = resetIndex(test_aux)
+    print(test_aux)
     ### Store ###
     trainX.to_pickle(trainDir_+'X.pkl')
+    trainX_val.to_pickle(trainDir_+'X_val.pkl')
     trainY.to_pickle(trainDir_+'Y.pkl')
+    train_aux.to_pickle(trainDir_+'_aux.pkl')
     #
     valX.to_pickle(valDir_+'X.pkl')
+    valX_val.to_pickle(valDir_+'X_val.pkl')
     valY.to_pickle(valDir_+'Y.pkl')
+    val_aux.to_pickle(valDir_+'_aux.pkl')
     #
     testX.to_pickle(testDir_+'X.pkl')
+    testX_val.to_pickle(testDir_+'X_val.pkl')
     testY.to_pickle(testDir_+'Y.pkl')
+    test_aux.to_pickle(testDir_+'_aux.pkl')
     #
     del testX, testY, trainX, trainY, valX, valY
 #
