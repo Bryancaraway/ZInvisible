@@ -17,7 +17,7 @@ kinemFitCfg    = (['result_2017'],
                   ['TTZ','DY'], 
                   skim_kinemFit_dir)
 kinemFitCut    = (operator.ge, 5)
-kinemFitoverlap= 0
+kinemFitoverlap= 1
 kinemFitMaxJets= 14
 # Train Overhead #
 train_dir      = master_file_path+'train/'
