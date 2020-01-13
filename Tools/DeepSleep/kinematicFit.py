@@ -72,8 +72,7 @@ def computeChi2(files_, samples_, outDir_, njets_):
         #
     #
 #
-def evaluateScore(files_, samples_, outDir_):
-
+def retrieveData(files_, samples_, outDir_):
     df = {}
     files = files_
     for file_ in files:
@@ -88,6 +87,12 @@ def evaluateScore(files_, samples_, outDir_):
             df[sample+file_.strip('result')] = {'df':df_, 'val':val_df_, 'valRC':valRCdict_}
             #
         #
+    #
+    return df
+#
+def evaluateScore(files_, samples_, outDir_):
+    
+    df = retrieveData(files_, samples_, outDir_)
     #
     def calcQscore(df_, overlap_ = cfg.kinemFitoverlap):
         for key_ in df.keys():
@@ -186,7 +191,8 @@ def evaluateScore(files_, samples_, outDir_):
             df_[key_]['df']['TopMinEta'] = np.amin(TopEta_, axis=1)
             df_[key_]['df']['TopMaxDiffM'] = np.amax(TopDiffM_, axis=1)
             df_[key_]['df']['TopMinDiffM'] = np.amin(TopDiffM_, axis=1)
-            df_[key_]['df']['Top_dR'] = top1_.delta_r(top2_)
+            df_[key_]['df']['tt_dR'] = top1_.delta_r(top2_)
+            df_[key_]['df']['tt_Pt']   = (top1_ + top2_).pt
         #
     #
     def getCombRTDisc(df_):
@@ -221,8 +227,20 @@ def evaluateScore(files_, samples_, outDir_):
     #getCombRTDisc(df)
     calcQscore(df)
     calcTopTLV(df)
-    #####################
+    #
+    for key_ in df.keys():
+        sample_, year_ = key_.split('_')
+        df[key_]['df'].to_pickle(outDir_+'result_'+year_+'_'+sample_+'.pkl')
+        df[key_]['val'].to_pickle(outDir_+'result_'+year_+'_'+sample_+'_val.pkl')
+        with open(outDir_+'result_'+year_+'_'+sample_+'_valRC.pkl', 'wb') as handle:
+            pickle.dump(df[key_]['valRC'], handle,  protocol=pickle.HIGHEST_PROTOCOL)
+    #
+#
+def AnalyzeScore(files_, samples_, outDir_):
     import matplotlib.pyplot as plt
+    import matplotlib        as mpl
+    df = retrieveData(files_, samples_, outDir_)    
+
     def plotScore(df_, cut_, score_, range_, xlabel_, int_range = None, norm_=True, n_bins=20):
         plt.figure()
         for key_ in df_.keys():
@@ -250,50 +268,150 @@ def evaluateScore(files_, samples_, outDir_):
         plt.close
         #
     #        
-    def QScoreVsKinem(df_, cut_, kinem_, range_, xlabel_, n_bins=20, norm_=True):
+    def QScoreVsKinem(df_, cut_, kinem_, range_, xlabel_, n_bins=20, norm_=True, add_cuts_= None):
         cut_range = np.linspace(cut_,2,5, endpoint=False)
-        fig, axs = plt.subplots(1,len(cut_range), figsize=(16,10)) 
-        fig.subplots_adjust(left=0.03, right=0.97, bottom=0.05, top=0.95, hspace=0.4, wspace=0.35)
-        for i_,ax in zip(cut_range,axs):
-            for key_ in df_.keys():
+        fig, axs = plt.subplots(3,2, figsize=(16,10)) 
+        fig.subplots_adjust(left=0.03, right=0.97, bottom=0.05, top=0.92, hspace=0.4, wspace=0.25)
+        hist_integral = [None,None]
+        for i_,ax in zip(cut_range,axs.flat):
+            for idx_, key_ in enumerate(df_.keys()):
                 if (kinem_ in df_[key_]['df'].keys()):
                     kinem     = df_[key_]['df'][kinem_]
                 elif (kinem_ in df_[key_]['val'].keys()):
                     kinem     = df_[key_]['val'][kinem_]
                 elif (kinem_ in df_[key_]['valRC'].keys()):
                     kinem     = df_[key_]['valRC'][kinem_]
-            #
-         
+                #
                 cut = (df_[key_]['df']['Q'] > i_)
+                if (add_cuts_):
+                    base_cuts = ((df_[key_]['val']['nBottoms'] > 0)    & 
+                                 (df_[key_]['df']['TopMinPt'] > 50)    & 
+                                 (df_[key_]['df']['TopMaxEta'] <= 2.4) &
+                                 (df_[key_]['df']['TopMaxDiffM'] <= 55))
+                    cut = (cut) & (base_cuts)
+                #
                 weight = df_[key_]['val']['weight'][cut] * np.sign(df_[key_]['val']['genWeight'][cut])
                 alpha_  = 1.0
-                ax.hist(x = kinem[cut], bins=n_bins, 
-                        range=range_, 
-                        histtype= 'step',
-                        alpha   = alpha_,
-                        weights= weight, density=norm_, label= key_+' (Q > '+str(i_)+')')
+                n_, bins_, _= ax.hist(x = kinem[cut], bins=n_bins, 
+                                      range=range_, 
+                                      histtype= 'step',
+                                      alpha   = alpha_,
+                                      weights= weight, density=norm_, label= key_)
                 alpha_ -= .1
-                ax.legend()
+                handles, labels = ax.get_legend_handles_labels()
+                #### Calculate integral for both plots and add them to legend label string
+                hist_integral[idx_]  = sum(n_[:])
+                for j_, (l, h) in enumerate(zip(labels, hist_integral)):
+                    labels[j_] = l + '({0:3.2f})'.format(h)
+                ax.set_title(' (Q > '+str(i_)+')')
+                ax.legend(handles, labels)
                 ax.grid(True)
                 #
             #
-        fig.suptitle(xlabel_)
-        plt.show()
-        plt.close()
+        fig_title = xlabel_+'(Overlap='+str(cfg.kinemFitoverlap)+')'
+        if (add_cuts_):
+            fig_title += '[base_cuts]'
+        fig.suptitle(fig_title)
         #
-    #       
+        #       
+    def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
+        #
+        from matplotlib import rc
+        rc("legend", fontsize=10, scatterpoints=1, numpoints=1, borderpad=0.3, labelspacing=0.2,
+           handlelength=0.7, handletextpad=0.25, handleheight=0.7, columnspacing=0.6)
+        rc("savefig", dpi=250)
+        rc("figure", figsize=(3.375, 3.375*(6./8.)), dpi=250)
+        #rc("text", usetex=True)
+        #rc("text.latex", preamble=r"\usepackage{amsmath}")
+        #rc('font',**{'family':'serif','serif':['Times']})
+        #rc("hatch", linewidth=0.0)
+        #
+        h        = [None,None] 
+        w        = [None,None]
+        integral = [None,None]
+        labels   = [None,None]
+        #
+        bins = np.arange(range_[0],range_[-1]+(int((range_[-1]+1)/n_bins)) , int((range_[-1]+1)/n_bins))
+        #
+        for i_, key_ in enumerate(df.keys()):
+            if (kinem_ in df_[key_]['df'].keys()):
+                kinem     = df_[key_]['df'][kinem_]
+            elif (kinem_ in df_[key_]['val'].keys()):
+                kinem     = df_[key_]['val'][kinem_]
+            elif (kinem_ in df_[key_]['valRC'].keys()):
+                kinem     = df_[key_]['valRC'][kinem_]
+            ###########
+            base_cuts = ((df_[key_]['val']['nBottoms'] > 0)     & 
+                         (df_[key_]['df']['TopMinPt'] > 50)     & 
+                         (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
+                         (df_[key_]['df']['TopMaxDiffM'] <= 55) &
+                         (df_[key_]['df']['Q'] > 1.7))
+                                                                   
+            ###########
+            h[i_] = np.clip(kinem[base_cuts], bins[0], bins[-1])
+            w[i_] = df_[key_]['val']['weight'][base_cuts] * np.sign(df_[key_]['val']['genWeight'][base_cuts]) * (137/41.9)
+            n_, bins_, _ = plt.hist(h[i_], weights=w[i_])
+            integral[i_] = sum(n_[:])
+            la_label = ''
+            if ('TTZ' in key_):
+                la_label = r't$\mathregular{\bar{t}}$Z'
+            elif ('DY' in key_):
+                la_label = 'Drell-Yan'
+            labels[i_]   = la_label + ' ({0:3.2f})'.format(integral[i_])
+            plt.close('all')
+        #
+        fig, ax = plt.subplots()
+        #fig.subplots_adjust(left=0.03, right=0.97, bottom=0.05, top=0.92)
+        n_, bins_, patches_ = ax.hist(h, 
+                                      bins=bins, stacked=True,# fill=True,
+                                      #range=range_,
+                                      histtype='stepfilled',
+                                      #linewidth=0,
+                                      weights= w,
+                                      label= labels)
+        #
+        #ax.grid(True)
+        from matplotlib.ticker import AutoMinorLocator 
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        fig.text(0.12,0.89, r"$\bf{CMS}$ $Simulation$",   fontsize = 8)
+        fig.text(0.68,0.89, r'137 fb$^{-1}$ (13 TeV)', fontsize = 8)
+        plt.xlabel(xlabel_)
+        plt.ylabel('Events / '+str(int((range_[-1]+1)/n_bins))+' GeV')
+        plt.xlim(range_)
+        #plt.setp(patches_, linewidth=0)
+        plt.legend()
+        plt.savefig('moneyplot.pdf', dpi = 250)
+        plt.show()
+        plt.close(fig)
+        #
+    #
     #############################
-    QScoreVsKinem(df, 1.5, 'TopMaxPt',    (0,500), 'TopMaxPt',    20, False)
-    QScoreVsKinem(df, 1.5, 'TopMinPt',    (0,500), 'TopMinPt',    20, False)
-    QScoreVsKinem(df, 1.5, 'TopMaxEta',   (0,3), 'TopMaxEta',    10, False)
-    QScoreVsKinem(df, 1.5, 'TopMinEta',   (0,3), 'TopMinEta',    10, False)
-    QScoreVsKinem(df, 1.5, 'TopMaxDiffM', (0,100), 'TopMaxDiffM', 20, False)
-    QScoreVsKinem(df, 1.5, 'TopMinDiffM', (0,50), 'TopMinDiffM',  10, False)
-    QScoreVsKinem(df, 1.5, 'Top_dR',      (0,5),   'Top_dR',      10, False)
-    QScoreVsKinem(df, 1.5, 'bestRecoZPt', (0,500), 'bestRecoZPt', 20, False)
-    QScoreVsKinem(df, 1.5, 'nJets30',     (0,10),  'nJets30',     11, False)
-    QScoreVsKinem(df, 1.5, 'nBottoms',    (0,5),   'nBottoms',    6,  False)
-    QScoreVsKinem(df, 1.5, 'nMergedTops', (0,5),   'nMergedTops', 6,  False)
+    StackedHisto(df, 'bestRecoZPt', (0,500), r'Z($\ell\ell$) $P_T$ (GeV)', 20)
+    exit()
+    #
+    add_cuts = True
+    #
+    QScoreVsKinem(df, 1.5, 'TopMaxPt',    (0,500), 'TopMaxPt',    20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'TopMinPt',    (0,500), 'TopMinPt',    20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'TopMaxEta',   (0,3), 'TopMaxEta',    10,  False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'TopMinEta',   (0,3), 'TopMinEta',    10,  False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'TopMaxDiffM', (0,100), 'TopMaxDiffM', 20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'TopMinDiffM', (0,50), 'TopMinDiffM',  10, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'tt_dR',       (0,5),   'tt_dR',       10, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'tt_Pt',       (0,500), 'tt_Pt',       20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'bestRecoZPt', (0,500), 'bestRecoZPt', 20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'nJets30',     (0,10),  'nJets30',     11, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'nBottoms',    (0,5),   'nBottoms',    6,  False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'nMergedTops', (0,5),   'nMergedTops', 6,  False, add_cuts)
+    #
+    import matplotlib.backends.backend_pdf
+    
+    pdf = matplotlib.backends.backend_pdf.PdfPages('QvsKinem_overlap'+str(cfg.kinemFitoverlap)+'.pdf')
+    for fig_ in range(1, plt.gcf().number+1): ## will open an empty extra figure :(
+        pdf.savefig( fig_ )
+    pdf.close()
+    #
     exit()
     #############################
     for i_ in range(15,19):
@@ -333,4 +451,4 @@ if __name__ == '__main__':
     #
     #computeChi2(   *files_samples_outDir, cfg.kinemFitMaxJets)
     evaluateScore(  *files_samples_outDir)
-
+    AnalyzeScore(   *files_samples_outDir)

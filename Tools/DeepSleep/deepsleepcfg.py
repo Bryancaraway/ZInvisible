@@ -14,10 +14,11 @@ skim_dir          = master_file_path+'skim/'
 skim_kinemFit_dir = master_file_path+'skim_kinemFit/'
 # Kinematic Fit sub cfg args
 kinemFitCfg    = (['result_2017'], 
-                  ['TTZ','DY'], 
+                  ['DY','TTZ'],
+                  #['DY'],#['TTZ','DY','TTX', 'DiBoson', 'TTBarLep'], 
                   skim_kinemFit_dir)
 kinemFitCut    = (operator.ge, 5)
-kinemFitoverlap= 1
+kinemFitoverlap= 0
 kinemFitMaxJets= 14
 # Train Overhead #
 train_dir      = master_file_path+'train/'

@@ -45,7 +45,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                             key = key.replace('_drLeptonCleaned','')
                         if ('Jet_' in key) :
                             key = key.replace('Jet_', '')
-                        dict_[key] = t.array(key_)[(selvar['nJets'] >= 3)]
+                        dict_[key] = t.array(key_)[(selvar['nJets'] >= 4)]
                         #
                     #
                 #
@@ -60,12 +60,14 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                         
                     del lvecdict[key]
                 #
-                try:
-                    defineKeys(ak4lvec,cfg.ak4lvec['TLV'])
-                    extractLVecInfo(ak4lvec)
-                except:
-                    defineKeys(ak4lvec,cfg.ak4lvec['TLVarsLC'])
-                    defineKeys(valRCvars, cfg.ak4lvec['TLVars'] + cfg.valRCvars)
+                #try:
+                #    defineKeys(ak4lvec,cfg.ak4lvec['TLV'])
+                #    extractLVecInfo(ak4lvec)
+                #except:
+                defineKeys(ak4lvec,cfg.ak4lvec['TLVarsLC'])
+                defineKeys(valRCvars, cfg.ak4lvec['TLVars'] )
+                defineKeys(valRCvars, cfg.valRCvars)
+                #
                 defineKeys(ak4vars,cfg.ak4vars)
                 defineKeys(valvars,cfg.valvars)
                 defineKeys(label,  cfg.label)
@@ -74,7 +76,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 # Ak4 Jet Pt > 30, Ak4 Jet Eta < 2.6 #
                 # after which nJet cut, check cfg    #
                 ak4_cuts = ((ak4lvec['pt'] > 30) & (abs(ak4lvec['eta']) < 2.6) 
-                             & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
+                            & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
                 zptcut = (valvars['bestRecoZPt'] > ZptCut_)
                 #
                 def applyAK4Cuts(dict_, cuts_, zptcut_):
