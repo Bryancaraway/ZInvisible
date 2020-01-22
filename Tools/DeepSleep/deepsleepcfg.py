@@ -12,19 +12,33 @@ tree_dir          = 'Training'
 MCsamples         = ['TTZ','DY','TTX','DiBoson','TTBarLep']
 skim_dir          = master_file_path+'skim/'
 skim_kinemFit_dir = master_file_path+'skim_kinemFit/'
+skim_Zinv_dir     = master_file_path+'skim_Zinv/'
+##############
+sample_maxJets  = {'DiLep':{'DY':14, 'TTZ':14, 'TTX':14, 'TTBarLep':11, 'DiBoson':11, 'TriBoson':10},
+                   'ZInv':{'WJets':14, 'ZJets':13, 'DiBoson':11, 'TriBoson':11, 'TTX':14, 'QCD':13, 
+                           'TTBarHad':13, 'TTBarLep':14, 'TTZ':13 }}
 # Kinematic Fit sub cfg args
 kinemFitCfg    = (['result_2017'], 
-                  ['DY','TTZ'],
+                  [ 'TTX', 'DiBoson', 'TTBarLep', 'TriBoson', 'DY','TTZ'],
                   #['DY'],#['TTZ','DY','TTX', 'DiBoson', 'TTBarLep'], 
                   skim_kinemFit_dir)
 kinemFitCut    = (operator.ge, 5)
-kinemFitoverlap= 0
+kinemFitoverlap= 1
 kinemFitMaxJets= 14
+##### TTZ, Z to MET CONFIG #####
+ZinvFitCfg    = (['result_2017'],
+                 ['WJets','ZJets','DiBoson','TriBoson','TTX','QCD','TTBarHad','TTBarLep','TTZ'],
+                 skim_Zinv_dir)
+ZinvFitCut     = (operator.ge, 5)
+ZinvFitoverlap = 0
+ZinvFitMaxJets = 14
 # Train Overhead #
 train_dir      = master_file_path+'train/'
 train_over_dir = master_file_path+'train_overSample/'
 test_dir       = master_file_path+'test/'
 val_dir        = master_file_path+'val/'
+
+
 ###################
 # Input Variables #
 LC = '_drLeptonCleaned'
@@ -41,7 +55,10 @@ ak8lvec = {'TLV'      :['FatJetTLV'+LC],
 #
 genpvars   = ['GenPart_pt', 'GenPart_eta', 'GenPart_phi', 'GenPart_E', 'GenPart_status', 'GenPart_pdgID', 'GenPart_genPartIdxMother']
 genLevCuts = ['passGenCuts','isZToLL']
-valvars    = ['nResolvedTops'+LC,'nMergedTops'+LC,'nBottoms'+LC,'nJets30'+LC,'bestRecoZPt','passElecZinvSelOnZMassPeak','passMuZinvSelOnZMassPeak','genWeight','weight']
+valvars    = ['nResolvedTops'+LC,'nMergedTops'+LC,'nBottoms'+LC,'nJets30'+LC,
+              'bestRecoZPt', 'bestRecoZEta', 'bestRecoZPhi', 'bestRecoZM',
+              'MET_phi', 'MET_pt',
+              'passElecZinvSelOnZMassPeak','passMuZinvSelOnZMassPeak','genWeight','weight']
 valRCvars  = ['ResolvedTopCandidate_discriminator', 'ResolvedTopCandidate_j1Idx', 'ResolvedTopCandidate_j2Idx', 'ResolvedTopCandidate_j3Idx']
 label      = ['isTAllHad']
 # Derived Varialbes #

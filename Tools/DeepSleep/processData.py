@@ -21,7 +21,7 @@ import pandas as pd
 from itertools import combinations
 ##
 
-def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6 , ZptCut_ = 0):
+def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6 , ZptCut_ = 0, treeDir_ = cfg.tree_dir):
     files = files_
     for file_ in files:
         if not os.path.exists(cfg.file_path+file_+'.root') : continue
@@ -29,12 +29,13 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
             print('Opening File:\t{}'.format(file_))
             for sample in samples_:
                 print(sample)
-                t = f_.get(cfg.tree_dir+'/'+sample)
+                t = f_.get(treeDir_+'/'+sample)
                 ak4vars = {}
                 ak4lvec = {}
                 #ak8vars = {}
                 #ak8lvec = {}
-                selvar  = {'nJets':t.array('nJets30_drLeptonCleaned')} ##### temporary, only train on 6 ak4 jet events
+                #selvar  = {'nJets':t.array('nJets30_drLeptonCleaned')} ##### temporary, only train on 6 ak4 jet events
+                selvar   = {'nJets':t.array('Jet_pt_drLeptonCleaned').counts}
                 valRCvars = {}
                 valvars  = {}
                 label   = {}
@@ -45,7 +46,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                             key = key.replace('_drLeptonCleaned','')
                         if ('Jet_' in key) :
                             key = key.replace('Jet_', '')
-                        dict_[key] = t.array(key_)[(selvar['nJets'] >= 4)]
+                        dict_[key] = t.array(key_)[((selvar['nJets'] >= 4) & (selvar['nJets'] <= maxJets_))]
                         #
                     #
                 #
@@ -64,20 +65,21 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 #    defineKeys(ak4lvec,cfg.ak4lvec['TLV'])
                 #    extractLVecInfo(ak4lvec)
                 #except:
-                defineKeys(ak4lvec,cfg.ak4lvec['TLVarsLC'])
-                defineKeys(valRCvars, cfg.ak4lvec['TLVars'] )
+                defineKeys(ak4lvec,   cfg.ak4lvec['TLVarsLC'])
+                defineKeys(valRCvars, cfg.ak4lvec['TLVars'])
                 defineKeys(valRCvars, cfg.valRCvars)
                 #
                 defineKeys(ak4vars,cfg.ak4vars)
                 defineKeys(valvars,cfg.valvars)
                 defineKeys(label,  cfg.label)
-
+                #
+                del selvar
                 # Cuts for initial round of training #
                 # Ak4 Jet Pt > 30, Ak4 Jet Eta < 2.6 #
                 # after which nJet cut, check cfg    #
                 ak4_cuts = ((ak4lvec['pt'] > 30) & (abs(ak4lvec['eta']) < 2.6) 
                             & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
-                zptcut = (valvars['bestRecoZPt'] > ZptCut_)
+                zptcut = (valvars['bestRecoZPt'] >= ZptCut_)
                 #
                 def applyAK4Cuts(dict_, cuts_, zptcut_):
                     for key in dict_.keys():
@@ -93,6 +95,10 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 applyAK4Cuts(valvars,   ak4_cuts, zptcut)
                 applyAK4Cuts(label,     ak4_cuts, zptcut)
                 del ak4_cuts, zptcut
+                #
+                print(max(ak4lvec['pt'].counts))
+                sample_maxJets = max(ak4lvec['pt'].counts)
+                valvars['nJets'] = ak4lvec['pt'].counts
                 ##
                 ##
                 def CleanRTCJetIdx(RC_, LC_, RC_j1, RC_j2, RC_j3):
@@ -132,18 +138,26 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                         #
                     #
                     return RC_j1j2j3
-                #
+                ###########
                 valRCvars['ResolvedTopCandidate_j1j2j3Idx'] = CleanRTCJetIdx(
-                    valRCvars, ak4lvec, valRCvars['ResolvedTopCandidate_j1Idx'], valRCvars['ResolvedTopCandidate_j2Idx'], valRCvars['ResolvedTopCandidate_j3Idx'])
-                del valRCvars['ResolvedTopCandidate_j1Idx'], valRCvars['ResolvedTopCandidate_j2Idx'], valRCvars['ResolvedTopCandidate_j3Idx'], valRCvars['pt'], valRCvars['eta'], valRCvars['phi'], valRCvars['E']
-
+                    valRCvars, ak4lvec, 
+                    valRCvars['ResolvedTopCandidate_j1Idx'], 
+                    valRCvars['ResolvedTopCandidate_j2Idx'], 
+                    valRCvars['ResolvedTopCandidate_j3Idx'])
+                #
+                del valRCvars['ResolvedTopCandidate_j1Idx'] 
+                del valRCvars['ResolvedTopCandidate_j2Idx'] 
+                del valRCvars['ResolvedTopCandidate_j3Idx']
+                del valRCvars['pt'], valRCvars['eta'], valRCvars['phi'], valRCvars['E']
+                ###########
                 # Add to dataframe #
                 def addToDF(dict_, df_):
                     for key in dict_.keys():
                         df_temp = pd.DataFrame.from_dict(dict_)
                         key_list = []
                         try:
-                            nVarPerKey = maxJets_ #len(df_temp[key][0])
+                            nVarPerKey = sample_maxJets #len(df_temp[key][0])
+                            #nVarPerKey = maxJets_
                             for i in range(0,nVarPerKey):
                                 key_list.append(key+'_'+str(i+1))
                             df_temp = pd.DataFrame(df_temp[key].values.tolist(), columns = key_list )
@@ -195,10 +209,13 @@ def interpData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_
             df = pd.DataFrame()
             df = pd.read_pickle(outDir_+file_+'_'+sample+'.pkl')
             #
+            sample_maxJets = max(pd.read_pickle(outDir_+file_+'_'+sample+'_val.pkl')['nJets'])
+            print(sample, sample_maxJets)
+            #
             def computeCombs(df_):
                 # DO THE CALCS BY HAND SO THAT IS IS DONE IN PARALLEL
-                dr_combs   = list(combinations(range(1,njets_+1),2))
-                invTM_combs = list(combinations(range(1,njets_+1),3))                
+                dr_combs   = list(combinations(range(1,sample_maxJets+1),2))
+                invTM_combs = list(combinations(range(1,sample_maxJets+1),3))                
                
                 for comb in dr_combs:
                     deta = df_['eta_'+str(comb[0])] - df_['eta_'+str(comb[1])]
