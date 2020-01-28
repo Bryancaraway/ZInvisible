@@ -21,7 +21,7 @@ import pandas as pd
 from itertools import combinations
 ##
 
-def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6 , ZptCut_ = 0, treeDir_ = cfg.tree_dir):
+def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6 , ZptCut_ = 0, treeDir_ = cfg.tree_dir, getGenData_ = False):
     files = files_
     for file_ in files:
         if not os.path.exists(cfg.file_path+file_+'.root') : continue
@@ -29,9 +29,12 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
             print('Opening File:\t{}'.format(file_))
             for sample in samples_:
                 print(sample)
+                getGenData = getGenData_
+                if ((sample != 'TTZ') and (sample != 'TTBarLep')): getGenData = False
                 t = f_.get(treeDir_+'/'+sample)
                 ak4vars = {}
                 ak4lvec = {}
+                genData = {}
                 #ak8vars = {}
                 #ak8lvec = {}
                 #selvar  = {'nJets':t.array('nJets30_drLeptonCleaned')} ##### temporary, only train on 6 ak4 jet events
@@ -73,11 +76,14 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 defineKeys(valvars,cfg.valvars)
                 defineKeys(label,  cfg.label)
                 #
+                if (getGenData):
+                    defineKeys(genData,cfg.genpvars)
+                #
                 del selvar
                 # Cuts for initial round of training #
                 # Ak4 Jet Pt > 30, Ak4 Jet Eta < 2.6 #
                 # after which nJet cut, check cfg    #
-                ak4_cuts = ((ak4lvec['pt'] > 30) & (abs(ak4lvec['eta']) < 2.6) 
+                ak4_cuts = ((ak4lvec['pt'] > 20) & (abs(ak4lvec['eta']) < 2.6) 
                             & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
                 zptcut = (valvars['bestRecoZPt'] >= ZptCut_)
                 #
@@ -94,6 +100,10 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 applyAK4Cuts(valRCvars, ak4_cuts, zptcut)
                 applyAK4Cuts(valvars,   ak4_cuts, zptcut)
                 applyAK4Cuts(label,     ak4_cuts, zptcut)
+                #
+                if (getGenData):
+                    applyAK4Cuts(genData, ak4_cuts, zptcut)
+                #
                 del ak4_cuts, zptcut
                 #
                 print(max(ak4lvec['pt'].counts))
@@ -193,9 +203,13 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 val_dfs.to_pickle(  outDir_+file_+'_'+sample+'_val.pkl')
                 with open(outDir_+file_+'_'+sample+'_valRC.pkl', 'wb') as handle:
                     pickle.dump(valRCvars, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                if (getGenData) :
+                    with open(outDir_+file_+'_'+sample+'_gen.pkl'   ,'wb') as handle:
+                        pickle.dump(genData, handle, protocol=pickle.HIGHEST_PROTOCOL)
                 del dfs
                 del val_dfs
                 del valRCvars
+                del genData
                 #
             #
         #

@@ -1,4 +1,4 @@
-########################
+########################%
 ### Process data     ###
 # for score computation#
 ########################
@@ -19,6 +19,29 @@ np.random.seed(0)
 import pandas as pd
 from itertools import combinations
 ##
+import math
+def deltaR(eta1, phi1, eta2, phi2):
+    deta = eta1-eta2
+    dphi = phi1-phi2
+    dphi = pd.concat([dphi.loc[dphi.isna()],
+                      dphi.loc[dphi > math.pi] - 2*math.pi,
+                      dphi.loc[dphi <= -math.pi] + 2*math.pi,
+                      dphi.loc[(dphi <= math.pi) & (dphi > -math.pi)]]).sort_index()
+    delta_r = np.sqrt(np.add(np.power(deta,2),np.power(dphi,2)))
+    return delta_r
+    #
+def deltaPhi(phi1, phi2):
+    dphi = phi1-phi2
+    dphi = pd.concat([dphi.loc[dphi.isna()],
+                      dphi.loc[dphi > math.pi] - 2*math.pi,
+                      dphi.loc[dphi <= -math.pi] + 2*math.pi,
+                      dphi.loc[(dphi <= math.pi) & (dphi > -math.pi)]]).sort_index()
+    return dphi
+
+def calc_mtb(ptb, phib, m_pt, m_phi):
+    mtb2 =  2*m_pt*ptb*(1 - np.cos(deltaPhi(phib, m_phi)))
+    return np.sqrt(mtb2)
+#########################################################
 
 def computeChi2(files_, samples_, outDir_, njets_):
     T_mass = 173.2
@@ -116,7 +139,7 @@ def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap):
                     if ( ((len(full_comb) - len(set(full_comb))) == overlap_) and (overlap_ > 0) ) : 
                         jetid_ = np.array(full_comb[0:3])[np.in1d(full_comb[0:3],full_comb[3:])].item()
                         bscore_ = df_[key_]['df']['btagDeepB_'+str(jetid_)].iloc[idx_]
-                        if ( bscore_ > .90) :
+                        if ( bscore_ >= .4941) :
                             continue
                     #
                     q_score.append(rtopd[np.in1d(rtidx,i_[0])].item() + rtopd[np.in1d(rtidx,i_[1])].item())
@@ -124,11 +147,11 @@ def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap):
                     #
                 #  print(temp_df)
                 if (len(q_score) > 0) :
-                    Q_dict['Q'].append(     max(q_score))
-                    if (len(np.array(q_index)[np.in1d(q_score,max(q_score))]) == 1 ) :
-                        Q_dict['Q_comb'].append(np.array(q_index)[np.in1d(q_score,max(q_score))].item())
+                    Q_dict['Q'].append(     np.nanmax(q_score))
+                    if (len(np.array(q_index)[np.in1d(q_score,np.nanmax(q_score))]) == 1 ) :
+                        Q_dict['Q_comb'].append(np.array(q_index)[np.in1d(q_score,np.nanmax(q_score))].item())
                     else:
-                        Q_dict['Q_comb'].append(np.array(q_index)[np.in1d(q_score,max(q_score))][0].item())
+                        Q_dict['Q_comb'].append(np.array(q_index)[np.in1d(q_score,np.nanmax(q_score))][0].item())
                 else:
                     Q_dict['Q'].append(0)
                     Q_dict['Q_comb'].append('0.0.0_0.0.0')
@@ -140,6 +163,50 @@ def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap):
             df[key_]['df']['Q_comb'] = Q_dict['Q_comb']
             #
         #
+    #
+    def calcCmtb(df_,maxb,wp):
+        b_wp = .4941
+        if   wp == 'm' :
+            b_wp = .4941
+        elif wp == 'l' :
+            b_wp = .1522
+        elif wp == 'n' :
+            b_wp = 0.0
+        #
+        for key_ in df_.keys():
+            tmp_ = df_[key_]['df']
+            b_disc = []
+            pt_    = []
+            eta_   = []
+            phi_   = []
+            E_     = []
+            for key_str in tmp_.keys():
+                if   ('btagDeepB_' in key_str):
+                    b_disc.append(key_str)
+                elif ('pt_' in key_str):
+                    pt_.append(key_str)
+                elif ('eta_' in key_str):
+                    eta_.append(key_str)
+                elif ('phi_' in key_str):
+                    phi_.append(key_str)
+                elif ('E_' in key_str):
+                    E_.append(key_str)
+            #
+            ind_=np.argsort(-tmp_[b_disc].values,axis=1)
+            #
+            b_disc = np.take_along_axis(tmp_[b_disc].values,ind_, axis=1)[:,:maxb]
+            pt_    = np.take_along_axis(tmp_[pt_].values,   ind_, axis=1)[:,:maxb]
+            phi_   = np.take_along_axis(tmp_[phi_].values,  ind_, axis=1)[:,:maxb]
+            pt_[ b_disc < b_wp] = np.nan # 0.4941 (Medium), 0.1522 (Loose)
+            phi_[b_disc < b_wp] = np.nan # 0.4941 (Medium), 0.1522 (Loose)
+            metpt_ =df_[key_]['val']['MET_pt']
+            metphi_=df_[key_]['val']['MET_phi']
+            #
+            mtb_   = []
+            for i_ in range(maxb):
+                mtb_.append(calc_mtb(pt_[:,i_],phi_[:,i_],metpt_,metphi_))
+            Cmtb_ = np.nanmin(mtb_,axis=0)
+            df_[key_]['df']['Cmtb_'+wp+str(maxb)] = Cmtb_
     #
     def calcTopTLV(df_):
         import uproot_methods
@@ -157,13 +224,13 @@ def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap):
                 comb_tlv = j1_ + j2_ + j3_
                 #
                 b_scores = [tmp_['btagDeepB_'+str(comb_[0])],tmp_['btagDeepB_'+str(comb_[1])],tmp_['btagDeepB_'+str(comb_[2])]]
-                best_b  = max(b_scores)
-                if (best_b > .75 ):
+                best_b  = np.nanmax(b_scores)
+                if (best_b >= .4941 ):
                     if (len(set(b_scores)) == len(b_scores)):
                         b_jet = np.array([j1_, j2_, j3_])[np.in1d(b_scores,best_b)].item()
                     else:
                         b_jet = np.array([j1_, j2_, j3_])[np.in1d(b_scores,best_b)][0] 
-                    return [comb_tlv.pt, comb_tlv.eta, comb_tlv.phi, comb_tlv.mass],[b_jet.pt, b_jet.eta, b_jet.phi, b_jet.mass]
+                    return [[comb_tlv.pt, comb_tlv.eta, comb_tlv.phi, comb_tlv.mass],[b_jet.pt, b_jet.eta, b_jet.phi, b_jet.mass]]
                 else:
                     return [[comb_tlv.pt, comb_tlv.eta, comb_tlv.phi, comb_tlv.mass],[np.nan,np.nan,np.nan,np.nan]]
                 #
@@ -202,36 +269,6 @@ def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap):
             b1_ = uproot_methods.TLorentzVectorArray.from_ptetaphim(b1_[:,[0]], b1_[:,[1]], b1_[:,[2]], b1_[:,[3]])
             b2_ = uproot_methods.TLorentzVectorArray.from_ptetaphim(b2_[:,[0]], b2_[:,[1]], b2_[:,[2]], b2_[:,[3]])
             #
-            import math
-            def deltaR(eta1, phi1, eta2, phi2):
-                deta = eta1-eta2
-                dphi = phi1-phi2
-                dphi = pd.concat([dphi.loc[dphi.isna()],
-                                  dphi.loc[dphi > math.pi] - 2*math.pi,
-                                  dphi.loc[dphi <= -math.pi] + 2*math.pi,
-                                  dphi.loc[(dphi <= math.pi) & (dphi > -math.pi)]]).sort_index()
-                delta_r = np.sqrt(np.add(np.power(deta,2),np.power(dphi,2)))
-                return delta_r
-            #
-            def deltaPhi(phi1, phi2):
-                dphi = phi1-phi2
-                dphi = pd.concat([dphi.loc[dphi.isna()],
-                                  dphi.loc[dphi > math.pi] - 2*math.pi,
-                                  dphi.loc[dphi <= -math.pi] + 2*math.pi,
-                                  dphi.loc[(dphi <= math.pi) & (dphi > -math.pi)]]).sort_index()
-                return dphi
-            
-            def calc_mtb(b, m_pt, m_phi):
-                mb2  = np.power(b.mass.ravel(),2)
-                ptb  = b.pt.ravel()
-                Eb   = b.E.ravel()
-                Eb2  = np.power(Eb,2)
-                phib = b.phi.ravel()
-                del b
-                
-                mtb2 =  2*m_pt*ptb*(1 - np.cos(deltaPhi(phib, m_phi)))
-                return np.sqrt(mtb2)
-
             TopPt_    = np.concatenate((top1_.pt,                       top2_.pt),                        axis=1) 
             TopEta_   = np.concatenate((np.absolute(top1_.eta),         np.absolute(top2_.eta)),          axis=1)
             TopDiffM_ = np.concatenate((np.absolute(top1_.mass - 173.0),np.absolute(top2_.mass - 173.0)), axis=1) 
@@ -241,29 +278,29 @@ def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap):
             METdPhiTop_ = np.array((deltaPhi(df_[key_]['val']['MET_phi'], top1_.phi.ravel()),
                                     deltaPhi(df_[key_]['val']['MET_phi'], top2_.phi.ravel()))).T
             
-            mtb_      =  np.array((calc_mtb(b1_, df_[key_]['val']['MET_pt'], df_[key_]['val']['MET_phi']),
-                                   calc_mtb(b2_, df_[key_]['val']['MET_pt'], df_[key_]['val']['MET_phi']))).T
+            mtb_      =  np.array((calc_mtb(b1_.pt.ravel(), b1_.phi.ravel(), df_[key_]['val']['MET_pt'], df_[key_]['val']['MET_phi']),
+                                   calc_mtb(b2_.pt.ravel(), b2_.phi.ravel(), df_[key_]['val']['MET_pt'], df_[key_]['val']['MET_phi']))).T
             #
-            df_[key_]['df']['TopMaxPt'] = np.amax(TopPt_, axis=1)
-            df_[key_]['df']['TopMinPt'] = np.amin(TopPt_, axis=1)
-            df_[key_]['df']['TopMaxEta'] = np.amax(TopEta_, axis=1)
-            df_[key_]['df']['TopMinEta'] = np.amin(TopEta_, axis=1)
-            df_[key_]['df']['TopMaxDiffM'] = np.amax(TopDiffM_, axis=1)
-            df_[key_]['df']['TopMinDiffM'] = np.amin(TopDiffM_, axis=1)
+            df_[key_]['df']['TopMaxPt'] = np.nanmax(TopPt_, axis=1)
+            df_[key_]['df']['TopMinPt'] = np.nanmin(TopPt_, axis=1)
+            df_[key_]['df']['TopMaxEta'] = np.nanmax(TopEta_, axis=1)
+            df_[key_]['df']['TopMinEta'] = np.nanmin(TopEta_, axis=1)
+            df_[key_]['df']['TopMaxDiffM'] = np.nanmax(TopDiffM_, axis=1)
+            df_[key_]['df']['TopMinDiffM'] = np.nanmin(TopDiffM_, axis=1)
             df_[key_]['df']['tt_dR']   = top1_.delta_r(top2_)
             df_[key_]['df']['tt_dPhi'] = top1_.delta_phi(top2_)
             df_[key_]['df']['tt_Pt']   = (top1_ + top2_).pt
             #
-            df_[key_]['df']['MaxbMt']  = np.amax(bMt_, axis=1)
-            df_[key_]['df']['MinbMt']  = np.amin(bMt_, axis=1)
-            df_[key_]['df']['Maxmtb']  = np.amax(mtb_, axis=1)
-            df_[key_]['df']['Minmtb']  = np.amin(mtb_, axis=1)
+            df_[key_]['df']['MaxbMt']  = np.nanmax(bMt_, axis=1)
+            df_[key_]['df']['MinbMt']  = np.nanmin(bMt_, axis=1)
+            df_[key_]['df']['Maxmtb']  = np.nanmax(mtb_, axis=1)
+            df_[key_]['df']['Minmtb']  = np.nanmin(mtb_, axis=1)
             #
-            df_[key_]['df']['METtMaxDPhi'] = np.amax(METdPhiTop_, axis=1)
-            df_[key_]['df']['METtMinDPhi'] = np.amin(METdPhiTop_, axis=1)
+            df_[key_]['df']['METtMaxDPhi'] = np.nanmax(METdPhiTop_, axis=1)
+            df_[key_]['df']['METtMinDPhi'] = np.nanmin(METdPhiTop_, axis=1)
             df_[key_]['df']['METttDPhi']   = deltaPhi(df_[key_]['val']['MET_phi'], (top1_ + top2_).phi.ravel())
             
-            if __name__ != '__main__' :
+            if __name__ == '__main__' :
                 ZdRTop_   = np.array((deltaR(df_[key_]['val']['bestRecoZEta'], df_[key_]['val']['bestRecoZPhi'], top1_.eta.ravel(), top1_.phi.ravel()),
                                       deltaR(df_[key_]['val']['bestRecoZEta'], df_[key_]['val']['bestRecoZPhi'], top2_.eta.ravel(), top2_.phi.ravel()))).T
                 ZdPhiTop_ = np.array((deltaPhi(df_[key_]['val']['bestRecoZPhi'], top1_.phi.ravel()),
@@ -271,10 +308,10 @@ def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap):
                 ZDiffM_ = np.absolute(df_[key_]['val']['bestRecoZM'] - 91.2)
                 METdPhiZ_   = deltaPhi(df_[key_]['val']['MET_phi'], df_[key_]['val']['bestRecoZPhi'])
                 #
-                df_[key_]['df']['ZtMaxDR'] = np.amax(ZdRTop_, axis=1)
-                df_[key_]['df']['ZtMinDR'] = np.amin(ZdRTop_, axis=1)
-                df_[key_]['df']['ZtMaxDPhi'] = np.amax(ZdPhiTop_, axis=1)
-                df_[key_]['df']['ZtMinDPhi'] = np.amin(ZdPhiTop_, axis=1)
+                df_[key_]['df']['ZtMaxDR'] = np.nanmax(ZdRTop_, axis=1)
+                df_[key_]['df']['ZtMinDR'] = np.nanmin(ZdRTop_, axis=1)
+                df_[key_]['df']['ZtMaxDPhi'] = np.nanmax(ZdPhiTop_, axis=1)
+                df_[key_]['df']['ZtMinDPhi'] = np.nanmin(ZdPhiTop_, axis=1)
                 df_[key_]['df']['ZttDPhi']   = deltaPhi(df_[key_]['val']['bestRecoZPhi'], (top1_ + top2_).phi.ravel())
                 df_[key_]['df']['ZDiffM'] = ZDiffM_
                 df_[key_]['df']['METZDPhi'] = METdPhiZ_
@@ -312,6 +349,23 @@ def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap):
             df_[key_]['df']['Top2_disc'] = top2_
     #####################
     #getCombRTDisc(df)
+    # df, max b's, working point: m = medium, l = loose (no tight)
+    calcCmtb(df,2,'m') 
+    calcCmtb(df,2,'l') 
+    calcCmtb(df,3,'m') 
+    calcCmtb(df,3,'l') 
+    calcCmtb(df,4,'m') 
+    calcCmtb(df,4,'l') 
+    calcCmtb(df,5,'m') 
+    calcCmtb(df,5,'l') 
+    calcCmtb(df,6,'m') 
+    calcCmtb(df,6,'l') 
+    calcCmtb(df,7,'m') 
+    calcCmtb(df,7,'l')
+    calcCmtb(df,5,'n') 
+    calcCmtb(df,6,'n') 
+    calcCmtb(df,7,'n') 
+    #
     calcQscore(df)
     calcTopTLV(df)
     #
@@ -408,26 +462,48 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
                     kinem     = df_[key_]['val'][kinem_]
                 elif (kinem_ in df_[key_]['valRC'].keys()):
                     kinem     = df_[key_]['valRC'][kinem_]
+                else:
+                    continue
                 #
                 cut = (df_[key_]['df']['Q'] >= i_)
                 if (add_cuts_):
-                    if (overlap_ == 1) :
-                        base_cuts = ((df_[key_]['val']['nBottoms'] > 0)     & 
-                                     (df_[key_]['df']['TopMinPt'] > 50)     & 
-                                     (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
-                                     (df_[key_]['df']['TopMaxDiffM'] <= 55) &
-                                     (df_[key_]['val']['MET_pt'] <= 75)     & 
-                                     (df_[key_]['df']['ZDiffM'] <= 6))     
-
-                    elif (overlap_ == 0) :
-                        base_cuts = ((df_[key_]['val']['nBottoms'] >= 2)     &
-                                     (df_[key_]['df']['TopMinPt'] > 50)     &
-                                     (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
-                                     (df_[key_]['df']['Minmtb'] >= 175)      &
-                                     (df_[key_]['val']['MET_pt'] >= 250)     & 
-                                     (df_[key_]['df']['TopMaxDiffM'] <= 55)) #&
-                                     #(df_[key_]['val']['MET_pt'] <= 100))#     & 
-                                     #(df_[key_]['df']['ZDiffM'] <= 7.5))     
+                    if __name__ == '__main__':
+                    	if (overlap_ == 1) :
+                    	    base_cuts = ((df_[key_]['val']['nBottoms'] > 0)     & 
+                    	                 (df_[key_]['df']['TopMinPt'] > 50)     & 
+                    	                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
+                    	                 (df_[key_]['df']['TopMaxDiffM'] <= 55) &
+                    	                 (df_[key_]['val']['MET_pt'] <= 75)     & 
+                    	                 (df_[key_]['df']['ZDiffM'] <= 6))     
+                    	
+                    	elif (overlap_ == 0) :
+                    	    base_cuts = ((df_[key_]['val']['nBottoms'] >= 2)     &
+                    	                 (df_[key_]['df']['TopMinPt'] > 50)     &
+                    	                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
+                    	                 (df_[key_]['df']['Minmtb'] >= 175)      &
+                    	                 (df_[key_]['val']['MET_pt'] >= 250)     & 
+                    	                 (df_[key_]['df']['TopMaxDiffM'] <= 55)) #&
+                    	                 #(df_[key_]['val']['MET_pt'] <= 100))#     & 
+                    	                 #(df_[key_]['df']['ZDiffM'] <= 7.5))     
+                    else:
+                    	if (overlap_ == 1) :
+                    	    base_cuts = ((df_[key_]['val']['nBottoms'] == 2)     & 
+                    	                 (df_[key_]['df']['TopMinPt'] > 50)     & 
+                    	                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
+                    	                 (df_[key_]['df']['TopMaxDiffM'] <= 55) &
+                    	                 (df_[key_]['val']['MET_pt'] >= 250)     & 
+                                         (df_[key_]['df']['Minmtb'] >= 175))
+                    	
+                    	elif (overlap_ == 0) :
+                    	    base_cuts = ((df_[key_]['val']['nBottoms'] >= 0)     &
+                                         (df_[key_]['df']['TopMinPt'] > 50)     &
+                    	                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
+                    	                 #(df_[key_]['df']['Minmtb'] >= 200)      &
+                                         #(df_[key_]['df']['Cmtb'] >= 200)         &
+                    	                 (df_[key_]['val']['MET_pt'] >= 250)     & 
+                                         #(df_[key_]['val']['nResolvedTops'] > 0 ))
+                    	                 (df_[key_]['df']['TopMaxDiffM'] <= 55)) #&
+                    	                 #(df_[key_]['val']['MET_pt'] <= 100))#     & 
                     #
                     cut = (cut) & (base_cuts)
                 #
@@ -489,35 +565,43 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
             if __name__ == '__main__':
             	if (overlap_ == 1) :
             	    base_cuts = ((df_[key_]['val']['nBottoms'] > 0)     & 
-            	                 (df_[key_]['df']['TopMinPt'] > 50)     & 
+            	                 #(df_[key_]['df']['TopMinPt'] > 50)     & 
             	                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
-            	                 (df_[key_]['df']['TopMaxDiffM'] <= 55) &   # 55
-                                 (df_[key_]['df']['ZDiffM'] <= 5)       &  # 5
-            	                 #(df_[key_]['val']['bestRecoZPt'] >= 300) &
+            	                 #(df_[key_]['df']['TopMaxDiffM'] <= 55) &   # 55
+                                 #(df_[key_]['df']['ZDiffM'] <= 7.5)       &  # 5
+            	                 (df_[key_]['val']['bestRecoZPt'] >= 300) &
             	                 #(df_[key_]['val']['MET_pt'] <= 200)   & 
-            	                 (df_[key_]['df']['Q'] > 1.80))             # 1.8
+            	                 (df_[key_]['df']['Q'] >= 1.5))             # 1.8
             	elif (overlap_ == 0) :
             	    base_cuts = ((df_[key_]['val']['nBottoms'] > 0)     &
             	                 (df_[key_]['df']['TopMinPt'] > 50)     &
-            	                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
+                                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
             	                 (df_[key_]['df']['TopMaxDiffM'] <= 55) &
-            	                 #(df_[key_]['df']['ZDiffM'] <= 7.5)     & # 7.5
-            	                 #(df_[key_]['val']['bestRecoZPt'] >= 300) & 
+            	                 (df_[key_]['df']['ZDiffM'] <= 7.5)     & # 7.5
+            	                 (df_[key_]['val']['bestRecoZPt'] >= 300) & 
             	                 #(df_[key_]['val']['MET_pt'] <= 100)     & 
             	                 (df_[key_]['df']['Q'] >= 1.5))
             else:
                 if (overlap_ == 1) :
-                    base_cuts = ((df_[key_]['val']['nBottoms'] == 2)     &
-                                 (df_[key_]['df']['Minmtb'] >= 175)       &
-                                 (df_[key_]['val']['nResolvedTops'] ==2) &
-                                 (df_[key_]['df']['Q'] >= 1.5)           &
-                                 (df_[key_]['val']['MET_pt'] > 250))
-                if (overlap_ == 0) :
-                    base_cuts = ((df_[key_]['val']['nBottoms'] >= 2)     &
-                                 (df_[key_]['df']['Minmtb'] >= 175)       &
-                                 #(df_[key_]['val']['nResolvedTops'] >= 1) &
+                    base_cuts = ((df_[key_]['val']['nBottoms'] == 2)      &
+                                 #(df_[key_]['df']['Minmtb'] >= 200)       & # 175
+                                 #(df_[key_]['df']['Cmtb'] >= 175)         &
+                                 (df_[key_]['val']['nResolvedTops'] >= 1) &
                                  (df_[key_]['df']['Q'] >= 1.9)           &
-                                 (df_[key_]['val']['MET_pt'] > 250))
+            	                 (df_[key_]['df']['TopMinPt'] > 50)     &
+                                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
+            	                 (df_[key_]['df']['TopMaxDiffM'] <= 55) &
+                                 (df_[key_]['val']['MET_pt'] >= 250))
+                if (overlap_ == 0) :
+                    base_cuts = ((df_[key_]['val']['nBottoms'] >= 1)      &
+                                 #(df_[key_]['df']['Minmtb'] >= 200)       &
+                                 (df_[key_]['df']['Cmtb_l3'] >= 180)         &
+                                 #(df_[key_]['val']['nResolvedTops'] == 2) &
+                                 (df_[key_]['df']['Q'] >= 1.89)           &
+            	                 (df_[key_]['df']['TopMinPt'] > 50)     &
+                                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
+            	                 (df_[key_]['df']['TopMaxDiffM'] <= 55) &
+                                 (df_[key_]['val']['MET_pt'] >= 250))
             ###########
             h.append( np.clip(kinem[base_cuts], bins[0], bins[-1]))
             w.append( df_[key_]['val']['weight'][base_cuts] * np.sign(df_[key_]['val']['genWeight'][base_cuts]) * (137/41.9))
@@ -559,9 +643,9 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
         #plt.setp(patches_, linewidth=0)
         plt.legend()
         if __name__ == '__main__':
-            plt.savefig('moneyplot_overlap'+str(overlap_)+'.pdf', dpi = 300)
+            plt.savefig('money_pdf/moneyplot_overlap'+str(overlap_)+'.pdf', dpi = 300)
         else:
-            plt.savefig('moneyplot_overlapInv'+str(overlap_)+'.pdf', dpi = 300)
+            plt.savefig('money_pdf/moneyplot_overlapInv'+str(overlap_)+'.pdf', dpi = 300)
         plt.show()
         plt.close(fig)
         #
@@ -575,6 +659,22 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
     #
     add_cuts = True
     #
+    QScoreVsKinem(df, 1.5, 'Cmtb_m2',     (180,500),   'Cmtb_m2',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_m3',     (180,500),   'Cmtb_m3',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_m4',     (180,500),   'Cmtb_m4',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_m5',     (180,500),   'Cmtb_m5',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_m6',     (180,500),   'Cmtb_m6',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_m7',     (180,500),   'Cmtb_m7',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_l2',     (180,500),   'Cmtb_l2',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_l3',     (180,500),   'Cmtb_l3',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_l4',     (180,500),   'Cmtb_l4',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_l5',     (180,500),   'Cmtb_l5',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_l6',     (180,500),   'Cmtb_l6',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_l7',     (180,500),   'Cmtb_l7',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_n5',     (180,500),   'Cmtb_n5',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_n6',     (180,500),   'Cmtb_n6',          20, False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'Cmtb_n7',     (180,500),   'Cmtb_n7',          20, False, add_cuts)
+    #
     QScoreVsKinem(df, 1.5, 'Q',          (1.5,2), 'Q',             20, False, add_cuts)
     QScoreVsKinem(df, 1.5, 'TopMaxPt',    (0,500), 'TopMaxPt',     20, False, add_cuts)
     QScoreVsKinem(df, 1.5, 'TopMinPt',    (0,500), 'TopMinPt',     20, False, add_cuts)
@@ -585,6 +685,10 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
     QScoreVsKinem(df, 1.5, 'tt_dR',       (0,5),   'tt_dR',        10, False, add_cuts)
     QScoreVsKinem(df, 1.5, 'tt_dPhi',       (0,3.2), 'tt_dPhi',    10, False, add_cuts)
     QScoreVsKinem(df, 1.5, 'tt_Pt',       (0,500), 'tt_Pt',        20, False, add_cuts)
+    #QScoreVsKinem(df, 1.5, 'Cmtb',     (0,500),   'Cmtb',          20, False, add_cuts)
+    #
+
+    #
     QScoreVsKinem(df, 1.5, 'Maxmtb',     (0,500),   'Maxmtb',      20, False, add_cuts)
     QScoreVsKinem(df, 1.5, 'Minmtb',     (0,500),   'Minmtb',      20, False, add_cuts)
     QScoreVsKinem(df, 1.5, 'MaxbMt',     (0,500),   'MaxbMt',      20, False, add_cuts)
@@ -614,9 +718,9 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
     import matplotlib.backends.backend_pdf
     
     if __name__ == '__main__':
-        pdf = matplotlib.backends.backend_pdf.PdfPages('QvsKinem_overlap'+str(overlap_)+'.pdf')
+        pdf = matplotlib.backends.backend_pdf.PdfPages('money_pdf/QvsKinem_overlap'+str(overlap_)+'.pdf')
     else:
-        pdf = matplotlib.backends.backend_pdf.PdfPages('QvsKinem_overlapInv'+str(overlap_)+'.pdf')
+        pdf = matplotlib.backends.backend_pdf.PdfPages('money_pdf/QvsKinem_overlapInv'+str(overlap_)+'.pdf')
     for fig_ in range(1, plt.gcf().number+1):
         pdf.savefig( fig_ )
     pdf.close()

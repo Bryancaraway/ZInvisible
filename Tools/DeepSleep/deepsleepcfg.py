@@ -53,7 +53,7 @@ ak8lvec = {'TLV'      :['FatJetTLV'+LC],
            'TLVarsLC' :['FatJet_pt'+LC, 'FatJet_eta'+LC, 'FatJet_phi'+LC, 'FatJet_E'+LC],
            'TLVars'   :['FatJet_pt', 'FatJet_eta', 'FatJet_phi', 'FatJet_E']}
 #
-genpvars   = ['GenPart_pt', 'GenPart_eta', 'GenPart_phi', 'GenPart_E', 'GenPart_status', 'GenPart_pdgID', 'GenPart_genPartIdxMother']
+genpvars   = ['GenPart_pt', 'GenPart_eta', 'GenPart_phi', 'GenPart_E', 'GenPart_status', 'GenPart_pdgId', 'GenPart_genPartIdxMother']
 genLevCuts = ['passGenCuts','isZToLL']
 valvars    = ['nResolvedTops'+LC,'nMergedTops'+LC,'nBottoms'+LC,'nJets30'+LC,
               'bestRecoZPt', 'bestRecoZEta', 'bestRecoZPhi', 'bestRecoZM',
