@@ -25,9 +25,9 @@ import matplotlib.pyplot as plt
 np.random.seed(0)
 ##
 def genDataAna(files_, samples_, outDir_, overlap_ = cfg.ZinvFitoverlap) : 
-    df = kFit.retrieveData(files_, samples_, outDir_+'overlap'+str(overlap_)+'/')
+    df = kFit.retrieveData(files_, ['TTBarLep', 'TTZ'], outDir_+'overlap'+str(overlap_)+'/')
     for file_ in files_:
-        for sample in samples_:
+        for sample in ['TTBarLep', 'TTZ']:
             if not os.path.exists(outDir_+file_+'_'+sample+'_gen.pkl') : continue
             
             with open(outDir_+file_+'_'+sample+'_gen.pkl', 'rb') as handle:
@@ -36,17 +36,17 @@ def genDataAna(files_, samples_, outDir_, overlap_ = cfg.ZinvFitoverlap) :
     #
     ## Analyze TTBarLep_2017, TTZ_2017 ##
     #
-    tt_ids = df['TTBarLep_2017']['gen']['GenPart_pdgId']
-    tt_mom = df['TTBarLep_2017']['gen']['GenPart_genPartIdxMother']
-    tt_pt  = df['TTBarLep_2017']['gen']['GenPart_pt']
-    tt_eta = df['TTBarLep_2017']['gen']['GenPart_eta']
-    tt_phi = df['TTBarLep_2017']['gen']['GenPart_phi']
-    tt_E   = df['TTBarLep_2017']['gen']['GenPart_E']
+    sample = 'TTBarLep_2017'
+    #sample = 'TTZ_2017'
+    Q_cut = 1.5
+    #
+    tt_ids = df[sample]['gen']['GenPart_pdgId']
+    tt_mom = df[sample]['gen']['GenPart_genPartIdxMother']
+    tt_pt  = df[sample]['gen']['GenPart_pt']
+    tt_eta = df[sample]['gen']['GenPart_eta']
+    tt_phi = df[sample]['gen']['GenPart_phi']
+    tt_E   = df[sample]['gen']['GenPart_E']
 
-    tt_cut = (
-        ( ( (abs(tt_ids) <= 16) & (abs(tt_ids) >= 11) ) & (abs(tt_ids[tt_mom[tt_mom]]) == 6) ) |
-        (   (abs(tt_ids) == 5)  & (abs(tt_ids[tt_mom]) == 6)                                 ) 
-    )
     mt_cut = (
         ( ((tt_ids == 11) | (tt_ids == 13) | (tt_ids == 15) | (tt_ids == -12) | (tt_ids == -14) | (tt_ids == -16))    & (tt_ids[tt_mom[tt_mom]] == -6) ) |
         ( (tt_ids == -5) & (tt_ids[tt_mom] == -6) )
@@ -55,29 +55,55 @@ def genDataAna(files_, samples_, outDir_, overlap_ = cfg.ZinvFitoverlap) :
         ( ((tt_ids == -11) | (tt_ids == -13) | (tt_ids == -15) | (tt_ids == 12) | (tt_ids == 14) | (tt_ids == 16))    & (tt_ids[tt_mom[tt_mom]] == 6) ) |
         ( (tt_ids == 5) & (tt_ids[tt_mom] == 6) )
     )
-    mb_inv = ((mt_cut.sum() == 3) & ( tt_ids == -5))
-    pb_inv = ((pt_cut.sum() == 3) & ( tt_ids == 5))
+    mb_inv = ((mt_cut.sum() == 3) & ( tt_ids == -5) & (tt_ids[tt_mom] == -6))
+    pb_inv = ((pt_cut.sum() == 3) & ( tt_ids == 5)  & (tt_ids[tt_mom] ==  6))
     #
-    base_cuts = ((df['TTBarLep_2017']['val']['nBottoms'] >= 0)     &
-                 (df['TTBarLep_2017']['df']['TopMinPt'] > 50)     &
-                 (df['TTBarLep_2017']['df']['TopMaxEta'] <= 2.4)  &
-                 #(df['TTBarLep_2017']['df']['Minmtb'] >= 200)      &                                                                                                                     
-                 (df['TTBarLep_2017']['df']['Cmtb_l3'] >= 175)         &                                                                                                                    
-                 (df['TTBarLep_2017']['val']['MET_pt'] >= 250)     &
-                 #(df['TTBarLep_2017']['val']['nResolvedTops'] > 0 ))                                                                                                                     
-                 (df['TTBarLep_2017']['df']['TopMaxDiffM'] <= 55)) #&                                                                                                                     
-                 #(df['TTBarLep_2017']['val']['MET_pt'] <= 100))#     & 
+    base_cuts = ((df[sample]['val']['nBottoms'] >= 0)     &
+                 (df[sample]['df']['TopMinPt'] > 50)     &
+                 (df[sample]['df']['TopMaxEta'] <= 2.4)  &
+                 #(df[sample]['df']['Minmtb'] >= 200)      &                                                                                                                     
+                 (df[sample]['df']['Cmtb_l3'] >= 200)     &                                                         
+                 (df[sample]['val']['MET_pt'] >= 250)     &
+                 #(df[sample]['val']['nResolvedTops'] > 0 ))                                                                                                                     
+                 (df[sample]['df']['Q'] >= Q_cut)          &
+                 (df[sample]['df']['TopMaxDiffM'] <= 55)) #&                                                                                                                     
+                 #(df[sample]['val']['MET_pt'] <= 100))#     & 
     #
-    mb_id,  pb_id  = tt_ids[mb_inv], tt_ids[pb_inv]
-    mb_pt,  pb_pt  = tt_pt[mb_inv],  tt_pt[pb_inv]
-    plt.figure()
-    plt.hist([mb_pt[base_cuts].flatten(),pb_pt[base_cuts].flatten()], histtype= 'step')
-    plt.show()
-
-    mb_eta, pb_eta = tt_eta[mb_inv], tt_eta[pb_inv]
-    mb_phi, pb_phi = tt_phi[mb_inv], tt_phi[pb_inv]
-    mb_E,   pb_E   = tt_E[mb_inv],   tt_E[pb_inv]
-
+    just_mb = ((mb_inv) & (pt_cut.sum() != 3))
+    just_pb = ((pb_inv) & (mt_cut.sum() != 3))
+    #
+    w_mb = df[sample]['val']['weight'][((mt_cut.sum() == 3) & (pt_cut.sum() != 3))][base_cuts] * np.sign(df[sample]['val']['genWeight'][((mt_cut.sum() == 3) & (pt_cut.sum() != 3))][base_cuts]) * (137/41.9)
+    w_pb = df[sample]['val']['weight'][((mt_cut.sum() != 3) & (pt_cut.sum() == 3))][base_cuts] * np.sign(df[sample]['val']['genWeight'][((mt_cut.sum() != 3) & (pt_cut.sum() == 3))][base_cuts]) * (137/41.9)
+    #
+    mb_pt,  pb_pt  = tt_pt[just_mb][base_cuts].flatten(),  tt_pt[just_pb][base_cuts].flatten()
+    #
+    from matplotlib.ticker import AutoMinorLocator
+    def plot_result(x_,bins_,range_,label_):
+        fig, ax = plt.subplots()
+        ax.hist(x_,
+                range=range_,
+                bins=bins_, stacked=True, histtype='step',
+                weights = [w_mb,w_pb])
+        plt.xlabel(label_)
+        ax.xaxis.set_minor_locator(AutoMinorLocator())
+        ax.yaxis.set_minor_locator(AutoMinorLocator())
+        ax.grid(True)
+    #
+    mb_eta, pb_eta = tt_eta[just_mb][base_cuts].flatten(), tt_eta[just_pb][base_cuts].flatten()
+    mb_phi, pb_phi = tt_phi[just_mb][base_cuts].flatten(), tt_phi[just_pb][base_cuts].flatten()
+    mb_E,   pb_E   = tt_E[just_mb][base_cuts].flatten(), tt_E[just_pb][base_cuts].flatten()
+    #
+    plot_result([mb_pt,pb_pt],   15, (0,350),    'b_pt')
+    plot_result([mb_eta,pb_eta], 25, (-5,5),     'b_eta')
+    plot_result([mb_phi,pb_phi], 15, (-3.5,3.5), 'b_phi')
+    plot_result([mb_E,pb_E],     15, (0,350),    'b_E')
+    #plt.show()
+    import matplotlib.backends.backend_pdf
+    pdf = matplotlib.backends.backend_pdf.PdfPages('money_pdf/genb'+sample+'Q'+str(Q_cut)+'ge200_overlap'+str(overlap_)+'.pdf')
+    for fig_ in range(1, plt.gcf().number+1):
+        pdf.savefig( fig_ )
+    pdf.close()
+    #
 
 if __name__ == '__main__':   
 
@@ -87,5 +113,6 @@ if __name__ == '__main__':
     #prD.interpData(      *files_samples_outDir, cfg.ZinvFitMaxJets)  
     #
     #kFit.evaluateScore(  *files_samples_outDir, cfg.ZinvFitoverlap)
-    #kFit.AnalyzeScore(   *files_samples_outDir, cfg.ZinvFitoverlap) 
-    genDataAna( *files_samples_outDir, cfg.ZinvFitoverlap)
+    kFit.AnalyzeScore(   *files_samples_outDir, cfg.ZinvFitoverlap) 
+    #genDataAna( *files_samples_outDir, cfg.ZinvFitoverlap)
+    

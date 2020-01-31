@@ -21,22 +21,25 @@ import pandas as pd
 from itertools import combinations
 ##
 
-def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6 , ZptCut_ = 0, treeDir_ = cfg.tree_dir, getGenData_ = False):
+def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6 , ZptCut_ = 0, treeDir_ = cfg.tree_dir, getGenData_ = False, getak8var_ = False):
     files = files_
     for file_ in files:
         if not os.path.exists(cfg.file_path+file_+'.root') : continue
         with uproot.open(cfg.file_path+file_+'.root') as f_:
             print('Opening File:\t{}'.format(file_))
-            for sample in samples_:
-                print(sample)
+            t_ = f_.get(treeDir_)
+            print(t_.keys())
+            for t,sample in zip(t_.itervalues(),samples_):
+            #for sample in samples_:
+                print(sample,t)
                 getGenData = getGenData_
                 if ((sample != 'TTZ') and (sample != 'TTBarLep')): getGenData = False
-                t = f_.get(treeDir_+'/'+sample)
+                #t = t_.get(sample)
                 ak4vars = {}
                 ak4lvec = {}
                 genData = {}
-                #ak8vars = {}
-                #ak8lvec = {}
+                ak8vars = {}
+                ak8lvec = {}
                 #selvar  = {'nJets':t.array('nJets30_drLeptonCleaned')} ##### temporary, only train on 6 ak4 jet events
                 selvar   = {'nJets':t.array('Jet_pt_drLeptonCleaned').counts}
                 valRCvars = {}
@@ -47,9 +50,11 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                         key = key_ 
                         if ('_drLeptonCleaned' in key) : 
                             key = key.replace('_drLeptonCleaned','')
-                        if ('Jet_' in key) :
+                        if   ('Jet_' in key and 'FatJet_' not in key) :
                             key = key.replace('Jet_', '')
-                        dict_[key] = t.array(key_)[((selvar['nJets'] >= 4) & (selvar['nJets'] <= maxJets_))]
+                        elif ('FatJet_' in key) :
+                            key = key.replace('FatJet_', '')
+                        dict_[key] = t.array(key_)[((selvar['nJets'] >= (njets_-1)) & (selvar['nJets'] <= maxJets_))]
                         #
                     #
                 #
@@ -76,6 +81,10 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 defineKeys(valvars,cfg.valvars)
                 defineKeys(label,  cfg.label)
                 #
+                if (getak8var_):
+                    defineKeys(ak8vars,cfg.ak8vars)
+                    defineKeys(ak8lvec,cfg.ak8lvec['TLVarsLC'])
+                #
                 if (getGenData):
                     defineKeys(genData,cfg.genpvars)
                 #
@@ -87,28 +96,33 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                             & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
                 zptcut = (valvars['bestRecoZPt'] >= ZptCut_)
                 #
-                def applyAK4Cuts(dict_, cuts_, zptcut_):
+                def applyAK4Cuts(dict_, cuts_, zptcut_, isak4=False):
                     for key in dict_.keys():
-                        try : 
+                        if isak4 : 
                             dict_[key] = dict_[key][cuts_] ## bool switch might work better with try! statement
-                        except:
-                            pass
                         dict_[key]  = dict_[key][(blOps_((cuts_).sum(), njets_)) & (cuts_.sum() <= maxJets_) & (zptcut_)]
                 #
-                applyAK4Cuts(ak4vars,   ak4_cuts, zptcut)
-                applyAK4Cuts(ak4lvec,   ak4_cuts, zptcut)
+                applyAK4Cuts(ak4vars,   ak4_cuts, zptcut, isak4=True)
+                applyAK4Cuts(ak4lvec,   ak4_cuts, zptcut, isak4=True)
                 applyAK4Cuts(valRCvars, ak4_cuts, zptcut)
                 applyAK4Cuts(valvars,   ak4_cuts, zptcut)
                 applyAK4Cuts(label,     ak4_cuts, zptcut)
+                #
+                if (getak8var_):
+                    applyAK4Cuts(ak8vars, ak4_cuts, zptcut)
+                    applyAK4Cuts(ak8lvec, ak4_cuts, zptcut)
                 #
                 if (getGenData):
                     applyAK4Cuts(genData, ak4_cuts, zptcut)
                 #
                 del ak4_cuts, zptcut
                 #
-                print(max(ak4lvec['pt'].counts))
-                sample_maxJets = max(ak4lvec['pt'].counts)
+                sample_maxJets    = max(ak4lvec['pt'].counts)
+                if (getak8var_):
+                    sample_maxFatJets = max(ak8lvec['pt'].counts)
                 valvars['nJets'] = ak4lvec['pt'].counts
+                if (getak8var_):
+                    valvars['nFatJets'] = ak8lvec['pt'].counts
                 ##
                 ##
                 def CleanRTCJetIdx(RC_, LC_, RC_j1, RC_j2, RC_j3):
@@ -161,18 +175,18 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 del valRCvars['pt'], valRCvars['eta'], valRCvars['phi'], valRCvars['E']
                 ###########
                 # Add to dataframe #
-                def addToDF(dict_, df_):
+                def addToDF(dict_, df_, n_colpervar=None):
                     for key in dict_.keys():
                         df_temp = pd.DataFrame.from_dict(dict_)
                         key_list = []
-                        try:
-                            nVarPerKey = sample_maxJets #len(df_temp[key][0])
+                        if n_colpervar:
+                            nVarPerKey = n_colpervar #len(df_temp[key][0])
                             #nVarPerKey = maxJets_
                             for i in range(0,nVarPerKey):
                                 key_list.append(key+'_'+str(i+1))
                             df_temp = pd.DataFrame(df_temp[key].values.tolist(), columns = key_list )
                             df_ = pd.concat([df_,df_temp],axis=1)
-                        except:
+                        else:
                             df_ = pd.concat([df_,df_temp[key]],axis=1)
 
                     return df_
@@ -180,14 +194,22 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 dfs       = pd.DataFrame()
                 val_dfs   = pd.DataFrame()
                 #
-                dfs     = addToDF(ak4vars, dfs)
+                dfs     = addToDF(ak4vars, dfs, sample_maxJets)
                 del ak4vars
-                dfs     = addToDF(ak4lvec, dfs)
+                dfs     = addToDF(ak4lvec, dfs, sample_maxJets)
                 del ak4lvec
                 val_dfs = addToDF(valvars, val_dfs)
                 del valvars
                 dfs     = addToDF(label,   dfs)
                 del label
+                #
+                #if (getak8var_):
+                #    ak8_dfs   = pd.DataFrame()
+                #    ak8_dfs = addToDF(ak8vars, ak8_dfs, sample_maxFatJets)
+                #    del ak8vars
+                #    ak8_dfs = addToDF(ak8lvec, ak8_dfs, sample_maxFatJets)
+                #    del ak8lvec
+                #
                 #reduce memory usage of DF by converting float64 to float32
                 def reduceDF(df_):
                     for key in df_.keys():
@@ -206,6 +228,12 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 if (getGenData) :
                     with open(outDir_+file_+'_'+sample+'_gen.pkl'   ,'wb') as handle:
                         pickle.dump(genData, handle, protocol=pickle.HIGHEST_PROTOCOL)
+                if (getak8var_):
+                    #ak8_dfs.to_pickle(  outDir_+file_+'_'+sample+'_ak8.pkl')
+                    #del ak8_dfs
+                    with open(outDir_+file_+'_'+sample+'_ak8.pkl'   ,'wb') as handle:
+                        ak8_dict = {**ak8vars, **ak8lvec}
+                        pickle.dump(ak8_dict, handle, protocol=pickle.HIGHEST_PROTOCOL)
                 del dfs
                 del val_dfs
                 del valRCvars

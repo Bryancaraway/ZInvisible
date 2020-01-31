@@ -13,6 +13,7 @@ MCsamples         = ['TTZ','DY','TTX','DiBoson','TTBarLep']
 skim_dir          = master_file_path+'skim/'
 skim_kinemFit_dir = master_file_path+'skim_kinemFit/'
 skim_Zinv_dir     = master_file_path+'skim_Zinv/'
+skim_ZHbb_dir     = master_file_path+'skim_ZHbb/'
 ##############
 sample_maxJets  = {'DiLep':{'DY':14, 'TTZ':14, 'TTX':14, 'TTBarLep':11, 'DiBoson':11, 'TriBoson':10},
                    'ZInv':{'WJets':14, 'ZJets':13, 'DiBoson':11, 'TriBoson':11, 'TTX':14, 'QCD':13, 
@@ -32,6 +33,14 @@ ZinvFitCfg    = (['result_2017'],
 ZinvFitCut     = (operator.ge, 5)
 ZinvFitoverlap = 0
 ZinvFitMaxJets = 14
+##### TTZ, Z to MET CONFIG #####
+ZHbbFitCfg    = (['result_2017'],
+                 #['WJets','ZJets','DY','DiBoson','TriBoson','TTX','QCD','TTBarHad','TTBarLep','TTZ/H'],
+                 [ 'QCD',  'TTX',  'DY',  'TTBarLep',  'WJets',  'TTZH',  'TTBarHad',  'DiBoson',  'TriBoson',  'ZJets'],
+                 skim_ZHbb_dir)
+ZHbbFitCut    = (operator.ge, 0)
+ZHbbFitoverlap = 0
+ZHbbFitMaxJets = 14
 # Train Overhead #
 train_dir      = master_file_path+'train/'
 train_over_dir = master_file_path+'train_overSample/'
@@ -48,14 +57,14 @@ ak4lvec = {'TLV'      :['JetTLV'+LC],
            'TLVarsLC' :['Jet_pt'+LC, 'Jet_eta'+LC, 'Jet_phi'+LC, 'Jet_E'+LC],
            'TLVars'   :['Jet_pt', 'Jet_eta', 'Jet_phi', 'Jet_E']}
 #
-ak8vars = ['FatJet_tau1'+LC,'FatJet_tau2'+LC,'FatJet_tau3'+LC,'FatJet_tau4'+LC,'FatJet_deepTag_WvsQCD'+LC,'FatJet_deepTag_TvsQCD'+LC,'FatJet_deepTag_ZvsQCD'+LC,'FatJet_msoftdrop'+LC,'FatJet_mass'+LC]
+ak8vars = ['FatJet_tau1'+LC,'FatJet_tau2'+LC,'FatJet_tau3'+LC,'FatJet_tau4'+LC,'FatJet_deepTag_WvsQCD'+LC,'FatJet_deepTag_TvsQCD'+LC,'FatJet_deepTag_ZvsQCD'+LC,'FatJet_msoftdrop'+LC,'FatJet_mass'+LC,'FatJet_btagDeepB'+LC,'FatJet_btagHbb'+LC]
 ak8lvec = {'TLV'      :['FatJetTLV'+LC],
            'TLVarsLC' :['FatJet_pt'+LC, 'FatJet_eta'+LC, 'FatJet_phi'+LC, 'FatJet_E'+LC],
            'TLVars'   :['FatJet_pt', 'FatJet_eta', 'FatJet_phi', 'FatJet_E']}
 #
 genpvars   = ['GenPart_pt', 'GenPart_eta', 'GenPart_phi', 'GenPart_E', 'GenPart_status', 'GenPart_pdgId', 'GenPart_genPartIdxMother']
 genLevCuts = ['passGenCuts','isZToLL']
-valvars    = ['nResolvedTops'+LC,'nMergedTops'+LC,'nBottoms'+LC,'nJets30'+LC,
+valvars    = ['nResolvedTops'+LC,'nMergedTops'+LC,'nBottoms'+LC,'nSoftBottoms'+LC,'nJets30'+LC,
               'bestRecoZPt', 'bestRecoZEta', 'bestRecoZPhi', 'bestRecoZM',
               'MET_phi', 'MET_pt',
               'passElecZinvSelOnZMassPeak','passMuZinvSelOnZMassPeak','genWeight','weight']

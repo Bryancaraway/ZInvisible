@@ -95,27 +95,80 @@ def computeChi2(files_, samples_, outDir_, njets_):
         #
     #
 #
-def retrieveData(files_, samples_, outDir_):
+def retrieveData(files_, samples_, outDir_, getgen_=False, getak8_=False):
     df = {}
     files = files_
     for file_ in files:
         for sample in samples_:
             if not os.path.exists(outDir_+file_+'_'+sample+'.pkl') : continue
+            if not os.path.exists(outDir_+file_+'_'+sample+'_val.pkl') : continue
+            if not os.path.exists(outDir_+file_+'_'+sample+'_valRC.pkl') : continue
             df_ = pd.DataFrame()
             val_df_ = pd.DataFrame()
             df_ = pd.read_pickle(outDir_+file_+'_'+sample+'.pkl')
             val_df_ = pd.read_pickle(outDir_+file_+'_'+sample+'_val.pkl')
             with open(outDir_+file_+'_'+sample+'_valRC.pkl', 'rb') as handle:
                 valRCdict_ = pickle.load(handle)
+            #
             df[sample+file_.strip('result')] = {'df':df_, 'val':val_df_, 'valRC':valRCdict_}
+            #
+            if getgen_:
+                with open(outDir_+file_+'_'+sample+'_gen.pkl', 'rb') as handle:
+                    gen_ = pickle.load(handle)
+                df[sample+file_.strip('result')]['gen'] = gen_
+            if getak8_:
+                #ak8_df_ = pd.DataFrame()
+                #ak8_df_ = pd.read_pickle(outDir_+file_+'_'+sample+'_ak8.pkl')
+                with open(outDir_+file_+'_'+sample+'_ak8.pkl', 'rb') as handle:
+                    ak8_ = pickle.load(handle)
+                df[sample+file_.strip('result')]['ak8'] = ak8_
             #
         #
     #
     return df
 #
-def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap):
+def getLaLabel(str_):
+    str_ = str_.split('_')[0] # get rid of year suffix
+    la_str = ''
+    col_str= ''
+    if   ('TTZ' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z'
+        col_str = 'tab:blue'
+    elif ('TTZH' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z/H'
+        col_str = 'tab:blue'
+    elif ('DY' in str_):
+        la_str = 'Drell-Yan'
+        col_str = 'tab:orange'
+    elif ('DiBoson' in str_):
+        la_str = 'VV'
+        col_str = 'tab:olive'
+    elif ('TriBoson' in str_):
+        la_str = 'VVV'
+        col_str = 'tab:pink'
+    elif ('TTX' in str_):
+        la_str = r't($\mathregular{\bar{t}}$)X'
+        col_str = 'tab:red'
+    elif ('TTBarLep' in str_):
+        la_str = r't$\mathregular{\bar{t}}$'
+        col_str = 'tab:green'
+    elif ('TTBarHad' in str_):
+        la_str = r't$\mathregular{\bar{t}}$'
+        col_str = 'tab:brown'
+    elif ('WJets' in str_):
+        la_str = r'W$+$jets'
+        col_str = 'tab:cyan'
+    elif ('ZJets' in str_):
+        la_str = r'Z$+$jets'
+        col_str = 'tab:gray'
+    elif ('QCD' in str_):
+        la_str = r'QCD'
+        col_str = 'tab:purple'
+    return la_str, col_str
+        
+def evaluateScore(files_, samples_, outDir_, overlap_= cfg.kinemFitoverlap, getak8_=False):
     
-    df = retrieveData(files_, samples_, outDir_)
+    df = retrieveData(files_, samples_, outDir_, getak8_)
     #
     def calcQscore(df_, overlap_ = overlap_):
         for key_ in df.keys():
@@ -410,41 +463,7 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
         plt.close
         #
     #        
-    def getLaLabel(str_):
-        la_str = ''
-        col_str= ''
-        if   ('TTZ' in str_):
-            la_str = r't$\mathregular{\bar{t}}$Z'
-            col_str = 'tab:blue'
-        elif ('DY' in str_):
-            la_str = 'Drell-Yan'
-            col_str = 'tab:orange'
-        elif ('DiBoson' in str_):
-            la_str = 'VV'
-            col_str = 'tab:olive'
-        elif ('TriBoson' in str_):
-            la_str = 'VVV'
-            col_str = 'tab:pink'
-        elif ('TTX' in str_):
-            la_str = r't($\mathregular{\bar{t}}$)X'
-            col_str = 'tab:red'
-        elif ('TTBarLep' in str_):
-            la_str = r't$\mathregular{\bar{t}}$'
-            col_str = 'tab:green'
-        elif ('TTBarHad' in str_):
-            la_str = r't$\mathregular{\bar{t}}$'
-            col_str = 'tab:brown'
-        elif ('WJets' in str_):
-            la_str = r'W$+$jets'
-            col_str = 'tab:cyan'
-        elif ('ZJets' in str_):
-            la_str = r'Z$+$jets'
-            col_str = 'tab:orange'
-        elif ('QCD' in str_):
-            la_str = r'QCD'
-            col_str = 'tab:purple'
-        return la_str, col_str
-        
+
     def QScoreVsKinem(df_, cut_, kinem_, range_, xlabel_, n_bins=20, norm_=True, add_cuts_= None):
         from matplotlib import rc
         rc("legend", fontsize=10, scatterpoints=1, numpoints=1, borderpad=0.3, labelspacing=0.2,
@@ -495,9 +514,11 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
                                          (df_[key_]['df']['Minmtb'] >= 175))
                     	
                     	elif (overlap_ == 0) :
-                    	    base_cuts = ((df_[key_]['val']['nBottoms'] >= 0)     &
+                    	    base_cuts = ((df_[key_]['val']['nBottoms'] > 0)     &
+                                         (df_[key_]['val']['nSoftBottoms'] == 0) &
                                          (df_[key_]['df']['TopMinPt'] > 50)     &
                     	                 (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
+                                         #(df_[key_]['df']['Cmtb_l3'] >= 175)    &
                     	                 #(df_[key_]['df']['Minmtb'] >= 200)      &
                                          #(df_[key_]['df']['Cmtb'] >= 200)         &
                     	                 (df_[key_]['val']['MET_pt'] >= 250)     & 
@@ -593,11 +614,12 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
             	                 (df_[key_]['df']['TopMaxDiffM'] <= 55) &
                                  (df_[key_]['val']['MET_pt'] >= 250))
                 if (overlap_ == 0) :
-                    base_cuts = ((df_[key_]['val']['nBottoms'] >= 1)      &
-                                 #(df_[key_]['df']['Minmtb'] >= 200)       &
-                                 (df_[key_]['df']['Cmtb_l3'] >= 180)         &
+                    base_cuts = ((df_[key_]['val']['nBottoms'] > 0)      &
+                                 (df_[key_]['val']['nSoftBottoms'] == 0)      &
+                                 #(df_[key_]['df']['Minmtb'] >= 200R)       &
+                                 (df_[key_]['df']['Cmtb_l3'] >= 185)         &
                                  #(df_[key_]['val']['nResolvedTops'] == 2) &
-                                 (df_[key_]['df']['Q'] >= 1.89)           &
+                                 (df_[key_]['df']['Q'] >= 1.90)           &
             	                 (df_[key_]['df']['TopMinPt'] > 50)     &
                                  (df_[key_]['df']['TopMaxEta'] <= 2.4)  &
             	                 (df_[key_]['df']['TopMaxDiffM'] <= 55) &
@@ -700,6 +722,7 @@ def AnalyzeScore(files_, samples_, outDir_, overlap_ = cfg.kinemFitoverlap):
     QScoreVsKinem(df, 1.5, 'METttDPhi',   (0,3.2),  'METttDPhi',   20, False, add_cuts)
     QScoreVsKinem(df, 1.5, 'nJets30',     (0,10),  'nJets30',      11, False, add_cuts)
     QScoreVsKinem(df, 1.5, 'nBottoms',    (0,5),   'nBottoms',     6,  False, add_cuts)
+    QScoreVsKinem(df, 1.5, 'nSoftBottoms', (0,5),  'nSoftBottoms', 6,  False, add_cuts)
     QScoreVsKinem(df, 1.5, 'nResolvedTops', (0,5), 'nResolvedTops',6,  False, add_cuts)
     QScoreVsKinem(df, 1.5, 'nMergedTops', (0,5),   'nMergedTops',  6,  False, add_cuts)
     #
