@@ -28,10 +28,10 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
         with uproot.open(cfg.file_path+file_+'.root') as f_:
             print('Opening File:\t{}'.format(file_))
             t_ = f_.get(treeDir_)
-            print(t_.keys())
-            for t,sample in zip(t_.itervalues(),samples_):
+            for sample in samples_:
             #for sample in samples_:
-                print(sample,t)
+                print(sample)
+                t = t_.get(sample)
                 getGenData = getGenData_
                 if ((sample != 'TTZ') and (sample != 'TTBarLep')): getGenData = False
                 #t = t_.get(sample)

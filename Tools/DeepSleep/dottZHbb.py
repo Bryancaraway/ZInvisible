@@ -22,9 +22,13 @@ import processData  as prD
 import kinematicFit as kFit
 #
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 np.random.seed(0)
 ##
+def fille(one_d_array):
+    return pd.DataFrame.from_records(one_d_array).values.flatten()
+    #
 def deltaR(eta1,phi1,eta2,phi2):
     deta = eta1-eta2
     dphi = phi1-phi2
@@ -34,7 +38,14 @@ def deltaR(eta1,phi1,eta2,phi2):
     #
     delta_r = np.sqrt(np.add(np.power(deta,2),np.power(dphi,2)))
     return delta_r
-
+def invM(pt1,eta1,phi1,pt2,eta2,phi2):
+    pt1pt2 = pt1*pt2
+    cosheta1eta2 = np.cosh(eta1-eta2)
+    cosphi1phi2  = np.cos(phi1-phi2)
+    #
+    invm2 = 2*pt1pt2*(cosheta1eta2-cosphi1phi2)
+    return np.sqrt(invm2)
+    #
 def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     df = kFit.retrieveData(files_, samples_, outDir_, getak8_=True)
     for i_, key_ in enumerate(df.keys()):
@@ -43,10 +54,16 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         fj_phi  = df[key_]['ak8']['phi']
         fj_eta  = df[key_]['ak8']['eta']
         fj_E    = df[key_]['ak8']['E']
+        sd_M    = df[key_]['ak8']['msoftdrop']
         bb_tag  = df[key_]['ak8']['btagDeepB']
         hbb_tag = df[key_]['ak8']['btagHbb']
         #
-        ak8_bbcut =  ((fj_pt > 300)  & (bb_tag >= 0.5))
+        lep_pt   = df[key_]['val']['Lep_pt']
+        lep_eta  = df[key_]['val']['Lep_eta']
+        lep_phi  = df[key_]['val']['Lep_phi']
+        lep_E    = df[key_]['val']['Lep_E']
+        #
+        ak8_bbcut =  ((fj_pt > 300)  & (bb_tag >= 0.9))
         ak8_hbbcut = ((fj_pt > 300) & (hbb_tag >= 0.5))
         #
         tmp_ = df[key_]['df']
@@ -83,20 +100,72 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         #
         df[key_]['ak8']['nbbFatJets']  = bb_tag[ak8_bbcut].counts
         df[key_]['ak8']['nhbbFatJets'] = hbb_tag[ak8_hbbcut].counts
+        H_pt   = fj_pt[ak8_hbbcut]
+        df[key_]['ak8']['H_pt'] = fille(H_pt[:,0:1] )
+        df[key_]['ak8']['H_score'] = fille(hbb_tag[ak8_hbbcut][:,0:1])
         H_eta  = fj_eta[ak8_hbbcut]
         H_phi  = fj_phi[ak8_hbbcut]
+        H_M    = sd_M[ak8_hbbcut]
+        df[key_]['ak8']['H_M'] = fille(H_M[:,0:1])
+        #
+        fjbb_pt  = fj_pt[ak8_bbcut]
+        df[key_]['ak8']['fjbb_pt'] = fille(fjbb_pt[:,0:1] )
+        df[key_]['ak8']['fjbb_score'] = fille(bb_tag[ak8_bbcut][:,0:1])
+        fjbb_eta = fj_eta[ak8_bbcut]
+        fjbb_phi = fj_phi[ak8_bbcut]
+        fjbb_M   = sd_M[ak8_hbbcut]
+        df[key_]['ak8']['fjbb_M'] = fille(fjbb_M[:,0:1])
         #
         #H_eta[H_eta.counts == 0] = np.nan
-        Hb_dr = []
+        Hb_dr  = []
+        Hl_dr  = []
+        fjb_dr = []
+        fjl_dr = []
         for i_ in range(maxb):
             Hb_dr.append(deltaR(
                 H_eta[:,0:1],H_phi[:,0:1],
                 b_eta[:,i_],b_phi[:,i_]))
-        Hb_dr = np.array(Hb_dr).T
+            fjb_dr.append(deltaR(
+                fjbb_eta[:,0:1],fjbb_phi[:,0:1],
+                b_eta[:,i_],b_phi[:,i_]))
+        Hl_dr = fille(deltaR(
+            H_eta[:,0:1],H_phi[:,0:1],
+            lep_eta,lep_phi))
+        Hl_invm = fille(invM(
+            H_pt[:,0:1],H_eta[:,0:1],H_phi[:,0:1],
+            lep_pt,lep_eta,lep_phi))
+        fjl_dr = fille(deltaR(
+            fjbb_eta[:,0:1],fjbb_phi[:,0:1],
+            lep_eta,lep_phi))
+        fjl_invm = fille(invM(
+            fjbb_pt[:,0:1],fjbb_eta[:,0:1],fjbb_phi[:,0:1],
+            lep_pt,lep_eta,lep_phi))
+        Hb_dr  = np.array(Hb_dr).T
+        fjb_dr = np.array(fjb_dr).T
         n_nonHbb = np.count_nonzero(Hb_dr > .8, axis=1)
+        n_nonfjbb = np.count_nonzero(fjb_dr > .8, axis=1)
+        
+        #print(pd.Series(Hl_dr).values.tolist())
         df[key_]['ak8']['n_nonHbb'] = n_nonHbb
+        df[key_]['ak8']['n_nonfjbb'] = n_nonfjbb
+        df[key_]['ak8']['Hl_dr']  = Hl_dr
+        df[key_]['ak8']['Hl_invm']  = Hl_invm
+        df[key_]['ak8']['fjl_dr'] = fjl_dr
+        df[key_]['ak8']['fjl_invm']  = fjl_invm
 
-    StackedHisto(df, 'n_nonHbb',  (0,4), 'n_nonHbb',  4) 
+#    StackedHisto(df, 'n_nonHbb', (0,4),     'nb_nonHbb',  4) 
+#    StackedHisto(df, 'Hl_dr',    (0,5),     'Hl_dr',  20)
+#    StackedHisto(df, 'Hl_invm',  (0,300),   'Hl_invm',  20)
+#    StackedHisto(df, 'H_pt',     (200,600), 'H_pt',  20)
+#    StackedHisto(df, 'H_M',     (0,300),    'H_M',  20)
+#    StackedHisto(df, 'H_score', (.4,1.2),   'Hbb_score',  20)
+    StackedHisto(df, 'n_nonfjbb', (0,4),     'nb_nonfjbb',  4) 
+    StackedHisto(df, 'fjl_dr',    (0,5),     'fjl_dr',  20)
+    StackedHisto(df, 'fjl_invm',  (0,300),   'fjl_invm',  20)
+    StackedHisto(df, 'fj_pt',     (200,600), 'fj_pt',  20)
+    StackedHisto(df, 'fj_M',     (0,300),    'fj_M',  20)
+    StackedHisto(df, 'fj_score', (.4,1.2),   'fjbb_score',  20)
+
     #StackedHisto(df, 'nbbFatJets',  (0,4), 'nbbFatJets',  4)
     #StackedHisto(df, 'nhbbFatJets', (0,4), 'nhbbFatJets', 4)
 
@@ -117,7 +186,8 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     labels   = []
     colors   = []
     #
-    bins = np.arange(range_[0],range_[-1]+(int((range_[-1]+1)/n_bins)) , int((range_[-1]+1)/n_bins))
+
+    bins = np.arange(range_[0],range_[-1]+(int((range_[-1]+1)/n_bins)) , (range_[-1]+1)/n_bins)
     #                                                                                                
     for i_, key_ in enumerate(df_.keys()):
         if (kinem_ in df_[key_]['df'].keys()):
@@ -134,7 +204,8 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
         base_cuts = (
             #(( (df_[key_]['ak8']['nbbFatJets']  == 1) & (df_[key_]['ak8']['nhbbFatJets'] == 0) ) |
             # ( (df_[key_]['ak8']['nbbFatJets']  == 0) & (df_[key_]['ak8']['nhbbFatJets'] == 1) )) &
-            (df_[key_]['ak8']['n_nonHbb'] >= 2) &
+            (df_[key_]['ak8']['n_nonfjbb'] >= 2) &
+            #(df_[key_]['ak8']['nbbFatJets'] == 1) &
             (df_[key_]['val']['MET_pt'] >= 20))# &
                       #(df_[key_]['val']['nResolvedTops'] == 1))
         ########
@@ -175,6 +246,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     plt.xlabel(xlabel_, fontsize = fontsize)
     plt.ylabel('Events / '+str(int((range_[-1]+1)/n_bins))+' GeV', fontsize = fontsize)
     plt.xlim(range_)
+    plt.yscale('log')
     #plt.setp(patches_, linewidth=0)
     plt.legend()
     plt.savefig('money_pdf/moneyplot'+xlabel_+'_.pdf', dpi = 300)

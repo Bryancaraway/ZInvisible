@@ -47,7 +47,6 @@ train_over_dir = master_file_path+'train_overSample/'
 test_dir       = master_file_path+'test/'
 val_dir        = master_file_path+'val/'
 
-
 ###################
 # Input Variables #
 LC = '_drLeptonCleaned'
@@ -66,7 +65,7 @@ genpvars   = ['GenPart_pt', 'GenPart_eta', 'GenPart_phi', 'GenPart_E', 'GenPart_
 genLevCuts = ['passGenCuts','isZToLL']
 valvars    = ['nResolvedTops'+LC,'nMergedTops'+LC,'nBottoms'+LC,'nSoftBottoms'+LC,'nJets30'+LC,
               'bestRecoZPt', 'bestRecoZEta', 'bestRecoZPhi', 'bestRecoZM',
-              'MET_phi', 'MET_pt',
+              'MET_phi', 'MET_pt', 'Lep_pt', 'Lep_eta', 'Lep_phi', 'Lep_E',
               'passElecZinvSelOnZMassPeak','passMuZinvSelOnZMassPeak','genWeight','weight']
 valRCvars  = ['ResolvedTopCandidate_discriminator', 'ResolvedTopCandidate_j1Idx', 'ResolvedTopCandidate_j2Idx', 'ResolvedTopCandidate_j3Idx']
 label      = ['isTAllHad']
