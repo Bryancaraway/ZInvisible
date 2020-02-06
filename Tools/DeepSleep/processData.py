@@ -33,7 +33,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 print(sample)
                 t = t_.get(sample)
                 getGenData = getGenData_
-                if ((sample != 'TTZ') and (sample != 'TTBarLep')): getGenData = False
+                if ((sample != 'TTZ') and (sample != 'TTBarLep') and (sample != 'TTZH')): getGenData = False
                 #t = t_.get(sample)
                 ak4vars = {}
                 ak4lvec = {}
@@ -226,6 +226,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 with open(outDir_+file_+'_'+sample+'_valRC.pkl', 'wb') as handle:
                     pickle.dump(valRCvars, handle, protocol=pickle.HIGHEST_PROTOCOL)
                 if (getGenData) :
+                    print(genData)
                     with open(outDir_+file_+'_'+sample+'_gen.pkl'   ,'wb') as handle:
                         pickle.dump(genData, handle, protocol=pickle.HIGHEST_PROTOCOL)
                 if (getak8var_):
