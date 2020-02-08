@@ -71,6 +71,7 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         sd_M    = df[key_]['ak8']['msoftdrop']
         bb_tag  = df[key_]['ak8']['btagDeepB']
         hbb_tag = df[key_]['ak8']['btagHbb']
+        w_tag   = df[key_]['ak8']['deepTag_WvsQCD']
         #
         lep_pt   = df[key_]['val']['Lep_pt']
         lep_eta  = df[key_]['val']['Lep_eta']
@@ -105,28 +106,46 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         b_eta = tmp_[eta_].to_numpy()
         b_E   = tmp_[E_].to_numpy()
         #
+        j_pt  = tmp_[pt_].to_numpy()
+        j_phi = tmp_[phi_].to_numpy()
+        j_eta = tmp_[eta_].to_numpy()
+        j_E   = tmp_[E_].to_numpy()
+        #
         b_disc[b_cut] = np.nan
         b_pt[b_cut]   = np.nan
         b_phi[b_cut]  = np.nan
         b_eta[b_cut]  = np.nan
         b_E[b_cut]    = np.nan
-        
+        #
+        j_pt [b_cut == False] = np.nan
+        j_phi[b_cut == False] = np.nan
+        j_eta[b_cut == False] = np.nan
+        j_E  [b_cut == False] = np.nan
         #
         df[key_]['ak8']['nbbFatJets']  = bb_tag[ak8_bbcut].counts
         df[key_]['ak8']['nhbbFatJets'] = hbb_tag[ak8_hbbcut].counts
         #########
-        hbb_tag, H_pt, H_eta, H_phi, H_M = sortbyscore([hbb_tag[fj_pt>300],
-                                                        fj_pt  [fj_pt>300],
-                                                        fj_eta [fj_pt>300],
-                                                        fj_phi [fj_pt>300],
-                                                        sd_M   [fj_pt>300]],  
-                                                       hbb_tag [fj_pt>300])
+        hbb_tag, H_pt, H_eta, H_phi, H_M, H_wtag = sortbyscore([hbb_tag[fj_pt>300],
+                                                                fj_pt  [fj_pt>300],
+                                                                fj_eta [fj_pt>300],
+                                                                fj_phi [fj_pt>300],
+                                                                sd_M   [fj_pt>300],
+                                                                w_tag  [fj_pt>300]],  
+                                                               hbb_tag [fj_pt>300])
         # take the best tagged H/Z -> bb
         df[key_]['ak8']['H_score'] = hbb_tag[:,0]
         df[key_]['ak8']['H_pt']    = H_pt[:,0]
         df[key_]['ak8']['H_eta']   = H_eta[:,0]
         df[key_]['ak8']['H_phi']   = H_phi[:,0]
         df[key_]['ak8']['H_M']     = H_M[:,0]
+        df[key_]['ak8']['H_Wscore']= H_wtag[:,0]
+        #
+        df[key_]['ak8']['H2_score'] = hbb_tag[:,1]
+        df[key_]['ak8']['H2_pt']    = H_pt   [:,1]
+        df[key_]['ak8']['H2_eta']   = H_eta  [:,1]
+        df[key_]['ak8']['H2_phi']   = H_phi  [:,1]
+        df[key_]['ak8']['H2_M']     = H_M    [:,1]
+        df[key_]['ak8']['H2_Wscore']= H_wtag [:,1]
         #########
         fjbb_pt  = fj_pt[ak8_bbcut]
         df[key_]['ak8']['fjbb_pt'] = fill1e(fjbb_pt[:,0:1] )
@@ -148,6 +167,10 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
             fjb_dr.append(deltaR(
                 fjbb_eta[:,0:1],fjbb_phi[:,0:1],
                 b_eta[:,i_],b_phi[:,i_]))
+        #
+        Hj_dr = deltaR(
+            H_eta[:,0],H_phi[:,0],
+            j_eta,j_phi)
         Hl_dr = deltaR(
             H_eta[:,0],H_phi[:,0],
             lep_eta,lep_phi)
@@ -163,12 +186,22 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         Hb_dr  = np.array(Hb_dr).T
         fjb_dr = np.array(fjb_dr).T
         n_nonHbb = np.count_nonzero(Hb_dr > .8, axis=1)
+        n_jnonHbb= np.count_nonzero(Hj_dr > .8, axis=1)
         n_b_Hbb  = np.count_nonzero(Hb_dr < .8, axis=1)
+        n_j_Hbb  = np.count_nonzero(Hj_dr < .8, axis=1)
         n_nonfjbb = np.count_nonzero(fjb_dr > .8, axis=1)
-        
+        #
         #print(pd.Series(Hl_dr).values.tolist())
+        df[key_]['ak8']['nonHbbj1_pt'] = -np.sort(-np.where(Hj_dr > 0.8, j_pt, np.nan),axis = 1 )[:,0]
+        df[key_]['ak8']['nonHbbj2_pt'] = -np.sort(-np.where(Hj_dr > 0.8, j_pt, np.nan),axis = 1 )[:,1]
+        df[key_]['ak8']['nonHbbj1_dr'] = np.sort(np.where(Hj_dr > 0.8, Hj_dr, np.nan),axis = 1 )[:,0]
+        df[key_]['ak8']['nonHbbj2_dr'] = np.sort(np.where(Hj_dr > 0.8, Hj_dr, np.nan),axis = 1 )[:,1]
+        df[key_]['ak8']['nonHbb_b1_dr'] = np.sort(np.where(Hb_dr > 0.8, Hb_dr, np.nan),axis = 1 )[:,0]
+        df[key_]['ak8']['nonHbb_b2_dr'] = np.sort(np.where(Hb_dr > 0.8, Hb_dr, np.nan),axis = 1 )[:,1]
         df[key_]['ak8']['n_nonHbb'] = n_nonHbb
         df[key_]['ak8']['n_b_Hbb'] = n_b_Hbb
+        df[key_]['ak8']['n_jnonHbb'] = n_jnonHbb
+        df[key_]['ak8']['n_j_Hbb'] = n_j_Hbb
         df[key_]['ak8']['n_nonfjbb'] = n_nonfjbb
         df[key_]['ak8']['Hl_dr']  = Hl_dr
         df[key_]['ak8']['Hl_invm']  = Hl_invm
@@ -179,24 +212,35 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         sample_, year_ = key_.split('_')
         with open(outDir_+'result_'+year_+'_'+sample_+'_ak8.pkl'   ,'wb') as handle:
             pickle.dump(df[key_]['ak8'], handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    StackedHisto(df, 'n_nonHbb', (0,4),     'nb_nonHZbb',  4) 
-    StackedHisto(df, 'n_b_Hbb', (0,4),      'nb_HZbb',  4) 
-    StackedHisto(df, 'Hl_dr',    (0,5),     'HZl_dr',  20)
-    StackedHisto(df, 'Hl_invm',  (0,300),   'HZl_invm',  20)
+    
+def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
+    df = kFit.retrieveData(files_, samples_, outDir_, getgen_=False, getak8_=True)
+    #
+    StackedHisto(df, 'H_Wscore', (0,1),     'H_Wscore',  20)
+    StackedHisto(df, 'H2_Wscore', (0,1),     'H2_Wscore',  20)
+    StackedHisto(df, 'nFatJets',      (0,5),     'nFatJets', 5)
+    StackedHisto(df, 'nJets',         (0,8),     'nJets', 8)
+    StackedHisto(df, 'nonHbbj1_pt',     (0,600), 'nonHbbq1_pt',  60)
+    StackedHisto(df, 'nonHbbj2_pt',     (0,600), 'nonHbbq2_pt',  60)
+    StackedHisto(df, 'nonHbbj1_dr',     (0,5), 'nonHbbq1_dr',  20)
+    StackedHisto(df, 'nonHbbj2_dr',     (0,5), 'nonHbbq2_dr',  20)
+    StackedHisto(df, 'nonHbb_b1_dr',    (0,5), 'nonHbb_b1_dr', 20)
+    StackedHisto(df, 'nonHbb_b2_dr',    (0,5), 'nonHbb_b2_dr', 20)
+    StackedHisto(df, 'nResolvedTops', (0,5),'nResolvedTops',5)
+    StackedHisto(df, 'n_nonHbb', (0,6),     'nb_nonHZbb',  6) 
+    StackedHisto(df, 'n_b_Hbb', (0,6),      'nb_HZbb',  6) 
+    StackedHisto(df, 'n_jnonHbb', (0,6),     'nq_nonHZbb',  6) 
+    StackedHisto(df, 'n_j_Hbb', (0,6),      'nq_HZbb',  6) 
+    #StackedHisto(df, 'Hl_dr',    (0,5),     'HZl_dr',  20)
+    #StackedHisto(df, 'Hl_invm',  (0,300),   'HZl_invm',  20)
     StackedHisto(df, 'H_pt',     (200,600), 'HZ_pt',  20)
     StackedHisto(df, 'H_M',     (0,300),    'HZ_M',  100)
-    StackedHisto(df, 'H_score', (-1,1),     'HZbb_score',  20)
-    StackedHisto(df, 'MET_pt',  (20,500),   'MET',         40)
-#    StackedHisto(df, 'n_nonfjbb', (0,4),     'nb_nonfjbb',  4) 
-#    StackedHisto(df, 'fjl_dr',    (0,5),     'fjl_dr',  20)
-#    StackedHisto(df, 'fjl_invm',  (0,300),   'fjl_invm',  20)
-#    StackedHisto(df, 'fj_pt',     (200,600), 'fj_pt',  20)
-#    StackedHisto(df, 'fj_M',     (0,300),    'fj_M',  20)
-#    StackedHisto(df, 'fj_score', (.4,1.2),   'fjbb_score',  20)
+    StackedHisto(df, 'H_score', (.4,1),     'HZbb_score',  20)
+    StackedHisto(df, 'H2_pt',     (200,600), 'HZ2_pt',  20)
+    StackedHisto(df, 'H2_M',     (0,300),    'HZ2_M',  40)
+    StackedHisto(df, 'H2_score', (-1,1),     'HZbb2_score',  20)
+    #StackedHisto(df, 'MET_pt',  (20,500),   'MET',         40)
 
-    #StackedHisto(df, 'nbbFatJets',  (0,4), 'nbbFatJets',  4)
-    #StackedHisto(df, 'nhbbFatJets', (0,4), 'nhbbFatJets', 4)
 def GenAna_ttbar(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     df = kFit.retrieveData(files_, ['TTBarLep'], outDir_, getgen_=True, getak8_=True)
     print(df.keys())
@@ -215,9 +259,10 @@ def GenAna_ttbar(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     )
     w = w[base_cuts]
     #
-    ZH_eta = fat_df['H_eta'][base_cuts]
-    ZH_phi = fat_df['H_phi'][base_cuts]
-    ZH_M   = fat_df['H_M'][base_cuts]
+    ZH_eta   = fat_df['H_eta'][base_cuts]
+    ZH_phi   = fat_df['H_phi'][base_cuts]
+    ZH_M     = fat_df['H_M'][base_cuts]
+    ZH_score = fat_df['H_score'][base_cuts] 
 
     #
     gen_ids = gen_df['GenPart_pdgId'][base_cuts]
@@ -227,15 +272,16 @@ def GenAna_ttbar(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     gen_phi = gen_df['GenPart_phi'][base_cuts]
     gen_E   = gen_df['GenPart_E'][base_cuts]
     #
+
     get_bq_fromtop = (
         ((abs(gen_ids) == 5) & (abs(gen_ids[gen_mom]) == 6)) | # if bottom and mom is top
         ((abs(gen_ids) < 5) & (abs(gen_ids[gen_mom]) == 24) & (abs(gen_ids[gen_mom[gen_mom]]) == 6))   # get quarks from W whos parrent is a top
     )
     base = ((get_bq_fromtop) & (get_bq_fromtop.sum() ==4))
     case_1_base_pt = ((base) & 
-                      (gen_ids[gen_mom] > 0) & (gen_ids[gen_mom] != 22))
+                      (gen_ids[gen_mom] > 0) & (gen_ids[gen_mom] != 21))
     case_1_base_mt = ((base) & 
-                      (gen_ids[gen_mom] < 0) & (gen_ids[gen_mom] != -22))
+                      (gen_ids[gen_mom] < 0) & (gen_ids[gen_mom] != -21))
     case_1_base    = (
         ((case_1_base_pt) & (case_1_base_pt.sum() == 3)) |
         ((case_1_base_mt) & (case_1_base_mt.sum() == 3)) 
@@ -263,15 +309,46 @@ def GenAna_ttbar(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     #print(gen_ids[((case_2 == case_4) & (case_2 == True))]) ########
     #print(*gen_ids[((case_3 == case_4) & (case_3 == True))][0]) ########
     #print(*gen_ids[gen_mom][((case_3 == case_4) & (case_3 == True))][0]) ########
-    plt.hist(ZH_M[case_1],weights=w[case_1],bins = 50)    
+    n,b,_ =plt.hist(ZH_M[case_1],weights=w[case_1],bins = 50)    
+    plt.title('Case_1 (qq from W within fatjet) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_M (softdrop)')
     plt.show()
-    plt.hist(ZH_M[case_2],weights=w[case_2],bins = 50)    
+    n,b,_ =plt.hist(ZH_M[case_2],weights=w[case_2],bins = 50)    
+    plt.title('Case_2 (b+q from W, same top within fatjet) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_M (softdrop)')                     
+    plt.show()                                            
+    n,b,_ =plt.hist(ZH_M[case_3],weights=w[case_3],bins = 20)     
+    plt.title('Case_3 (b+qq from W, same top within fatjet) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_M (softdrop)')                    
+    plt.show()                                            
+    n,b,_ =plt.hist(ZH_M[case_4],weights=w[case_4],bins = 20)    
+    plt.title('Case_4 (bb from ttbar within fatjet) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_M (softdrop)')                    
+    plt.show()                                            
+    n,b,_ =plt.hist(ZH_M[case_5],weights=w[case_5],bins = 50)    
+    plt.title('Case_5 (Else) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_M (softdrop)')
     plt.show()
-    plt.hist(ZH_M[case_3],weights=w[case_3],bins = 20)    
+    #
+    n,b,_ =plt.hist(ZH_score[case_1],weights=w[case_1],bins = 50)    
+    plt.title('Case_1 (qq from W within fatjet) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_score (softdrop)')
     plt.show()
-    plt.hist(ZH_M[case_4],weights=w[case_4],bins = 20)    
-    plt.show()
-    plt.hist(ZH_M[case_5],weights=w[case_5],bins = 50)    
+    n,b,_ =plt.hist(ZH_score[case_2],weights=w[case_2],bins = 50)    
+    plt.title('Case_2 (b+q from W, same top within fatjet) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_score (softdrop)')                     
+    plt.show()                                            
+    n,b,_ =plt.hist(ZH_score[case_3],weights=w[case_3],bins = 20)     
+    plt.title('Case_3 (b+qq from W, same top within fatjet) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_score (softdrop)')                    
+    plt.show()                                            
+    n,b,_ =plt.hist(ZH_score[case_4],weights=w[case_4],bins = 20)    
+    plt.title('Case_4 (bb from ttbar within fatjet) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_score (softdrop)')                    
+    plt.show()                                            
+    n,b,_ =plt.hist(ZH_score[case_5],weights=w[case_5],bins = 50)    
+    plt.title('Case_5 (Else) ({0:3.1f})'.format(sum(n[:])))
+    plt.xlabel('reco_HZ_score (softdrop)')
     plt.show()
     
 def GenAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
@@ -405,12 +482,15 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             #(df_[key_]['ak8']['n_nonfjbb'] >= 2) &
             (df_[key_]['ak8']['n_nonHbb'] >= 2)    &
             (df_[key_]['ak8']['n_b_Hbb'] >= 1)     &
+            #(df_[key_]['ak8']['n_jnonHbb'] >= 1)     &
             (df_[key_]['ak8']['nhbbFatJets'] > 0)  &
             (df_[key_]['ak8']['H_M']         > 50) &  
             (df_[key_]['ak8']['H_M']         < 200)&  
+            #(df_[key_]['ak8']['H_score']     > .75)&
             #(df_[key_]['ak8']['nbbFatJets'] == 1) &
+            #(df_[key_]['val']['nResolvedTops'] == 1) &
             (df_[key_]['val']['MET_pt']      >= 20))# &
-                      #(df_[key_]['val']['nResolvedTops'] == 1))
+
         ########
         h.append( np.clip(kinem[base_cuts], bins[0], bins[-1]))
         w.append( df_[key_]['val']['weight'][base_cuts] * np.sign(df_[key_]['val']['genWeight'][base_cuts]) * (137/41.9))
@@ -451,7 +531,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     plt.xlim(range_)
     plt.yscale('log')
     #plt.setp(patches_, linewidth=0)
-    plt.legend()
+    plt.legend(framealpha = 0.2)
     plt.savefig('money_pdf/moneyplot'+xlabel_+'_.pdf', dpi = 300)
     plt.show()
     plt.close(fig)
@@ -484,4 +564,5 @@ if __name__ == '__main__':
     #ZHbbAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
     ########
     #GenAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
-    GenAna_ttbar(*files_samples_outDir, cfg.ZHbbFitoverlap)
+    #GenAna_ttbar(*files_samples_outDir, cfg.ZHbbFitoverlap)
+    plotAna(*files_samples_outDir, cfg.ZHbbFitoverlap)

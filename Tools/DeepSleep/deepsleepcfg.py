@@ -36,7 +36,7 @@ ZinvFitMaxJets = 14
 ##### TTZ, Z to MET CONFIG #####
 ZHbbFitCfg    = (['result_2017'],
                  #['WJets','ZJets','DY','DiBoson','TriBoson','TTX','QCD','TTBarHad','TTBarLep','TTZ/H'],
-                 [ 'QCD',  'TTX',  'DY',  'TTBarLep',  'WJets',  'TTZH',  'TTBarHad',  'DiBoson',  'TriBoson',  'ZJets'],
+                 [ 'TTZH', 'QCD',  'TTX',  'DY',  'TTBarLep',  'WJets', 'TTBarHad',  'DiBoson',  'TriBoson',  'ZJets'],
                  skim_ZHbb_dir)
 ZHbbFitCut    = (operator.ge, 0)
 ZHbbFitoverlap = 0
