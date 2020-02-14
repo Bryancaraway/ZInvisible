@@ -56,7 +56,10 @@ ak4lvec = {'TLV'      :['JetTLV'+LC],
            'TLVarsLC' :['Jet_pt'+LC, 'Jet_eta'+LC, 'Jet_phi'+LC, 'Jet_E'+LC],
            'TLVars'   :['Jet_pt', 'Jet_eta', 'Jet_phi', 'Jet_E']}
 #
-ak8vars = ['FatJet_tau1'+LC,'FatJet_tau2'+LC,'FatJet_tau3'+LC,'FatJet_tau4'+LC,'FatJet_deepTag_WvsQCD'+LC,'FatJet_deepTag_TvsQCD'+LC,'FatJet_deepTag_ZvsQCD'+LC,'FatJet_msoftdrop'+LC,'FatJet_mass'+LC,'FatJet_btagDeepB'+LC,'FatJet_btagHbb'+LC]
+ak8vars = ['FatJet_tau1'+LC,'FatJet_tau2'+LC,'FatJet_tau3'+LC,'FatJet_tau4'+LC,
+           'FatJet_deepTag_WvsQCD'+LC,'FatJet_deepTag_TvsQCD'+LC,'FatJet_deepTag_ZvsQCD'+LC,
+           'FatJet_msoftdrop'+LC,'FatJet_mass'+LC,'FatJet_btagDeepB'+LC,'FatJet_btagHbb'+LC,
+           'FatJet_subJetIdx1'+LC,'FatJet_subJetIdx2'+LC,'SubJet_pt', 'SubJet_btagDeepB']
 ak8lvec = {'TLV'      :['FatJetTLV'+LC],
            'TLVarsLC' :['FatJet_pt'+LC, 'FatJet_eta'+LC, 'FatJet_phi'+LC, 'FatJet_E'+LC],
            'TLVars'   :['FatJet_pt', 'FatJet_eta', 'FatJet_phi', 'FatJet_E']}
