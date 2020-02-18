@@ -109,12 +109,14 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             # ( (df_[key_]['ak8']['nbbFatJets']  == 0) & (df_[key_]['ak8']['nhbbFatJets'] == 1) )) &
             #(df_[key_]['ak8']['n_nonfjbb'] >= 2) &
             (df_[key_]['ak8']['n_nonHbb'] >= 2)    &
+            (df_[key_]['ak8']['best_rt_score'] >= .5)    &
+            #(df_[key_]['val']['matchedGen'] == True)   &
             #(df_[key_]['ak8']['n_b_Hbb'] >= 1)     &
             #(df_[key_]['ak8']['n_jnonHbb'] >= 1)     &
             (df_[key_]['ak8']['nhbbFatJets'] > 0)  &
             (df_[key_]['ak8']['H_M']         > 50) &  
             (df_[key_]['ak8']['H_M']         < 250)& 
-            (df_[key_]['ak8']['H_Wscore']     < .80)&
+            #(df_[key_]['ak8']['H_Wscore']     < .80)&
             #(((df_[key_]['ak8']['best_Wb_invM']<= 175)&(df_[key_]['ak8']['H_Wscore']<.85))|(df_[key_]['ak8']['best_Wb_invM']> 175))&
             #(df_[key_]['ak8']['best_Wb_invM']> 200)&
             #(df_[key_]['ak8']['Hb_invM1']    > 175)&
