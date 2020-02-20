@@ -70,7 +70,7 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         met_phi  = df[key_]['val']['MET_phi']
         #
         ak8_bbcut =  ((fj_pt > 300)  & (bb_tag >= 0.9))
-        ak8_hbbcut = ((fj_pt > 300) & (hbb_tag >= 0.5))
+        ak8_hbbcut = ((fj_pt >= 300) & (sd_M > 50) & (sd_M < 200) & (hbb_tag >= 0.5))
         #
         tmp_ = df[key_]['df']
         b_disc = []
@@ -119,17 +119,20 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         #
         df[key_]['ak8']['nbbFatJets']  = bb_tag[ak8_bbcut].counts
         df[key_]['ak8']['nhbbFatJets'] = hbb_tag[ak8_hbbcut].counts
-        df[key_]['ak8']['n_nonHZ_W'] = w_tag[(w_tag >= 0.8)].counts
+        df[key_]['ak8']['n_nonHZ_W'] = w_tag[(hbb_tag <.5) & (w_tag >= 0.8)].counts
+        df[key_]['ak8']['n_nonHZ_T'] = w_tag[(hbb_tag <.5) & (t_tag >= 0.8)].counts
         #########
-        hz_kinem_cut = ((fj_pt>300) & (sd_M > 50) & (sd_M < 250) & (hbb_tag >= 0.5))
-        H_hbbtag, H_pt, H_eta, H_phi, H_M, H_wtag, H_bbtag = lib.sortbyscore([hbb_tag    ,
-                                                                             fj_pt      ,
-                                                                             fj_eta     ,
-                                                                             fj_phi     ,
-                                                                             sd_M       ,
-                                                                             w_tag      , # 0.8 Med Wp
-                                                                             bb_tag    ],
-                                                                            hbb_tag     ,
+        hz_kinem_cut = ((fj_pt>300) & (sd_M > 50) & (sd_M < 200) & (hbb_tag >= 0.5))
+        H_hbbtag,H_pt,H_eta,H_phi,H_E,H_M,H_wtag,H_ttag,H_bbtag=lib.sortbyscore([hbb_tag    ,
+                                                                                 fj_pt      ,
+                                                                                 fj_eta     ,
+                                                                                 fj_phi     ,
+                                                                                 fj_E       ,
+                                                                                 sd_M       ,
+                                                                                 w_tag      , # 0.8 Med Wp
+                                                                                 t_tag,
+                                                                                 bb_tag    ],
+                                                                                hbb_tag     ,
                                                                             hz_kinem_cut)
         hz_kinem_sj1_cut = ((fj_pt[fj_subjId1 != -1]>300) & (sd_M[fj_subjId1 != -1] > 50) & (sd_M[fj_subjId1 != -1] < 250) & (hbb_tag[fj_subjId1 != -1] >= 0.5))
         H_sj1_pt, H_sj1_btag, H_sj1_hbb = lib.sortbyscore([fj_sj1_pt  ,
@@ -149,14 +152,24 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         df[key_]['ak8']['H_pt']    = H_pt[:,0]
         df[key_]['ak8']['H_eta']   = H_eta[:,0]
         df[key_]['ak8']['H_phi']   = H_phi[:,0]
+        df[key_]['ak8']['H_E']     = H_E[:,0]
         df[key_]['ak8']['H_M']     = H_M[:,0]
         df[key_]['ak8']['H_Wscore']= H_wtag[:,0]
+        df[key_]['ak8']['H_Tscore']= H_ttag[:,0]
         df[key_]['ak8']['H_bbscore']=H_bbtag[:,0]
         #
-        H_sj_b12 = np.column_stack([H_sj1_btag[:,0], H_sj2_btag[:,0]])
+        H_sj_b12  = np.column_stack([H_sj1_btag[:,0], H_sj2_btag[:,0]])
+        H_sj_pt12 = np.nan_to_num(np.column_stack([H_sj1_pt[:,0],    H_sj2_pt[:,0]]) )
+        H_sjpt12_over_fjpt = (H_sj_pt12[:,0] +  H_sj_pt12[:,1])/H_pt[:,0]
+        H_sjpt1_over_fjpt  = (H_sj_pt12[:,0])/H_pt[:,0]
+        H_sjpt2_over_fjpt  = (H_sj_pt12[:,1])/H_pt[:,0]
         df[key_]['ak8']['n_H_sj_btag'] = np.sum(H_sj_b12 >= b_wp, axis=1)
+        df[key_]['ak8']['n_H_sj']      = np.sum(H_sj_b12 >= 0, axis=1)
         df[key_]['ak8']['H_sj_bestb']  = np.nanmax(H_sj_b12, axis=1)
         df[key_]['ak8']['H_sj_worstb'] = np.nanmin(H_sj_b12, axis=1)
+        df[key_]['ak8']['H_sjpt12_over_fjpt'] = H_sjpt12_over_fjpt
+        df[key_]['ak8']['H_sjpt1_over_fjpt'] = H_sjpt1_over_fjpt
+        df[key_]['ak8']['H_sjpt2_over_fjpt'] = H_sjpt2_over_fjpt
         #
         #df[key_]['ak8']['H2_score'] = H_hbbtag[:,1]
         #df[key_]['ak8']['H2_pt']    = H_pt   [:,1]
@@ -188,12 +201,13 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         Hl_invm = invM(
             H_pt[:,0],H_eta[:,0],H_phi[:,0],
             lep_pt,lep_eta,lep_phi)
-        fjl_dr = fill1e(deltaR(
-            fjbb_eta[:,0:1],fjbb_phi[:,0:1],
-            lep_eta,lep_phi))
-        fjl_invm = fill1e(invM(
-            fjbb_pt[:,0:1],fjbb_eta[:,0:1],fjbb_phi[:,0:1],
-            lep_pt,lep_eta,lep_phi))
+        Hl_invm_sd = lib.invM_sdM(
+            H_pt[:,0],H_eta[:,0],H_phi[:,0], H_M[:,0],
+            lep_pt,lep_eta,lep_phi,lep_E)
+        Hl_invm_E = lib.invM_E(
+            H_pt[:,0],H_eta[:,0],H_phi[:,0], H_E[:,0],
+            lep_pt,lep_eta,lep_phi,lep_E)
+        #
         #Hb_dr  = np.array(Hb_dr).T
         n_nonHbb = np.count_nonzero(Hb_dr > .8, axis=1)
         n_qnonHbb= np.count_nonzero(Hq_dr > .8, axis=1)
@@ -221,7 +235,7 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
             else:
                 best_rt_score.append(np.nan)
         #
-        best_rt_score = np.array(best_rt_score)
+        best_rt_score = np.nan_to_num(np.array(best_rt_score))
         #print(Hb_dr)
         #print(Hj_dr)
         #exit()
@@ -230,25 +244,37 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         b_pt_dr  = np.take_along_axis(b_pt,ind,axis=1)
         b_eta_dr = np.take_along_axis(b_eta,ind,axis=1)
         b_phi_dr = np.take_along_axis(b_phi,ind,axis=1)
+        b_E_dr   = np.take_along_axis(b_E,ind,axis=1) 
         b_disc_dr= np.take_along_axis(b_disc,ind,axis=1) 
-        Hb_invM1 = invM(
-            H_pt[:,0],H_eta[:,0],H_phi[:,0],
-            b_pt_dr[:,0],b_eta_dr[:,0],b_phi_dr[:,0])
-        Hb_invM2 = invM(
-            H_pt[:,0],H_eta[:,0],H_phi[:,0],
-            b_pt_dr[:,1],b_eta_dr[:,1],b_phi_dr[:,1])
+        Hb_invM = invM(
+            H_pt[:,0][:,None],H_eta[:,0][:,None],H_phi[:,0][:,None],
+            b_pt_dr,b_eta_dr,b_phi_dr)
+        Hb_invM_sd = lib.invM_sdM(
+            H_pt[:,0][:,None],H_eta[:,0][:,None],H_phi[:,0][:,None],H_M[:,0][:,None],
+            b_pt_dr,b_eta_dr,b_phi_dr,b_E_dr)
+        Hb_invM_E = lib.invM_E(
+            H_pt[:,0][:,None],H_eta[:,0][:,None],H_phi[:,0][:,None],H_E[:,0][:,None],
+            b_pt_dr,b_eta_dr,b_phi_dr,b_E_dr)
         mtb1 = calc_mtb(b_pt_dr[:,0],b_phi_dr[:,0],met_pt,met_phi)
         mtb2 = calc_mtb(b_pt_dr[:,1],b_phi_dr[:,1],met_pt,met_phi)
-        best_Wb_invM = np.where(((mtb2 > mtb1) & (mtb2 != np.nan)), Hb_invM2, Hb_invM1) 
+        best_Wb_invM = np.where(((mtb2 > mtb1) & (mtb2 != np.nan)), Hb_invM[:,1], Hb_invM[:,0]) 
+        best_Wb_invM_sd = np.where(((mtb2 > mtb1) & (mtb2 != np.nan)), Hb_invM_sd[:,1], Hb_invM_sd[:,0]) 
+        best_Wb_invM_E = np.where(((mtb2 > mtb1) & (mtb2 != np.nan)), Hb_invM_E[:,1], Hb_invM_E[:,0]) 
         #
         #print(pd.Series(Hl_dr).values.tolist())
         df[key_]['ak8']['b1_outH_score'] = b_disc_dr[:,0]
         df[key_]['ak8']['b2_outH_score'] = b_disc_dr[:,1]
         df[key_]['ak8']['mtb1_outH']  = mtb1
         df[key_]['ak8']['mtb2_outH']  = mtb2
-        df[key_]['ak8']['best_Wb_invM'] = best_Wb_invM
-        df[key_]['ak8']['Hb_invM1']  = Hb_invM1
-        df[key_]['ak8']['Hb_invM2']  = Hb_invM2
+        df[key_]['ak8']['best_Wb_invM']    = best_Wb_invM
+        df[key_]['ak8']['best_Wb_invM_sd'] = best_Wb_invM_sd
+        df[key_]['ak8']['best_Wb_invM_E']  = best_Wb_invM_E
+        df[key_]['ak8']['Hb_invM1']  = Hb_invM[:,0]
+        df[key_]['ak8']['Hb_invM2']  = Hb_invM[:,1]
+        df[key_]['ak8']['Hb_invM1_sd']  = Hb_invM_sd[:,0]
+        df[key_]['ak8']['Hb_invM2_sd']  = Hb_invM_sd[:,1]
+        df[key_]['ak8']['Hb_invM1_E']   = Hb_invM_E[:,0]
+        df[key_]['ak8']['Hb_invM2_E']   = Hb_invM_E[:,1]
         df[key_]['ak8']['nonHbbq1_pt'] = -np.sort(-np.where(Hq_dr > 0.8, j_pt, np.nan),axis = 1 )[:,0]
         df[key_]['ak8']['nonHbbq2_pt'] = -np.sort(-np.where(Hq_dr > 0.8, j_pt, np.nan),axis = 1 )[:,1]
         df[key_]['ak8']['nonHbbq1_dr'] = np.sort(np.where(Hq_dr > 0.8, Hq_dr, np.nan),axis = 1 )[:,0]
@@ -262,8 +288,6 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         
         df[key_]['ak8']['Hl_dr']  = Hl_dr
         df[key_]['ak8']['Hl_invm']  = Hl_invm
-        df[key_]['ak8']['fjl_dr'] = fjl_dr
-        df[key_]['ak8']['fjl_invm']  = fjl_invm
         df[key_]['ak8']['best_rt_score'] = best_rt_score
 
     for key_ in df.keys():
@@ -275,35 +299,47 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     df = kFit.retrieveData(files_, samples_, outDir_, getgen_=False, getak8_=True)
     #
     from fun_library import StackedHisto
+    #StackedHisto(df, 'H_sjpt12_over_fjpt', (0,3), 'H_sjpt12_over_fjpt', 15)
+    #StackedHisto(df, 'H_sjpt1_over_fjpt', (0,3), 'H_sjpt1_over_fjpt', 15)
+    #StackedHisto(df, 'H_sjpt2_over_fjpt', (0,3), 'H_sjpt2_over_fjpt', 15)
     #StackedHisto(df, 'nJets30',         (0,12),     'nJets30', 12)
-    StackedHisto(df, 'best_rt_score', (.5,1), 'best_rt_score', 20)
-    StackedHisto(df, 'n_qnonHbb', (0,6),     'nq_nonHZbb',  6)
-    StackedHisto(df, 'n_nonHbb', (0,6),     'nb_nonHZbb',  6)  
-    StackedHisto(df, 'Hl_dr',    (0,5),     'HZl_dr',  20)
-    StackedHisto(df, 'Hl_invm',  (0,300),   'HZl_invm',  20)
-    StackedHisto(df, 'n_H_sj_btag', (0,6),     'n_H_sj_btag',  6) 
-    StackedHisto(df, 'n_b_Hbb', (0,6),      'nb_HZbb',  6) 
-    StackedHisto(df, 'H_sj_bestb', (0,1), 'H_sj_bestb', 20)
-    StackedHisto(df, 'H_sj_worstb', (0,1), 'H_sj_worstb', 20)
-    StackedHisto(df, 'nMergedTops', (0,5),'nMergedTops',5)
-    StackedHisto(df, 'n_nonHZ_W', (0,4),       'n_nonHZ_W', 4)
-    StackedHisto(df, 'H_eta',     (-3.2,3.2),    'HZ_eta',  50)
-    StackedHisto(df, 'H_bbscore', (0,1), 'H_bbscore', 20)
-    StackedHisto(df, 'b1_outH_score', (0,1), 'b1_outH_score', 20)
-    StackedHisto(df, 'b2_outH_score', (0,1), 'b2_outH_score', 20)
-    StackedHisto(df, 'best_Wb_invM',  (0,500), 'best_Wb_invM',  40)
-    StackedHisto(df, 'Hb_invM1',  (0,500), 'Hb_invM1',  40)
-    StackedHisto(df, 'Hb_invM2',  (0,500), 'Hb_invM2',  40)
-    #StackedHisto(df, 'H2_M',     (0,300),    'HZ2_M',  40)
-    StackedHisto(df, 'H_pt',     (200,600), 'HZ_pt',  20)
-    #StackedHisto(df, 'H2_pt',     (200,600), 'HZ2_pt',  20)
-    #StackedHisto(df, 'H2_score', (-1,1),     'HZbb2_score',  20)
-    StackedHisto(df, 'H_Wscore', (0,1),     'H_Wscore',  20)
-    StackedHisto(df, 'H_M',     (0,300),    'HZ_M',  100)
+    #StackedHisto(df, 'best_rt_score', (.5,1), 'best_rt_score', 20)
+    #StackedHisto(df, 'n_qnonHbb', (0,6),     'nq_nonHZbb',  6)
+    #StackedHisto(df, 'n_nonHbb', (0,6),     'nb_nonHZbb',  6)  
+    #StackedHisto(df, 'Hl_dr',    (0,5),     'HZl_dr',  20)
+    #StackedHisto(df, 'Hl_invm',  (0,700),   'HZl_invm',  50)
+    #StackedHisto(df, 'n_H_sj_btag', (0,6),     'n_H_sj_btag',  6) 
+    #StackedHisto(df, 'n_H_sj', (0,4),     'n_H_sj',  4) 
+    #StackedHisto(df, 'n_b_Hbb', (0,6),      'nb_HZbb',  6) 
+    #StackedHisto(df, 'H_sj_bestb', (0,1), 'H_sj_bestb', 20)
+    #StackedHisto(df, 'H_sj_worstb', (0,1), 'H_sj_worstb', 20)
+    #StackedHisto(df, 'nMergedTops', (0,5),'nMergedTops',5)
+    #StackedHisto(df, 'n_nonHZ_W', (0,4),       'n_nonHZ_W', 4)
+    #StackedHisto(df, 'n_nonHZ_T', (0,4),       'n_nonHZ_T', 4)
+    #StackedHisto(df, 'H_eta',     (-3.2,3.2),    'HZ_eta',  50)
+    #StackedHisto(df, 'H_bbscore', (0,1), 'H_bbscore', 20)
+    #StackedHisto(df, 'b1_outH_score', (0,1), 'b1_outH_score', 20)
+    #StackedHisto(df, 'b2_outH_score', (0,1), 'b2_outH_score', 20)
+    StackedHisto(df, 'best_Wb_invM',    (0,1000), 'best_Wb_invM',    50)
+    StackedHisto(df, 'Hb_invM1',        (0,1000), 'Hb_invM1',        50)
+    StackedHisto(df, 'Hb_invM2',        (0,1000), 'Hb_invM2',        50)
+    StackedHisto(df, 'best_Wb_invM_sd', (0,1000), 'best_Wb_invM_sd', 50)
+    StackedHisto(df, 'Hb_invM1_sd',     (0,1000), 'Hb_invM1_sd',     50)
+    StackedHisto(df, 'Hb_invM2_sd',     (0,1000), 'Hb_invM2_sd',     50)
+    StackedHisto(df, 'best_Wb_invM_E',  (0,1000), 'best_Wb_invM_E',  50)
+    StackedHisto(df, 'Hb_invM1_E',      (0,1000), 'Hb_invM1_E',      50)
+    StackedHisto(df, 'Hb_invM2_E',      (0,1000), 'Hb_invM2_E',      50)
+    ##StackedHisto(df, 'H2_M',     (0,300),    'HZ2_M',  40)
+    #StackedHisto(df, 'H_pt',     (200,600), 'HZ_pt',  20)
+    ##StackedHisto(df, 'H2_pt',     (200,600), 'HZ2_pt',  20)
+    ##StackedHisto(df, 'H2_score', (-1,1),     'HZbb2_score',  20)
+    #StackedHisto(df, 'H_Wscore', (0,1),     'H_Wscore',  20)
+    #StackedHisto(df, 'H_Tscore', (0,1),     'H_Tscore',  20)
+    StackedHisto(df, 'H_M',     (0,300),    'HZ_M',  50)
     StackedHisto(df, 'MET_pt',  (20,500),   'MET',         40)
     StackedHisto(df, 'H_score', (.4,1),     'HZbb_score',  20)
     StackedHisto(df, 'mtb1_outH',  (0,500), 'mtb1_outH',  40)
-    #StackedHisto(df, 'mtb2_outH',  (0,500), 'mtb2_outH',  40)
+    StackedHisto(df, 'mtb2_outH',  (0,500), 'mtb2_outH',  40)
     StackedHisto(df, 'nhbbFatJets', (0,6),      'nhbbFatJets',  6) 
     
     #StackedHisto(df, 'H2_Wscore', (0,1),     'H2_Wscore',  20)

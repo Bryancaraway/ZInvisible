@@ -60,6 +60,24 @@ def invM(pt1,eta1,phi1,pt2,eta2,phi2):
     #
     invm2 = 2*pt1pt2*(cosheta1eta2-cosphi1phi2)
     return np.sqrt(invm2)
+def invM_sdM(pt1,eta1,phi1,m1,pt2,eta2,phi2,E2):
+    m1sq = np.power(m1,2)
+    pt1cosheta1_sq = np.power(pt1,2)*np.power(np.cosh(eta1),2)
+    pt2cosheta2_sq = np.power(pt2,2)*np.power(np.cosh(eta2),2)
+    E1pE22 = np.power(np.sqrt(pt1cosheta1_sq+m1sq)+E2,2)
+    cosphi1phi2 = np.cos(phi1-phi2)
+    sinheta1Xsinheta2 = np.sinh(eta1)*np.sinh(eta2)
+    p1dotp2 = pt1*pt2*(cosphi1phi2 + sinheta1Xsinheta2)
+    invm2 = E1pE22  - pt1cosheta1_sq - pt2cosheta2_sq - 2*p1dotp2
+    return np.sqrt(invm2)
+def invM_E(pt1,eta1,phi1,E1,pt2,eta2,phi2,E2):
+    pt1cosheta1_sq = np.power(pt1,2)*np.power(np.cosh(eta1),2)
+    pt2cosheta2_sq = np.power(pt2,2)*np.power(np.cosh(eta2),2)
+    cosphi1phi2 = np.cos(phi1-phi2)
+    sinheta1Xsinheta2 = np.sinh(eta1)*np.sinh(eta2)
+    p1dotp2 = pt1*pt2*(cosphi1phi2 + sinheta1Xsinheta2)
+    invm2 = np.power(E1+E2,2) - pt1cosheta1_sq - pt2cosheta2_sq - 2*p1dotp2 
+    return np.sqrt(invm2)
     #
 def deltaPhi(phi1, phi2):
     dphi = phi1-phi2
@@ -109,13 +127,13 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             # ( (df_[key_]['ak8']['nbbFatJets']  == 0) & (df_[key_]['ak8']['nhbbFatJets'] == 1) )) &
             #(df_[key_]['ak8']['n_nonfjbb'] >= 2) &
             (df_[key_]['ak8']['n_nonHbb'] >= 2)    &
-            (df_[key_]['ak8']['best_rt_score'] >= .5)    &
+            #(df_[key_]['ak8']['best_rt_score'] >= .5)    &
             #(df_[key_]['val']['matchedGen'] == True)   &
             #(df_[key_]['ak8']['n_b_Hbb'] >= 1)     &
             #(df_[key_]['ak8']['n_jnonHbb'] >= 1)     &
             (df_[key_]['ak8']['nhbbFatJets'] > 0)  &
             (df_[key_]['ak8']['H_M']         > 50) &  
-            (df_[key_]['ak8']['H_M']         < 250)& 
+            (df_[key_]['ak8']['H_M']         < 200)& 
             #(df_[key_]['ak8']['H_Wscore']     < .80)&
             #(((df_[key_]['ak8']['best_Wb_invM']<= 175)&(df_[key_]['ak8']['H_Wscore']<.85))|(df_[key_]['ak8']['best_Wb_invM']> 175))&
             #(df_[key_]['ak8']['best_Wb_invM']> 200)&
@@ -123,7 +141,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             #(df_[key_]['ak8']['H_score']     > .75)&
             #(df_[key_]['ak8']['nbbFatJets'] == 1) &
             #(df_[key_]['val']['nResolvedTops'] == 1) &
-            (df_[key_]['val']['MET_pt']      >= 20))# &
+            (df_[key_]['val']['MET_pt']      >= 0))# &
 
         ########
         h.append( np.clip(kinem[base_cuts], bins[0], bins[-1]))
