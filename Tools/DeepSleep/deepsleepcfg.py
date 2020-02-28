@@ -102,3 +102,21 @@ cnn_epochs     = 30
 CNNoutputDir   = './CNN_output/'
 CNNoutputName  = 'first_try.h5'
 CNNmodelName   = 'first_model.h5'
+
+##### DNN backend for Z/H -> bb #####
+dnn_ZH_dir  = (master_file_path+'train_ZH/', master_file_path+'test_ZH/', master_file_path+'val_ZH/')
+# only event level variables
+dnn_ZH_vars = [
+    'max_lb_dr','min_lb_dr','max_lb_invm','min_lb_invm', 'n_H_sj_btag', 'nJets30', 'H_score', 'best_rt_score',
+    'n_qnonHbb', 'n_nonHbb', 'H_M','Hl_dr', 'Hl_invm_sd', 'n_H_sj', 'n_b_Hbb', 'H_sj_bestb', 'H_sj_worstb',
+    'H_eta','H_bbscore','b1_outH_score', 'b2_outH_score', 'best_Wb_invM_sd', 'Hb_invM1_sd', 'Hb_invM2_sd',
+    'H_Wscore', 'H_Tscore', 'MET_pt', 'nhbbFatJets', 'nFatJets', 'nJets', 'nonHbb_b1_dr', 'nonHbb_b2_dr', 
+    'n_q_Hbb', 'weight', 'genWeight']
+#
+dnn_ZH_alpha      = 0.0001
+dnn_ZH_batch_size = 1024
+dnn_ZH_epochs     = 0
+DNNoutputDir      = './DNN_ZH_output/'
+DNNoutputName     = 'first_try.h5'
+DNNmodelName      = 'first_model.h5' 
+DNNuseWeights     = True

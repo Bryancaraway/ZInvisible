@@ -128,7 +128,7 @@ def retrieveData(files_, samples_, outDir_, getgen_=False, getak8_=False):
     return df
 #
 def getLaLabel(str_):
-    str_ = str_.split('_')[0] # get rid of year suffix
+    str_ = str_.split('_201')[0] # get rid of year suffix
     la_str = ''
     col_str= ''
     if   ('TTZ' == str_):
@@ -137,6 +137,21 @@ def getLaLabel(str_):
     elif ('TTZH' == str_):
         la_str = r't$\mathregular{\bar{t}}$Z/H'
         col_str = 'tab:blue'
+    elif ('TTZH_GenMatch' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z/H_genMatchedZHbb'
+        col_str = 'indianred'
+    elif ('TTZH_noGenMatch' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z/H_nogenMatchedZHbb'
+        col_str = 'black'
+    elif ('TTZH_genZbb' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z/H_genMatchedZbb'
+        col_str = 'tab:blue'
+    elif ('TTZH_genZqq' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z/H_genMatchedZqq'
+        col_str = 'darkgreen'
+    elif ('TTZH_genHbb' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z/H_genMatchedHbb'
+        col_str = 'gold'
     elif ('DY' in str_):
         la_str = 'Drell-Yan'
         col_str = 'tab:orange'

@@ -54,9 +54,14 @@ def deltaR(eta1,phi1,eta2,phi2):
     return delta_r
     #
 def invM(pt1,eta1,phi1,pt2,eta2,phi2):
-    pt1pt2 = pt1*pt2
-    cosheta1eta2 = np.cosh(eta1-eta2)
-    cosphi1phi2  = np.cos(phi1-phi2)
+    try:
+        pt1pt2 = (pt1*pt2.T).T
+        cosheta1eta2 = np.cosh((eta1-eta2.T).T)
+        cosphi1phi2  = np.cos(deltaPhi(phi1,phi2))
+    except (AttributeError) :
+        pt1pt2 = pt1*pt2
+        cosheta1eta2 = np.cosh(eta1-eta2)
+        cosphi1phi2  = np.cos(deltaPhi(phi1,phi2))
     #
     invm2 = 2*pt1pt2*(cosheta1eta2-cosphi1phi2)
     return np.sqrt(invm2)
@@ -64,33 +69,51 @@ def invM_sdM(pt1,eta1,phi1,m1,pt2,eta2,phi2,E2):
     m1sq = np.power(m1,2)
     pt1cosheta1_sq = np.power(pt1,2)*np.power(np.cosh(eta1),2)
     pt2cosheta2_sq = np.power(pt2,2)*np.power(np.cosh(eta2),2)
-    E1pE22 = np.power(np.sqrt(pt1cosheta1_sq+m1sq)+E2,2)
-    cosphi1phi2 = np.cos(phi1-phi2)
-    sinheta1Xsinheta2 = np.sinh(eta1)*np.sinh(eta2)
-    p1dotp2 = pt1*pt2*(cosphi1phi2 + sinheta1Xsinheta2)
-    invm2 = E1pE22  - pt1cosheta1_sq - pt2cosheta2_sq - 2*p1dotp2
+    try:
+        E1pE22 = np.power((np.sqrt(pt1cosheta1_sq+m1sq)+E2.T).T,2)
+        cosphi1phi2 = np.cos(deltaPhi(phi1,phi2))
+        sinheta1Xsinheta2 = (np.sinh(eta1)*np.sinh(eta2).T).T
+        p1dotp2 = (pt1*pt2.T).T*(cosphi1phi2 + sinheta1Xsinheta2)
+        invm2 = E1pE22  - (pt1cosheta1_sq + pt2cosheta2_sq.T).T - 2*p1dotp2
+    except (AttributeError):
+        E1pE22 = np.power(np.sqrt(pt1cosheta1_sq+m1sq)+E2,2)
+        cosphi1phi2 = np.cos(deltaPhi(phi1,phi2))
+        sinheta1Xsinheta2 = np.sinh(eta1)*np.sinh(eta2)
+        p1dotp2 = pt1*pt2*(cosphi1phi2 + sinheta1Xsinheta2)
+        invm2 = E1pE22  - pt1cosheta1_sq - pt2cosheta2_sq - 2*p1dotp2
     return np.sqrt(invm2)
 def invM_E(pt1,eta1,phi1,E1,pt2,eta2,phi2,E2):
     pt1cosheta1_sq = np.power(pt1,2)*np.power(np.cosh(eta1),2)
     pt2cosheta2_sq = np.power(pt2,2)*np.power(np.cosh(eta2),2)
-    cosphi1phi2 = np.cos(phi1-phi2)
-    sinheta1Xsinheta2 = np.sinh(eta1)*np.sinh(eta2)
-    p1dotp2 = pt1*pt2*(cosphi1phi2 + sinheta1Xsinheta2)
-    invm2 = np.power(E1+E2,2) - pt1cosheta1_sq - pt2cosheta2_sq - 2*p1dotp2 
+    cosphi1phi2 = np.cos(deltaPhi(phi1,phi2))
+    try:
+        sinheta1Xsinheta2 = (np.sinh(eta1)*(np.sinh(eta2)).T).T
+        p1dotp2 = (pt1*pt2.T).T*(cosphi1phi2 + sinheta1Xsinheta2)
+        invm2 = np.power(E1+E2.T,2).T - (pt1cosheta1_sq + (pt2cosheta2_sq + 2*p1dotp2).T).T
+    except (AttributeError) :
+        sinheta1Xsinheta2 = np.sinh(eta1)*np.sinh(eta2)
+        p1dotp2 = pt1*pt2*(cosphi1phi2 + sinheta1Xsinheta2)
+        invm2 = np.power(E1+E2,2) - pt1cosheta1_sq - pt2cosheta2_sq - 2*p1dotp2 
     return np.sqrt(invm2)
     #
 def deltaPhi(phi1, phi2):
-    dphi = phi1-phi2
-    dphi = pd.concat([dphi.loc[dphi.isna()],
-                      dphi.loc[dphi > math.pi] - 2*math.pi,
-                      dphi.loc[dphi <= -math.pi] + 2*math.pi,
-                      dphi.loc[(dphi <= math.pi) & (dphi > -math.pi)]]).sort_index()
+    try:
+        dphi = np.subtract(phi1,phi2.T).T
+    except (AttributeError) :
+        dphi = phi1-phi2
+    dphi[((dphi > math.pi)   & (dphi != np.nan))] = dphi[((dphi > math.pi)   & (dphi != np.nan))] - 2*math.pi
+    dphi[((dphi <= -math.pi) & (dphi != np.nan))] = dphi[((dphi <= -math.pi) & (dphi != np.nan))] + 2*math.pi
+    
     return dphi
 
-def calc_mtb(ptb, phib, m_pt, m_phi):
-    mtb2 =  2*m_pt*ptb*(1 - np.cos(deltaPhi(phib, m_phi)))
+def calc_mtb(pt_, phi_, m_pt, m_phi):
+    try:
+        mtb2 =  2*(m_pt*pt_.T).T*(1 - np.cos(deltaPhi(m_phi,phi_)))
+    except (AttributeError):
+         mtb2 =  2*m_pt*pt_*(1 - np.cos(deltaPhi(phi_, m_phi)))
     return np.sqrt(mtb2)
     #
+
 def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     from matplotlib import rc
     #
@@ -128,7 +151,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             #(df_[key_]['ak8']['n_nonfjbb'] >= 2) &
             (df_[key_]['ak8']['n_nonHbb'] >= 2)    &
             #(df_[key_]['ak8']['best_rt_score'] >= .5)    &
-            #(df_[key_]['val']['matchedGen'] == True)   &
+            #(df_[key_]['val']['matchedGen'] == False)   &
             #(df_[key_]['ak8']['n_b_Hbb'] >= 1)     &
             #(df_[key_]['ak8']['n_jnonHbb'] >= 1)     &
             (df_[key_]['ak8']['nhbbFatJets'] > 0)  &
@@ -142,11 +165,20 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             #(df_[key_]['ak8']['nbbFatJets'] == 1) &
             #(df_[key_]['val']['nResolvedTops'] == 1) &
             (df_[key_]['val']['MET_pt']      >= 0))# &
-
+        if ('_GenMatch' in key_):
+            base_cuts = base_cuts & (df_[key_]['val']['matchedGen_ZHbb'] == True)
+        if ('_noGenMatch' in key_):
+            base_cuts = base_cuts & (df_[key_]['val']['matchedGen_ZHbb'] == False) & (df_[key_]['val']['matchedGen_Zqq'] == False) 
+        if ('_genZbb' in key_):
+            base_cuts = base_cuts & (df_[key_]['val']['matchedGen_Zbb'] == True)
+        if ('_genZqq' in key_):
+            base_cuts = base_cuts & (df_[key_]['val']['matchedGen_Zqq'] == True)
+        if ('_genHbb' in key_):
+            base_cuts = base_cuts & (df_[key_]['val']['matchedGen_Hbb'] == True)
         ########
         h.append( np.clip(kinem[base_cuts], bins[0], bins[-1]))
         w.append( df_[key_]['val']['weight'][base_cuts] * np.sign(df_[key_]['val']['genWeight'][base_cuts]) * (137/41.9))
-        n_, bins_, _ = plt.hist(h[i_], weights=w[i_])
+        n_, bins_,_ = plt.hist(h[i_], weights=w[i_])
         integral.append( sum(n_[:]))
         la_label, color = kFit.getLaLabel(key_)
         labels.append( la_label + ' ({0:3.1f})'.format(integral[i_]))
@@ -164,9 +196,9 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     )
     #fig.subplots_adjust(left=0.03, right=0.97, bottom=0.05, top=0.92)
     n_, bins_, patches_ = ax.hist(h,
-                                  bins=bins, stacked=True,# fill=True,
+                                  bins=bins, stacked=False,# fill=True,
                                   #range=range_,
-                                  histtype='stepfilled',
+                                  histtype='step',
                                   #linewidth=0,
                                   weights= w,
                                   color  = colors,
