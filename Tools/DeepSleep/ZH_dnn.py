@@ -16,6 +16,7 @@ import sys
 import os
 import pickle
 import math
+import re
 #
 import deepsleepcfg as cfg
 import processData  as prD 
@@ -29,26 +30,17 @@ import fun_library as lib
 from fun_library import fill1e, fillne, deltaR, deltaPhi, invM, calc_mtb
 np.random.seed(0)
 #
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.python.keras import layers
-#tf.compat.v1.set_random_seed(2)
-print(tf.__version__)
-from tensorflow.python.keras import backend as K
-from keras import backend as k
-from tensorflow.python.ops import math_ops
-from keras.models import Sequential
-from keras.layers import Dense
-#
 from sklearn import metrics 
 ##
 def preProcess_DNN(files_, samples_, outDir_):
     df = kFit.retrieveData(files_, ['TTZH', 'TTBarLep'], outDir_, getak8_ = True)
     #
-    dnn_df   = pd.DataFrame()
-    train_df = pd.DataFrame()
-    test_df  = pd.DataFrame()
-    val_df   = pd.DataFrame()
+    dnn_df       = pd.DataFrame()
+    train_df     = pd.DataFrame()
+    test_df      = pd.DataFrame()
+    val_df       = pd.DataFrame()
+    aux_bkg_df   = pd.DataFrame()
+    case_names    = ''
     #
     for key_ in df.keys():
         temp_df_ = pd.DataFrame()
@@ -59,7 +51,11 @@ def preProcess_DNN(files_, samples_, outDir_):
             (df[key_]['ak8']['H_M']         < 200))
         if ('TTZH' in key_):
             base_cuts = base_cuts & (df[key_]['val']['matchedGen_ZHbb'] == True)
-        #print(df[key_]['val']['weight'][base_cuts])
+        if ('TTBarLep' in key_ ):
+            case_names = re.findall(r'case_\d',''.join(df[key_]['val'].keys()))
+            aux_bkg_df = df[key_]['val'][case_names]
+            if (len(sys.argv) > 1):
+                base_cuts = base_cuts & (aux_bkg_df[sys.argv[1]])
         for var_ in cfg.dnn_ZH_vars:
             key_str = ''
             if (  var_ in df[key_]['df'].keys() ) :
@@ -82,6 +78,17 @@ def preProcess_DNN(files_, samples_, outDir_):
         del temp_df_['genWeight']
         dnn_df = pd.concat([dnn_df,temp_df_], axis=0, ignore_index = True)
         #
+    #
+    #  Create Aux df containing the background cases
+    sig = dnn_df[dnn_df['Signal'] == True]
+    bkg = dnn_df[dnn_df['Signal'] == False]
+    bkg = pd.concat([bkg.reset_index(drop=True),aux_bkg_df[base_cuts].reset_index(drop=True)], axis=1)
+    for name_ in case_names:
+        sig[name_] = True
+    pd.concat([sig,bkg],axis=0,ignore_index=True).to_pickle(cfg.aux_ZH_dir+'aux.pkl')
+    ## Calculate DNN weighting
+    dnn_df['DNNweight'] = pd.concat([dnn_df['weight'][dnn_df['Signal'] == True] * (dnn_df['weight'][dnn_df['Signal'] == False].sum() / dnn_df['weight'][dnn_df['Signal'] == True].sum()),
+                                     dnn_df['weight'][dnn_df['Signal'] == False]])
     ## Split into 50/30/20 (Train, Validation, Test)
     train_df = dnn_df.sample(frac = 0.50, random_state = 5) 
     dnn_df   = dnn_df.drop(train_df.index).copy()
@@ -95,6 +102,18 @@ def preProcess_DNN(files_, samples_, outDir_):
     val_df  .to_pickle(val_dir+  'val.pkl')
     #
 def train_DNN(train_dir, test_dir, val_dir):
+    #
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.python.keras import layers
+    #tf.compat.v1.set_random_seed(2)
+    print(tf.__version__)
+    from tensorflow.python.keras import backend as K
+    from keras import backend as k
+    from tensorflow.python.ops import math_ops
+    from keras.models import Sequential
+    from keras.layers import Dense
+    #
     train_df = pd.read_pickle(train_dir+'train.pkl')
     test_df  = pd.read_pickle(test_dir+ 'test.pkl')
     val_df   = pd.read_pickle(val_dir+  'val.pkl')
@@ -103,8 +122,8 @@ def train_DNN(train_dir, test_dir, val_dir):
     #
     def splitXYW(df_):
         y_ = df_['Signal']
-        w_ = df_['weight']
-        x_ = df_.drop(columns=['Signal','weight'])
+        w_ = df_[re.findall(r'\w*weight', ' '.join(df_.keys()))]
+        x_ = df_.drop(columns=[y_.name, *w_.columns])
         return resetIndex(x_), resetIndex(y_), resetIndex(w_)
     trainX, trainY, trainW = splitXYW(train_df)
     testX,  testY,  testW  = splitXYW(test_df)
@@ -125,26 +144,37 @@ def train_DNN(train_dir, test_dir, val_dir):
     cbks = [change_lr]
     history =model.fit(trainX,
                        trainY.values.astype('int'),
-                       #sample_weight   = trainW.values,
+                       #sample_weight   = trainW['DNNweight'].values,
                        epochs          = cfg.dnn_ZH_epochs,
                        batch_size      = cfg.dnn_ZH_batch_size,
-                       validation_data = (valX,valY.values.astype('int')),#,valW), 
+                       validation_data = (valX,valY.values.astype('int')),#valW['DNNweight'].values), 
                        #callbacks  = cbks,
                        verbose         = 1)
-    hist = pd.DataFrame(history.history)
-    hist['epoch'] = history.epoch
     import train as Tr
-    Tr.plot_history(hist)
+    if (cfg.dnn_ZH_epochs > 0):
+        hist = pd.DataFrame(history.history)
+        hist['epoch'] = history.epoch
+
+        Tr.plot_history(hist)
+        #
+        model.save_weights(cfg.DNNoutputDir+cfg.DNNoutputName)
+        model.save(cfg.DNNoutputDir+cfg.DNNmodelName)
     #
-    model.save_weights(cfg.DNNoutputDir+cfg.DNNoutputName)
-    model.save(cfg.DNNoutputDir+cfg.DNNmodelName)
-    #
-    loss ,acc, auc = model.evaluate(testX.values,testY.values)#, sample_weight = testW.values)
+    loss ,acc, auc = model.evaluate(testX.values,testY.values)#, sample_weight = testW['DNNweight'].values)
     print("Test Set Acc: {0:.4f}\nTest Set AUC: {1:.4f}".format(acc,auc))
-    X = pd.concat([testX,trainX,valX])
-    Y = pd.concat([testY,trainY,valY])
-    W = pd.concat([testW,trainW,valW])
+    X = pd.concat([testX,trainX,valX], ignore_index=True)
+    Y = pd.concat([testY,trainY,valY], ignore_index=True)
+    W = pd.concat([testW['weight'],trainW['weight'],valW['weight']], ignore_index=True)
     pred = model.predict(X.values).flatten()
+    #
+    df = pd.concat([X,Y,pd.Series(pred,name='Pred')], axis=1)
+    import seaborn as sns
+    plt.figure(figsize=(16,9))
+    sns.set(font_scale=0.5)
+    sns.heatmap(df.corr(), annot=True, fmt= '1.2f',annot_kws={"size": 6}, cmap=plt.cm.Reds, cbar=False, square= False)
+    plt.title(sys.argv[1] if len(sys.argv) > 1 else 'General')
+    plt.show()
+    plt.close()
     #
     fpr, tpr, thresholds = metrics.roc_curve(Y.astype('int'), pred)
     Tr.plot_roc(fpr,tpr)
@@ -175,7 +205,7 @@ def Build_Model(inputs_,outputs_,mean_,std_):
     #layer      = keras.layers.Dropout(0.3)(layer)
     layer      = keras.layers.Dense(64, activation='relu')(layer)
     #layer      = keras.layers.Dense(32, activation='relu')(layer)
-    layer      = keras.layers.Dropout(0.7)(layer)
+    layer      = keras.layers.Dropout(0.7)(layer) # .7
     #layer      = keras.layers.Dense(66, activation='relu')(layer)
     #layer      = keras.layers.BatchNormalization()(layer)
     #
@@ -189,7 +219,62 @@ def Build_Model(inputs_,outputs_,mean_,std_):
     model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy',tf.keras.metrics.AUC()])
     ##
     return model
-
+def corr_study(train_dir, test_dir, val_dir):
+    df = pd.read_pickle(cfg.aux_ZH_dir+'aux.pkl')
+    case_df = df.filter(regex='case_\d', axis=1)
+    df = df.drop(columns=case_df.keys())
+    df = df.drop(columns='weight')
+    #
+    corr_df = pd.DataFrame()
+    corr_df = pd.concat([df.corr()['Signal'].rename('General')]+list(df[case_df[key_] == True].corr()['Signal'].rename(key_) for key_ in case_df.keys()), axis=1)
+    #
+    import seaborn as sns
+    def plot_heatmap(score_df,title):
+        plt.figure(figsize=(12,8))
+        sns.set(font_scale=0.75)
+        sns.heatmap(score_df, annot=True, fmt= '1.2f',annot_kws={"size": 6}, cmap=plt.cm.Reds, cbar=False, square= False)
+        plt.title(title)
+        plt.show()
+        plt.close()
+    #
+    from sklearn.feature_selection import f_classif, chi2, mutual_info_classif
+    #from statsmodels.stats.multicomp import pairwise_tukeyhsd
+    df_target = df['Signal']
+    df = df.drop(columns=df_target.name)
+    #
+    chi2_score, chi_2_p_value = chi2(abs(df),df_target)
+    f_score, f_p_value = f_classif(df,df_target)
+    mut_info_score = mutual_info_classif(df,df_target)
+    #
+    chi2_df   = pd.DataFrame(
+        [chi2(abs(df),df_target)[0]]+list(chi2(abs(df[case_df[key_] == True]),df_target[case_df[key_] == True])[0] for key_ in case_df.keys()), 
+        columns=df.keys(), index=['General']+list(case_df.keys())).transpose()
+    chi2_p_df = pd.DataFrame(
+        [chi2(abs(df),df_target)[1]]+list(chi2(abs(df[case_df[key_] == True]),df_target[case_df[key_] == True])[1] for key_ in case_df.keys()), 
+        columns=df.keys(), index=['General']+list(case_df.keys())).transpose()
+    f_classif_df   = pd.DataFrame(
+        [f_classif(abs(df),df_target)[0]]+list(f_classif(abs(df[case_df[key_] == True]),df_target[case_df[key_] == True])[0] for key_ in case_df.keys()), 
+        columns=df.keys(), index=['General']+list(case_df.keys())).transpose()
+    f_classif_p_df = pd.DataFrame(
+        [f_classif(abs(df),df_target)[1]]+list(f_classif(abs(df[case_df[key_] == True]),df_target[case_df[key_] == True])[1] for key_ in case_df.keys()), 
+        columns=df.keys(), index=['General']+list(case_df.keys())).transpose()
+    mut_info_classif_df   = pd.DataFrame(
+        [mutual_info_classif(abs(df),df_target)]+list(mutual_info_classif(abs(df[case_df[key_] == True]),df_target[case_df[key_] == True]) for key_ in case_df.keys()), 
+        columns=df.keys(), index=['General']+list(case_df.keys())).transpose()
+    #
+    plot_heatmap(chi2_df, 'Chi2')
+    #
+    def Plot_score (df_,score_, title):
+        plt.barh(np.arange(len(score_)),score_,tick_label=df_.keys())
+        plt.title(title)
+        plt.show()
+        plt.close()
+    #Plot_score(df, chi2_score,     'Chi2 score'       )
+    #Plot_score(df, chi_2_p_value,  'Chi2, p-value'    )
+    #Plot_score(df, f_score,        'F score'          )
+    #Plot_score(df, f_p_value,      'F, p-value'       )
+    #Plot_score(df, mut_info_score, 'Mutual info score')
+    #
 if __name__ == '__main__':   
     files_samples_outDir = cfg.ZHbbFitCfg
     ##
@@ -197,4 +282,5 @@ if __name__ == '__main__':
     ##
     ##
     #preProcess_DNN(*files_samples_outDir)    
-    train_DNN(     *cfg.dnn_ZH_dir)
+    corr_study(    *cfg.dnn_ZH_dir)
+    #train_DNN(     *cfg.dnn_ZH_dir)

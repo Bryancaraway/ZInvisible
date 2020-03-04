@@ -105,6 +105,7 @@ CNNmodelName   = 'first_model.h5'
 
 ##### DNN backend for Z/H -> bb #####
 dnn_ZH_dir  = (master_file_path+'train_ZH/', master_file_path+'test_ZH/', master_file_path+'val_ZH/')
+aux_ZH_dir  = master_file_path+'aux_ZH/'
 # only event level variables
 dnn_ZH_vars = [
     'max_lb_dr','min_lb_dr','max_lb_invm','min_lb_invm', 'n_H_sj_btag', 'nJets30', 'H_score', 'best_rt_score',
@@ -115,8 +116,8 @@ dnn_ZH_vars = [
 #
 dnn_ZH_alpha      = 0.0001
 dnn_ZH_batch_size = 1024
-dnn_ZH_epochs     = 0
+dnn_ZH_epochs     = 120 # 120
 DNNoutputDir      = './DNN_ZH_output/'
-DNNoutputName     = 'first_try.h5'
-DNNmodelName      = 'first_model.h5' 
-DNNuseWeights     = True
+DNNoutputName     = 'best_case7_noweight.h5'
+DNNmodelName      = 'best_case7_noweight_model.h5' 
+DNNuseWeights     = False

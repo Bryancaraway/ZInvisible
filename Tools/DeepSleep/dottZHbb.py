@@ -70,7 +70,7 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         met_phi  = df[key_]['val']['MET_phi']
         #
         ak8_bbcut =  ((fj_pt > 300)  & (bb_tag >= 0.9))
-        ak8_hbbcut = ((fj_pt >= 300) & (sd_M > 50) & (sd_M < 200) & (hbb_tag >= 0.5))
+        ak8_hbbcut = ((fj_pt >= 300) & (sd_M > 50) & (sd_M < 200) & (hbb_tag >= 0.0))
         #
         tmp_ = df[key_]['df']
         b_disc = []
@@ -123,7 +123,7 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         df[key_]['ak8']['n_nonHZ_W'] = w_tag[(hbb_tag <.5) & (w_tag >= 0.8)].counts
         df[key_]['ak8']['n_nonHZ_T'] = w_tag[(hbb_tag <.5) & (t_tag >= 0.8)].counts
         #########
-        hz_kinem_cut = ((fj_pt>=300) & (sd_M > 50) & (sd_M < 200) & (hbb_tag >= 0.5))
+        hz_kinem_cut = ((fj_pt>=300) & (sd_M > 50) & (sd_M < 200) & (hbb_tag >= 0.0))
         H_hbbtag,H_pt,H_eta,H_phi,H_E,H_M,H_wtag,H_ttag,H_bbtag=lib.sortbyscore([hbb_tag    ,
                                                                                  fj_pt      ,
                                                                                  fj_eta     ,
@@ -168,7 +168,7 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         df[key_]['ak8']['n_H_sj']      = np.sum(H_sj_b12 >= 0, axis=1)
         df[key_]['ak8']['H_sj_bestb']  = np.nan_to_num(np.nanmax(H_sj_b12, axis=1), nan = 0)
         df[key_]['ak8']['H_sj_worstb'] = np.nan_to_num(np.nanmin(H_sj_b12, axis=1), nan = 0)
-        df[key_]['ak8']['H_sjpt12_over_fjpt'] = H_sjpt12_over_fjpt0
+        df[key_]['ak8']['H_sjpt12_over_fjpt'] = H_sjpt12_over_fjpt
         df[key_]['ak8']['H_sjpt1_over_fjpt'] = H_sjpt1_over_fjpt
         df[key_]['ak8']['H_sjpt2_over_fjpt'] = H_sjpt2_over_fjpt
         #
@@ -226,7 +226,7 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         lb_mtb_dr   = np.take_along_axis(lb_mtb,ind_lb,axis=1)
         lb_dr_dr    = np.take_along_axis(lb_dr,ind_lb,axis=1)
         max_lb_dr = np.nanmax(lb_dr_dr, axis=1)
-        min_lb_dr = np.nanmax(lb_dr_dr, axis=1)
+        min_lb_dr = np.nanmin(lb_dr_dr, axis=1)
         max_lb_invm = np.nanmax(lb_invm_E_dr, axis=1)
         min_lb_invm = np.nanmin(lb_invm_E_dr, axis=1)
         df[key_]['ak8']['max_lb_dr'] = max_lb_dr
@@ -328,13 +328,14 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
 def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     df = kFit.retrieveData(files_, ['TTZH', 'TTBarLep'], outDir_, getgen_=False, getak8_=True)
     genMatched = True
-    sepGen     = False
+    sepGen     = True
     print(df.keys())
+    print(not sepGen)
     suf = '_2017'
     if (genMatched):
         df['TTZH_GenMatch'+suf]   = df['TTZH'+suf]
         df['TTZH_noGenMatch'+suf] = df['TTZH'+suf]
-        if (~sepGen) : 
+        if ( not sepGen) : 
             del df['TTZH'+suf]
     if (genMatched and sepGen):                   
         df['TTZH_genZbb'+suf]       = df['TTZH'+suf]
@@ -410,204 +411,223 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
 
 
 def GenAna_ttbar(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
-    df = kFit.retrieveData(files_, ['TTBarLep'], outDir_, getgen_=True, getak8_=True)
-    print(df.keys())
-    df = df['TTBarLep_2017']
-    w  = df['val']['weight'].values * np.sign(df['val']['genWeight'].values) * (137/41.9)
-    #
-    gen_df = df['gen']
-    fat_df = df['ak8']
-    met    = df['val']['MET_pt']
-    base_cuts = (
-        (fat_df['n_nonHbb']   >=  2) &  
-        #(fat_df['n_b_Hbb']    >=  1) &
-        (fat_df['nhbbFatJets']>   0) & 
-        (fat_df['H_M']        >  50) & 
-        (fat_df['H_M']        < 180) &
-        #(fat_df['best_Wb_invM']> 200) &
-        #(fat_df['H_Wscore'] < .90) &
-        (met                  >  20)
-    )
-    w = w[base_cuts]
-    #
-    ZH_eta   = fat_df['H_eta'][base_cuts]
-    ZH_phi   = fat_df['H_phi'][base_cuts]
-    ZH_M     = fat_df['H_M'][base_cuts]
-    ZH_score = fat_df['H_score'][base_cuts] 
-    ZH_Wscore= fat_df['H_Wscore'][base_cuts]
-    best_Wb_invM = fat_df['best_Wb_invM'][base_cuts]
-    #
-    fig, ax = plt.subplots()
-    ax.hist2d(x=ZH_Wscore, y=best_Wb_invM, 
-              range= ((0,1),(0,300)),
-              cmin = 0.01,
-              bins=50, weights=w)
-    #plt.show()
-    plt.clf()
-    #
-    gen_ids = gen_df['GenPart_pdgId'][base_cuts]
-    gen_mom = gen_df['GenPart_genPartIdxMother'][base_cuts]
-    gen_pt  = gen_df['GenPart_pt'][base_cuts]
-    gen_eta = gen_df['GenPart_eta'][base_cuts]
-    gen_phi = gen_df['GenPart_phi'][base_cuts]
-    gen_E   = gen_df['GenPart_E'][base_cuts]
-    #
-
-    get_bq_fromtop = (
-        ((abs(gen_ids) == 5) & (abs(gen_ids[gen_mom]) == 6)) | # if bottom and mom is top
-        ((abs(gen_ids) < 5) & (abs(gen_ids[gen_mom]) == 24) & (abs(gen_ids[gen_mom[gen_mom]]) == 6))   # get quarks from W whos parrent is a top
-    )
-    base = ((get_bq_fromtop) & (get_bq_fromtop.sum() ==4))
-    case_1_base_pt = ((base) & 
-                      (gen_ids[gen_mom] > 0) & (gen_ids[gen_mom] != 21))
-    case_1_base_mt = ((base) & 
-                      (gen_ids[gen_mom] < 0) & (gen_ids[gen_mom] != -21))
-    case_1_base    = (
-        ((case_1_base_pt) & (case_1_base_pt.sum() == 3)) |
-        ((case_1_base_mt) & (case_1_base_mt.sum() == 3)) 
-    )
-    case_4_base = ((base & (abs(gen_ids) == 5)) & ((base & (abs(gen_ids) == 5)).sum() == 2))
-    case_5_base_npt = (base & ((gen_ids[gen_mom] == -6) | (gen_ids[gen_mom] ==  24)))
-    case_5_base_nmt = (base & ((gen_ids[gen_mom] ==  6) | (gen_ids[gen_mom] == -24)))
-    case_5_base = (
-        ((case_5_base_npt) & (case_5_base_npt.sum() == 3)) |
-        ((case_5_base_nmt) & (case_5_base_nmt.sum() == 3)) 
-    )   
-    # 
-    case_123_dr = deltaR(ZH_eta,ZH_phi,gen_eta[case_1_base],gen_phi[case_1_base])
-    case_4_dr   = deltaR(ZH_eta,ZH_phi,gen_eta[case_4_base],gen_phi[case_4_base])
-    case_56_dr   = deltaR(ZH_eta,ZH_phi,gen_eta[case_5_base],gen_phi[case_5_base])
-    #
-    case_1  = (((case_123_dr < 0.8) & 
-                (((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 6).sum() == 2) & ((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 5).sum() == 2))
-            ).sum() == 2)
-    case_2  = (((case_123_dr < 0.8) & 
-                (((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 6).sum() == 2) & ((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 5).sum() == 1))
-            ).sum() == 2)
-    case_3  = (((case_123_dr < 0.8) & 
-                (((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 6).sum() == 3) & ((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 5).sum() == 2))
-            ).sum() == 3)
-    case_4  = (((case_4_dr < 0.8) & ((abs(gen_ids[case_4_base][case_4_dr<0.8]) == 5).sum() == 2)).sum() == 2)
-    case_5  = (((case_56_dr < 0.8) &
-                (((abs(gen_ids[case_5_base][case_56_dr<0.8]) < 6).sum() == 2) & ((abs(gen_ids[case_5_base][case_56_dr<0.8]) < 5).sum() == 1))
-            ).sum() == 2)
-    case_6  = (((case_56_dr < 0.8) &
-                (((abs(gen_ids[case_5_base][case_56_dr<0.8]) < 6).sum() == 3) & ((abs(gen_ids[case_5_base][case_56_dr<0.8]) < 5).sum() == 2))
-            ).sum() == 3)
-    case_7  = ((case_1 == False) & (case_2 == False) & (case_3 == False) & (case_4 == False) & (case_5 == False) & (case_6 == False))
-    #
-    case_7_dr = deltaR(ZH_eta[case_7],ZH_phi[case_7],gen_eta[case_7],gen_phi[case_7])
-    ind_ = 1
-    T = len(gen_ids[case_7])
-    G = (((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0)
-    L = (((case_7_dr < .8) & (abs(gen_ids[case_7]) >= 11) & (abs(gen_ids[case_7]) <= 16)).sum() > 0)
-    B = (((case_7_dr < .8) & (abs(gen_ids[case_7]) == 5)).sum() > 0)
-    BfromG = (((case_7_dr < .8) & (abs(gen_ids[case_7]) == 5) & (gen_ids[gen_mom][case_7] == 22)).sum() > 0)
-    Q = (((case_7_dr < .8) & (abs(gen_ids[case_7]) < 5)).sum() > 0)
-    QfromG = (((case_7_dr < .8) & (abs(gen_ids[case_7]) < 5) & (gen_ids[gen_mom][case_7] == 22)).sum() > 0)
-    #
-    BnG = (B & ~G)
-    BnL = (B & ~L)
-    BnLnG = (B & ~L & ~G)
-    GnB = (G & ~B)
-    GnL = (G & ~L)
-    GnLnB = (G & ~L & ~B)
-    LnB = (L & ~B)
-    LnG = (L & ~G)
-    LnGnB = (L & ~G & ~B)
-    nBnGnL = (~B & ~L & ~G)
-    #
-    LBnG   = (L & B & ~G)
-    GBnL   = (G & B & ~L)
-    LGnB   = (L & G & ~B) 
-    #
-    GnQ    = (G & ~Q)
-    LnQ    = (L & ~Q)
-    BnQ    = (B & ~Q)
-    print(T)
-    print(G.sum(),     'G')
-    print(L.sum(),     'L')
-    print(B.sum(),     'B')
-    print(Q.sum(),     'Q')
-    print(BnG.sum(),   'BnG')
-    print(BnL.sum(),   'BnL')
-    print(GnL.sum(),   'GnL')
-    print(GnB.sum(),   'GnB')
-    print(LnB.sum(),   'LnB')
-    print(LnG.sum(),   'LnG')
-    print(BnLnG.sum(), 'BnLnG')
-    print(GnLnB.sum(), 'GnLnB')
-    print(LnGnB.sum(), 'LnGnB')
-    print(nBnGnL.sum(),'nBnGnL')
-    print(LBnG.sum(),  'LBnG')
-    print(GBnL.sum(),  'GBnL')
-    print(LGnB.sum(),  'LGnB')
-    print(GnQ.sum(),   'GnQ')
-    print(LnQ.sum(),   'LnQ')
-    print(BnQ.sum(),   'BnQ')
-    print(BfromG.sum(),'BfromG')
-    print(QfromG.sum(),'QfromG')
-    print(gen_ids[case_7][(case_7_dr < .8)][B & Q])
-    print(gen_ids[gen_mom][case_7][(case_7_dr < .8)][B & Q])
-    print(case_7_dr[(case_7_dr < .8)][B & Q])
-    #print(gen_ids[case_7][(case_7_dr < .8)][((case_7_dr < .8) & (abs(gen_ids[case_7]) >= 11) & (abs(gen_ids[case_7]) <= 16)).sum() > 0])
-    #print(gen_ids[case_7][((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0].flatten())
-    plt.hist(gen_ids[case_7][(case_7_dr < .8)][G].flatten(), bins=100, range=(-25,25))
-    plt.title('gluon in H/Z ({0:2.2f}%)'.format(G.sum()/T * 100))
-    plt.show()
-    plt.clf()
-    plt.hist(gen_ids[case_7][(case_7_dr < .8)][L].flatten(), bins=100,range=(-25,25))
-    plt.title('lepton in H/Z ({0:2.2f}%)'.format(L.sum()/T * 100))
-    plt.show()
-    plt.clf()
-    plt.hist(gen_ids[case_7][(case_7_dr < .8)][B].flatten(), bins= 100, range=(-25,25))
-    plt.title('b in H/Z ({0:2.2f}%)'.format(B.sum()/T * 100))
-    plt.show()
-    plt.clf()
-    plt.hist(gen_ids[case_7][(case_7_dr < .8)][nBnGnL].flatten(), bins= 100, range=(-25,25))
-    plt.title('no b,l,g in H/Z ({0:2.2f}%)'.format(nBnGnL.sum()/T * 100))
-    plt.show()
-    plt.clf()
-    #print(gen_ids[case_7][(((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0)][ind_])
-    #print(*gen_ids[gen_mom][case_7][(((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0)][ind_])
-    #print(*case_7_dr[(((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0)][ind_])
-    exit()
-    #print(((case_2 == case_4) & (case_2 == True)).sum()) ########
-    #print(((case_3 == case_4) & (case_3 == True)).sum()) ########
-    #print(gen_ids[((case_2 == case_4) & (case_2 == True))]) ########
-    #print(*gen_ids[((case_3 == case_4) & (case_3 == True))][0]) ########
-    #print(*gen_ids[gen_mom][((case_3 == case_4) & (case_3 == True))][0]) ########
-    cases = [case_1,case_2,case_3,case_4,case_5,case_6,case_7]
-    des_dict = {
-        "Case_1" : 'Case_1 (qq from W within fatjet)',
-        "Case_2" : 'Case_2 (b+q from W, same top within fatjet)',
-        "Case_3" : 'Case_3 (b+qq from W, same top within fatjet)',
-        "Case_4" : 'Case_4 (bb from ttbar within fatjet)',
-        "Case_5" : 'Case_5 (b from one top, and q from other top within fatjet)',
-        "Case_6" : 'Case_6 (b from one top, and qq from other top within fatjet)',
-        "case_7" : 'case_7 (Else)'
+    df_ = kFit.retrieveData(files_, ['TTBarLep'], outDir_, getgen_=True, getak8_=True)
+    for key_ in df_.keys():
+        df = df_[key_]
+        w  = df['val']['weight'].values * np.sign(df['val']['genWeight'].values) * (137/41.9)
+        #
+        gen_df = df['gen']
+        fat_df = df['ak8']
+        met    = df['val']['MET_pt']
+        base_cuts = (
+            (fat_df['n_nonHbb']   >=  2) &  
+            #(fat_df['n_b_Hbb']    >=  1) &
+            (fat_df['nhbbFatJets']>   0) & 
+            (fat_df['H_M']        >  50) & 
+            (fat_df['H_M']        < 180) &
+            #(fat_df['best_Wb_invM']> 200) &
+            #(fat_df['H_Wscore'] < .90) &
+            (met                  >=  0)
+        )
+        #w = w[base_cuts]
+        #
+        ZH_eta   = fat_df['H_eta']           #[base_cuts]
+        ZH_phi   = fat_df['H_phi']           #[base_cuts]
+        ZH_M     = fat_df['H_M']             #[base_cuts]
+        ZH_score = fat_df['H_score']         #[base_cuts] 
+        ZH_Wscore= fat_df['H_Wscore']        #[base_cuts]
+        best_Wb_invM = fat_df['best_Wb_invM']#[base_cuts]
+        #
+        #fig, ax = plt.subplots()
+        #ax.hist2d(x=ZH_Wscore, y=best_Wb_invM, 
+        #          range= ((0,1),(0,300)),
+        #          cmin = 0.01,
+        #          bins=50, weights=w)
+        ##plt.show()
+        #plt.clf()
+        #
+        gen_ids = gen_df['GenPart_pdgId']           #[base_cuts]
+        gen_mom = gen_df['GenPart_genPartIdxMother']#[base_cuts]
+        gen_pt  = gen_df['GenPart_pt']              #[base_cuts]
+        gen_eta = gen_df['GenPart_eta']             #[base_cuts]
+        gen_phi = gen_df['GenPart_phi']             #[base_cuts]
+        gen_E   = gen_df['GenPart_E']               #[base_cuts]
+        #
+        
+        get_bq_fromtop = (
+            ((abs(gen_ids) == 5) & (abs(gen_ids[gen_mom]) == 6)) | # if bottom and mom is top
+            ((abs(gen_ids) < 5) & (abs(gen_ids[gen_mom]) == 24) & (abs(gen_ids[gen_mom[gen_mom]]) == 6))   # get quarks from W whos parrent is a top
+        )
+        base = ((get_bq_fromtop) & (get_bq_fromtop.sum() ==4))
+        case_1_base_pt = ((base) & 
+                          (gen_ids[gen_mom] > 0) & (gen_ids[gen_mom] != 21))
+        case_1_base_mt = ((base) & 
+                          (gen_ids[gen_mom] < 0) & (gen_ids[gen_mom] != -21))
+        case_1_base    = (
+            ((case_1_base_pt) & (case_1_base_pt.sum() == 3)) |
+            ((case_1_base_mt) & (case_1_base_mt.sum() == 3)) 
+        )
+        case_4_base = ((base & (abs(gen_ids) == 5)) & ((base & (abs(gen_ids) == 5)).sum() == 2))
+        case_5_base_npt = (base & ((gen_ids[gen_mom] == -6) | (gen_ids[gen_mom] ==  24)))
+        case_5_base_nmt = (base & ((gen_ids[gen_mom] ==  6) | (gen_ids[gen_mom] == -24)))
+        case_5_base = (
+            ((case_5_base_npt) & (case_5_base_npt.sum() == 3)) |
+            ((case_5_base_nmt) & (case_5_base_nmt.sum() == 3)) 
+        )   
+        # 
+        case_123_dr = deltaR(ZH_eta,ZH_phi,gen_eta[case_1_base],gen_phi[case_1_base])
+        case_4_dr   = deltaR(ZH_eta,ZH_phi,gen_eta[case_4_base],gen_phi[case_4_base])
+        case_56_dr   = deltaR(ZH_eta,ZH_phi,gen_eta[case_5_base],gen_phi[case_5_base])
+        #
+        case_1  = (((case_123_dr < 0.8) & 
+                    (((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 6).sum() == 2) & ((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 5).sum() == 2))
+                ).sum() == 2)
+        case_2  = (((case_123_dr < 0.8) & 
+                    (((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 6).sum() == 2) & ((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 5).sum() == 1))
+                ).sum() == 2)
+        case_3  = (((case_123_dr < 0.8) & 
+                    (((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 6).sum() == 3) & ((abs(gen_ids[case_1_base][case_123_dr<0.8]) < 5).sum() == 2))
+                ).sum() == 3)
+        case_4  = (((case_4_dr < 0.8) & ((abs(gen_ids[case_4_base][case_4_dr<0.8]) == 5).sum() == 2)).sum() == 2)
+        case_5  = (((case_56_dr < 0.8) &
+                    (((abs(gen_ids[case_5_base][case_56_dr<0.8]) < 6).sum() == 2) & ((abs(gen_ids[case_5_base][case_56_dr<0.8]) < 5).sum() == 1))
+                ).sum() == 2)
+        case_6  = (((case_56_dr < 0.8) &
+                    (((abs(gen_ids[case_5_base][case_56_dr<0.8]) < 6).sum() == 3) & ((abs(gen_ids[case_5_base][case_56_dr<0.8]) < 5).sum() == 2))
+                ).sum() == 3)
+        case_7  = ((case_1 == False) & (case_2 == False) & (case_3 == False) & (case_4 == False) & (case_5 == False) & (case_6 == False))
+        #
+        df_[key_]['val']['case_1'] = case_1
+        df_[key_]['val']['case_2'] = case_2
+        df_[key_]['val']['case_3'] = case_3
+        df_[key_]['val']['case_4'] = case_4
+        df_[key_]['val']['case_5'] = case_5
+        df_[key_]['val']['case_6'] = case_6
+        df_[key_]['val']['case_7'] = case_7
+        year   = key_[key_.index('201'):key_.index('201')+4]
+        sample = key_.split('_201')[0]
+        df_[key_]['val'].to_pickle(outDir_+'result_'+year+'_'+sample+'_val.pkl')
+        #
+        case_1 = case_1 & base_cuts
+        case_2 = case_2 & base_cuts
+        case_3 = case_3 & base_cuts
+        case_4 = case_4 & base_cuts
+        case_5 = case_5 & base_cuts
+        case_6 = case_6 & base_cuts
+        case_7 = case_7 & base_cuts
+        #
+        case_7_dr = deltaR(ZH_eta[case_7],ZH_phi[case_7],gen_eta[case_7],gen_phi[case_7])
+        ind_ = 1
+        T = len(gen_ids[case_7])
+        G = (((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0)
+        L = (((case_7_dr < .8) & (abs(gen_ids[case_7]) >= 11) & (abs(gen_ids[case_7]) <= 16)).sum() > 0)
+        B = (((case_7_dr < .8) & (abs(gen_ids[case_7]) == 5)).sum() > 0)
+        BfromG = (((case_7_dr < .8) & (abs(gen_ids[case_7]) == 5) & (gen_ids[gen_mom][case_7] == 22)).sum() > 0)
+        Q = (((case_7_dr < .8) & (abs(gen_ids[case_7]) < 5)).sum() > 0)
+        QfromG = (((case_7_dr < .8) & (abs(gen_ids[case_7]) < 5) & (gen_ids[gen_mom][case_7] == 22)).sum() > 0)
+        #
+        BnG = (B & ~G)
+        BnL = (B & ~L)
+        BnLnG = (B & ~L & ~G)
+        GnB = (G & ~B)
+        GnL = (G & ~L)
+        GnLnB = (G & ~L & ~B)
+        LnB = (L & ~B)
+        LnG = (L & ~G)
+        LnGnB = (L & ~G & ~B)
+        nBnGnL = (~B & ~L & ~G)
+        #
+        LBnG   = (L & B & ~G)
+        GBnL   = (G & B & ~L)
+        LGnB   = (L & G & ~B) 
+        #
+        GnQ    = (G & ~Q)
+        LnQ    = (L & ~Q)
+        BnQ    = (B & ~Q)
+        print(T)
+        print(G.sum(),     'G')
+        print(L.sum(),     'L')
+        print(B.sum(),     'B')
+        print(Q.sum(),     'Q')
+        print(BnG.sum(),   'BnG')
+        print(BnL.sum(),   'BnL')
+        print(GnL.sum(),   'GnL')
+        print(GnB.sum(),   'GnB')
+        print(LnB.sum(),   'LnB')
+        print(LnG.sum(),   'LnG')
+        print(BnLnG.sum(), 'BnLnG')
+        print(GnLnB.sum(), 'GnLnB')
+        print(LnGnB.sum(), 'LnGnB')
+        print(nBnGnL.sum(),'nBnGnL')
+        print(LBnG.sum(),  'LBnG')
+        print(GBnL.sum(),  'GBnL')
+        print(LGnB.sum(),  'LGnB')
+        print(GnQ.sum(),   'GnQ')
+        print(LnQ.sum(),   'LnQ')
+        print(BnQ.sum(),   'BnQ')
+        print(BfromG.sum(),'BfromG')
+        print(QfromG.sum(),'QfromG')
+        #print(gen_ids[case_7][(case_7_dr < .8)][B & Q])
+        #print(gen_ids[gen_mom][case_7][(case_7_dr < .8)][B & Q])
+        #print(case_7_dr[(case_7_dr < .8)][B & Q])
+        #print(gen_ids[case_7][(case_7_dr < .8)][((case_7_dr < .8) & (abs(gen_ids[case_7]) >= 11) & (abs(gen_ids[case_7]) <= 16)).sum() > 0])
+        #print(gen_ids[case_7][((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0].flatten())
+        plt.hist(gen_ids[case_7][(case_7_dr < .8)][G].flatten(), bins=100, range=(-25,25))
+        plt.title('gluon in H/Z ({0:2.2f}%)'.format(G.sum()/T * 100))
+        plt.show()
+        plt.clf()
+        plt.hist(gen_ids[case_7][(case_7_dr < .8)][L].flatten(), bins=100,range=(-25,25))
+        plt.title('lepton in H/Z ({0:2.2f}%)'.format(L.sum()/T * 100))
+        plt.show()
+        plt.clf()
+        plt.hist(gen_ids[case_7][(case_7_dr < .8)][B].flatten(), bins= 100, range=(-25,25))
+        plt.title('b in H/Z ({0:2.2f}%)'.format(B.sum()/T * 100))
+        plt.show()
+        plt.clf()
+        plt.hist(gen_ids[case_7][(case_7_dr < .8)][nBnGnL].flatten(), bins= 100, range=(-25,25))
+        plt.title('no b,l,g in H/Z ({0:2.2f}%)'.format(nBnGnL.sum()/T * 100))
+        plt.show()
+        plt.clf()
+        #print(gen_ids[case_7][(((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0)][ind_])
+        #print(*gen_ids[gen_mom][case_7][(((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0)][ind_])
+        #print(*case_7_dr[(((case_7_dr < .8) & (gen_ids[case_7] ==21)).sum() > 0)][ind_])
+        #exit()
+        #print(((case_2 == case_4) & (case_2 == True)).sum()) ########
+        #print(((case_3 == case_4) & (case_3 == True)).sum()) ########
+        #print(gen_ids[((case_2 == case_4) & (case_2 == True))]) ########
+        #print(*gen_ids[((case_3 == case_4) & (case_3 == True))][0]) ########
+        #print(*gen_ids[gen_mom][((case_3 == case_4) & (case_3 == True))][0]) ########
+        cases = [case_1,case_2,case_3,case_4,case_5,case_6,case_7]
+        des_dict = {
+            "Case_1" : 'Case_1 (qq from W within fatjet)',
+            "Case_2" : 'Case_2 (b+q from W, same top within fatjet)',
+            "Case_3" : 'Case_3 (b+qq from W, same top within fatjet)',
+            "Case_4" : 'Case_4 (bb from ttbar within fatjet)',
+            "Case_5" : 'Case_5 (b from one top, and q from other top within fatjet)',
+            "Case_6" : 'Case_6 (b from one top, and qq from other top within fatjet)',
+            "case_7" : 'case_7 (Else)'
         }
-    for case, des_key in zip(cases,des_dict):
-        n,b,_ =plt.hist(ZH_M[case],weights=w[case],bins = 50)    
-        plt.title(des_dict[des_key]+' ({0:3.1f})'.format(sum(n[:])))
-        plt.xlabel('reco_HZ_M (softdrop)')
-        plt.show()
-
-    for case, des_key in zip(cases,des_dict):
-        n,b,_ =plt.hist(ZH_score[case],weights=w[case],bins = 50)    
-        plt.title(des_dict[des_key]+' ({0:3.1f})'.format(sum(n[:])))
-        plt.xlabel('reco_HZ_score')
-        plt.show()
-    for case, des_key in zip(cases,des_dict):
-        n,b,_ =plt.hist(ZH_Wscore[case],weights=w[case],bins = 50)    
-        plt.title(des_dict[des_key]+' ({0:3.1f})'.format(sum(n[:])))
-        plt.xlabel('reco_HZ_Wscore')
-        plt.show()
-    for case, des_key in zip(cases,des_dict):
-        n,b,_ =plt.hist(best_Wb_invM[case],weights=w[case],bins = 50)    
-        plt.title(des_dict[des_key]+' ({0:3.1f})'.format(sum(n[:])))
-        plt.xlabel('reco_Wb_invM')
-        plt.show()
+        for case, des_key in zip(cases,des_dict):
+            n,b,_ =plt.hist(ZH_M[case],weights=w[case],bins = 50)    
+            plt.title(des_dict[des_key]+' ({0:3.1f})'.format(sum(n[:])))
+            plt.xlabel('reco_HZ_M (softdrop)')
+            plt.show()
+            
+        for case, des_key in zip(cases,des_dict):
+            n,b,_ =plt.hist(ZH_score[case],weights=w[case],bins = 50)    
+            plt.title(des_dict[des_key]+' ({0:3.1f})'.format(sum(n[:])))
+            plt.xlabel('reco_HZ_score')
+            plt.show()
+        for case, des_key in zip(cases,des_dict):
+            n,b,_ =plt.hist(ZH_Wscore[case],weights=w[case],bins = 50)    
+            plt.title(des_dict[des_key]+' ({0:3.1f})'.format(sum(n[:])))
+            plt.xlabel('reco_HZ_Wscore')
+            plt.show()
+        for case, des_key in zip(cases,des_dict):
+            n,b,_ =plt.hist(best_Wb_invM[case],weights=w[case],bins = 50)    
+            plt.title(des_dict[des_key]+' ({0:3.1f})'.format(sum(n[:])))
+            plt.xlabel('reco_Wb_invM')
+            plt.show()
 
 def GenAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     df = kFit.retrieveData(files_, ['TTZH'], outDir_, getgen_=True, getak8_=True)
@@ -740,20 +760,59 @@ def matchLep(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         fj_pt   = fj_df['pt']
         fj_eta   = fj_df['eta']
         fj_phi   = fj_df['phi']
+        fj_Hscore= fj_df['btagHbb']
         #
         lep_cut = (((abs(gen_ids) == 11) | (abs(gen_ids) == 13) | (abs(gen_ids) == 15)) & ((abs(gen_ids[gen_mom]) == 24) & (abs(gen_ids[gen_mom[gen_mom]]) == 6)))
         lep_match_dR = deltaR(lep_eta,lep_phi,gen_eta[lep_cut],gen_phi[lep_cut])
         df_[key_]['val']['matchedGenLep'] = (lep_match_dR < .1).sum() > 0 
         #
         if ('TTZH' in key_):
-                isHbb = (gen_ids == 25)
                 isbb_fromZ = (((gen_ids == -5) | (gen_ids == 5)) & 
                               (gen_ids[gen_mom] == 23))
                 isqq_fromZ = ((abs(gen_ids)<5) & 
                               (gen_ids[gen_mom] == 23))
+                isHbb = (gen_ids == 25)
                 isZbb  = ((gen_ids == 23) & (isbb_fromZ.sum() > 0))
                 isZqq  = ((gen_ids == 23) & (isqq_fromZ.sum() > 0))
                 isZH = (isHbb | isZbb | isZqq)
+                ##### testing things t pt vs z/h pt
+                #ist    = (abs(gen_ids) == 6)
+                #ist_Zbb= (ist & (isbb_fromZ.sum() > 0))
+                #ist_Hbb= (ist & (isHbb.sum() > 0))
+                #t_ZbbMaxpt =  np.nanmax(fillne(gen_pt[ist_Zbb]), axis=1)
+                #t_ZbbMinpt =  np.nanmin(fillne(gen_pt[ist_Zbb]), axis=1)
+                #t_HbbMaxpt =  np.nanmax(fillne(gen_pt[ist_Hbb]), axis=1)
+                #t_HbbMinpt =  np.nanmin(fillne(gen_pt[ist_Hbb]), axis=1)
+                #
+                #Hbbpt = fillne(gen_pt[isHbb]).flatten()
+                #Zbbpt = fillne(gen_pt[isZbb]).flatten()
+                #print(Hbbpt.shape)
+                #print(t_HbbMaxpt.shape)
+                #plt.hist2d(x=Hbbpt[Hbbpt >= 200], y=t_HbbMaxpt[Hbbpt >= 200], range = ((200,500),(0,500)), cmin= 0.1, bins= 15)
+                #plt.title('t max pt vs H pt')
+                #plt.xlabel('H pt')
+                #plt.ylabel('t max pt')
+                #plt.show()
+                #plt.close()
+                #plt.hist2d(x=Hbbpt[Hbbpt >= 200], y=t_HbbMinpt[Hbbpt >= 200], range = ((200,500),(0,500)), cmin= 0.1, bins= 15)
+                #plt.title('t min pt vs H pt')
+                #plt.xlabel('H pt')
+                #plt.ylabel('t min pt')
+                #plt.show()
+                #plt.close()
+                #plt.hist2d(x=Zbbpt[Zbbpt >= 200], y=t_ZbbMaxpt[Zbbpt >= 200], range = ((200,500),(0,500)), cmin= 0.1, bins= 15)
+                #plt.title('t max pt vs Z pt')
+                #plt.xlabel('Z pt')
+                #plt.ylabel('t max pt')
+                #plt.show()
+                #plt.close()
+                #plt.hist2d(x=Zbbpt[Zbbpt >= 200], y=t_ZbbMinpt[Zbbpt >= 200], range = ((200,500),(0,500)), cmin= 0.1, bins= 15)
+                #plt.title('t min pt vs Z pt')
+                #plt.xlabel('Z pt')
+                #plt.ylabel('t min pt')
+                #plt.show()
+                #plt.close()
+                #exit()
                 #
                 zh_pt = fill1e(gen_pt[isZH]).flatten()
                 zh_eta = fill1e(gen_eta[isZH]).flatten()
@@ -803,7 +862,8 @@ def matchLep(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
                 #plt.show()
                 #plt.close()
                 ##
-                zh_match = ((zh_match_dR < 0.8) & (zh_pt >= 200) & (zh_eta <= 2.6) & (zh_eta >= -2.6))
+                zh_match = ((fj_pt >= 300 ) & (fj_Hscore >= 0.0) & 
+                (zh_match_dR < 0.8) & (zh_pt >= 200) & (zh_eta <= 2.6) & (zh_eta >= -2.6))
 
                 df_[key_]['val']['matchedGenZH'] = (zh_match).sum() > 0 
                 df_[key_]['val']['matchedGen_ZHbb'] = (((zh_match).sum() > 0) & ((lep_match_dR < .1).sum() > 0)& (isZqq.sum() == 0))
@@ -885,9 +945,9 @@ if __name__ == '__main__':
     #lepCleaned_v2(*files_samples_outDir, cfg.ZHbbFitoverlap)
     #matchLep(*files_samples_outDir, cfg.ZHbbFitoverlap)
     ##
-    #ZHbbAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
+    ZHbbAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
     ########
     #GenAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
     #GenAna_ttbar(*files_samples_outDir, cfg.ZHbbFitoverlap)
     ########
-    plotAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
+    #plotAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
