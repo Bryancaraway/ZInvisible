@@ -45,9 +45,9 @@ def preProcess_DNN(files_, samples_, outDir_):
     for key_ in df.keys():
         temp_df_ = pd.DataFrame()
         base_cuts = (
-            (df[key_]['ak8']['n_nonHbb'] >= 2)   & 
-            (df[key_]['ak8']['nhbbFatJets'] > 0) &
-            (df[key_]['ak8']['H_M']         > 50)&
+            (df[key_]['ak8']['n_nonHbb'] >= 2)    & 
+            (df[key_]['ak8']['nhbbFatJets'] > 0)  &
+            (df[key_]['ak8']['H_M']         > 50) &
             (df[key_]['ak8']['H_M']         < 200))
         if ('TTZH' in key_):
             base_cuts = base_cuts & (df[key_]['val']['matchedGen_ZHbb'] == True)
@@ -89,11 +89,19 @@ def preProcess_DNN(files_, samples_, outDir_):
     ## Calculate DNN weighting
     dnn_df['DNNweight'] = pd.concat([dnn_df['weight'][dnn_df['Signal'] == True] * (dnn_df['weight'][dnn_df['Signal'] == False].sum() / dnn_df['weight'][dnn_df['Signal'] == True].sum()),
                                      dnn_df['weight'][dnn_df['Signal'] == False]])
+    #
+    import seaborn as sns
+    plt.figure(figsize=(16,9))
+    sns.set(font_scale=0.5)
+    sns.heatmap(dnn_df.corr(), annot=True, fmt= '1.2f',annot_kws={"size": 6}, cmap=plt.cm.Reds, cbar=False, square= False)
+    plt.title(sys.argv[1] if len(sys.argv) > 1 else 'General')
+    plt.show()
+    plt.close()
     ## Split into 50/30/20 (Train, Validation, Test)
-    train_df = dnn_df.sample(frac = 0.50, random_state = 5) 
+    train_df = dnn_df.sample(frac = 0.80, random_state = 5) 
     dnn_df   = dnn_df.drop(train_df.index).copy()
-    val_df   = dnn_df.sample(frac = 0.60, random_state = 4)
-    dnn_df   = dnn_df.drop(val_df.index).copy()
+    val_df   = train_df.sample(frac = 0.20, random_state = 4)
+    train_df   = train_df.drop(val_df.index).copy()
     test_df  = dnn_df.sample(frac = 1.0)
     #
     train_dir , test_dir, val_dir = cfg.dnn_ZH_dir
@@ -102,17 +110,6 @@ def preProcess_DNN(files_, samples_, outDir_):
     val_df  .to_pickle(val_dir+  'val.pkl')
     #
 def train_DNN(train_dir, test_dir, val_dir):
-    #
-    import tensorflow as tf
-    from tensorflow import keras
-    from tensorflow.python.keras import layers
-    #tf.compat.v1.set_random_seed(2)
-    print(tf.__version__)
-    from tensorflow.python.keras import backend as K
-    from keras import backend as k
-    from tensorflow.python.ops import math_ops
-    from keras.models import Sequential
-    from keras.layers import Dense
     #
     train_df = pd.read_pickle(train_dir+'train.pkl')
     test_df  = pd.read_pickle(test_dir+ 'test.pkl')
@@ -173,7 +170,7 @@ def train_DNN(train_dir, test_dir, val_dir):
     sns.set(font_scale=0.5)
     sns.heatmap(df.corr(), annot=True, fmt= '1.2f',annot_kws={"size": 6}, cmap=plt.cm.Reds, cbar=False, square= False)
     plt.title(sys.argv[1] if len(sys.argv) > 1 else 'General')
-    plt.show()
+    #plt.show()
     plt.close()
     #
     fpr, tpr, thresholds = metrics.roc_curve(Y.astype('int'), pred)
@@ -182,7 +179,7 @@ def train_DNN(train_dir, test_dir, val_dir):
         [pred[Y == True],pred[Y == False]] , 
         histtype='step',
         weights = [W[Y == True], W[Y == False]], 
-        bins = 10,
+        bins = 40,
         range = (0,1),
         label=['True','False'])
     plt.legend()
@@ -195,28 +192,48 @@ def resetIndex(df_):
 #
 #
 #
+def focal_loss(y_true, y_pred):
+    gamma = cfg.fl_gamma
+    alpha = cfg.fl_alpha
+    pt_1 = tf.where(tf.equal(y_true, 1), y_pred, tf.ones_like(y_pred))
+    pt_0 = tf.where(tf.equal(y_true, 0), y_pred, tf.zeros_like(y_pred))
+    return -K.sum(alpha * K.pow(1. - pt_1, gamma) * K.log(pt_1))-K.sum((1-alpha) * K.pow( pt_0, gamma) * K.log(1. - pt_0))
+#
 def Build_Model(inputs_,outputs_,mean_,std_):
     #
-    main_input = keras.layers.Input(shape=[inputs_], name='input')
-    layer      = keras.layers.Lambda(lambda x: (x - K.constant(mean_)) / K.constant(std_), name='normalizeData')(main_input)
-    #
-    layer      = keras.layers.Dropout(0.0)(layer)
-    layer      = keras.layers.Dense(128, activation='relu')(layer)
-    #layer      = keras.layers.Dropout(0.3)(layer)
-    layer      = keras.layers.Dense(64, activation='relu')(layer)
-    #layer      = keras.layers.Dense(32, activation='relu')(layer)
-    layer      = keras.layers.Dropout(0.7)(layer) # .7
-    #layer      = keras.layers.Dense(66, activation='relu')(layer)
-    #layer      = keras.layers.BatchNormalization()(layer)
-    #
-    output     = keras.layers.Dense(1, activation='sigmoid', name='output')(layer)
-    #
+    if  ( int(cfg.skim_ZHbb_dir.split('_')[-1][:3]) == 200 ):
+        main_input = keras.layers.Input(shape=[inputs_], name='input')
+
+        layer      = keras.layers.Lambda(lambda x: (x - K.constant(mean_)) / K.constant(std_), name='normalizeData')(main_input)
+        #
+        #layer      = keras.layers.BatchNormalization()(layer) 
+        #layer      = keras.layers.Dropout(0.0)(layer)
+        layer      = keras.layers.Dense(128, activation='relu', kernel_regularizer=keras.regularizers.l1(0.00))(layer)
+        layer      = keras.layers.Dense(64, activation='relu', kernel_regularizer=keras.regularizers.l1(0.00))(layer)
+        layer      = keras.layers.Dropout(0.5)(layer) 
+        #
+        output     = keras.layers.Dense(1, activation='sigmoid', name='output')(layer)
+        #
+    elif( int(cfg.skim_ZHbb_dir.split('_')[-1][:3]) == 300 ):
+        main_input = keras.layers.Input(shape=[inputs_], name='input')
+        layer      = keras.layers.Lambda(lambda x: (x - K.constant(mean_)) / K.constant(std_), name='normalizeData')(main_input)
+        #
+        layer      = keras.layers.Dropout(0.0)(layer)
+        layer      = keras.layers.Dense(128, activation='relu')(layer)
+        layer      = keras.layers.Dense(64, activation='relu')(layer)
+        layer      = keras.layers.Dropout(0.7)(layer) # .7
+        #layer      = keras.layers.BatchNormalization()(layer)
+        #
+        output     = keras.layers.Dense(1, activation='sigmoid', name='output')(layer)
+        #
     model      = keras.models.Model(inputs=main_input, outputs=output, name='model')
     optimizer  = keras.optimizers.Adam(learning_rate=cfg.dnn_ZH_alpha)# decay=cfg.dnn_ZH_alpha*1e-3, momentum=0.9, nesterov=True)
     #
     if (cfg.DNNuseWeights and os.path.exists(cfg.DNNoutputDir+cfg.DNNoutputName)): 
         model.load_weights(cfg.DNNoutputDir+cfg.DNNoutputName)
-    model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy',tf.keras.metrics.AUC()])
+        #
+    #from focal_loss import BinaryFocalLoss
+    model.compile(loss=[focal_loss], optimizer=optimizer, metrics=['accuracy',tf.keras.metrics.AUC()])
     ##
     return model
 def corr_study(train_dir, test_dir, val_dir):
@@ -229,10 +246,12 @@ def corr_study(train_dir, test_dir, val_dir):
     corr_df = pd.concat([df.corr()['Signal'].rename('General')]+list(df[case_df[key_] == True].corr()['Signal'].rename(key_) for key_ in case_df.keys()), axis=1)
     #
     import seaborn as sns
-    def plot_heatmap(score_df,title):
+    from matplotlib.colors import LogNorm
+    def plot_heatmap(score_df,title, norm_=False):
         plt.figure(figsize=(12,8))
         sns.set(font_scale=0.75)
-        sns.heatmap(score_df, annot=True, fmt= '1.2f',annot_kws={"size": 6}, cmap=plt.cm.Reds, cbar=False, square= False)
+        sns.heatmap(score_df, annot=True, fmt= '1.3f',annot_kws={"size": 6}, 
+                    cmap=plt.cm.Reds, cbar=False, square= False, norm=(LogNorm() if norm_ else None))
         plt.title(title)
         plt.show()
         plt.close()
@@ -241,6 +260,19 @@ def corr_study(train_dir, test_dir, val_dir):
     #from statsmodels.stats.multicomp import pairwise_tukeyhsd
     df_target = df['Signal']
     df = df.drop(columns=df_target.name)
+    def plot_norm():
+        for key_ in df.keys():
+            n_,edges_,_ = plt.hist([df[key_][df_target == True], df[key_][df_target == False]],density=True, histtype='step', label=['True','False'])
+            bin_centers = (edges_[1:]+edges_[:-1])/2
+            bin_width   = edges_[1]-edges_[0]
+            plt.errorbar(bin_centers,n_[0],yerr=np.sqrt(n_[0]/(sum(df_target == True) *bin_width)), color='tab:blue',   fmt='.')
+            plt.errorbar(bin_centers,n_[1],yerr=np.sqrt(n_[1]/(sum(df_target == False)*bin_width)), color='tab:orange', fmt='.')
+            plt.legend()
+            plt.title(key_)
+            plt.show()
+            plt.close()
+            #
+    #plot_norm()
     #
     chi2_score, chi_2_p_value = chi2(abs(df),df_target)
     f_score, f_p_value = f_classif(df,df_target)
@@ -262,7 +294,12 @@ def corr_study(train_dir, test_dir, val_dir):
         [mutual_info_classif(abs(df),df_target)]+list(mutual_info_classif(abs(df[case_df[key_] == True]),df_target[case_df[key_] == True]) for key_ in case_df.keys()), 
         columns=df.keys(), index=['General']+list(case_df.keys())).transpose()
     #
-    plot_heatmap(chi2_df, 'Chi2')
+    plot_heatmap(corr_df,             'Pearson Corr',       False)
+    plot_heatmap(chi2_df,             'Chi2',               True)
+    plot_heatmap(chi2_p_df,           'Chi2_p_score',       False)
+    plot_heatmap(f_classif_df,        'F_test',             True)
+    plot_heatmap(f_classif_p_df,      'F_test_p_score',     False)
+    plot_heatmap(mut_info_classif_df, 'mutual_information', False)
     #
     def Plot_score (df_,score_, title):
         plt.barh(np.arange(len(score_)),score_,tick_label=df_.keys())
@@ -275,6 +312,47 @@ def corr_study(train_dir, test_dir, val_dir):
     #Plot_score(df, f_p_value,      'F, p-value'       )
     #Plot_score(df, mut_info_score, 'Mutual info score')
     #
+def pred_all_samples(files_, samples_, outDir_):
+    df = kFit.retrieveData(files_, samples_, outDir_, getak8_ = True)
+    train_dir, test_dir, val_dir = cfg.dnn_ZH_dir
+    train_df = pd.read_pickle(train_dir+'train.pkl')
+    trainX = resetIndex(train_df.drop(columns=[ 'Signal',*re.findall(r'\w*weight', ' '.join(train_df.keys()))]))
+    nn_model = Build_Model(len(trainX.keys()),1,trainX.mean().values,trainX.std().values)
+    nn_model.load_weights(str(cfg.DNNoutputDir+cfg.DNNoutputName))
+    for key_ in df.keys():
+        temp_df_ = pd.DataFrame()
+        base_cuts = (
+            (df[key_]['ak8']['n_nonHbb'] >= 2)   & 
+            (df[key_]['ak8']['nhbbFatJets'] > 0) &
+            (df[key_]['ak8']['H_M']         > 50)&
+            (df[key_]['ak8']['H_M']         < 200))
+        for var_ in cfg.dnn_ZH_vars:
+            if 'weight' in var_ or 'Weight' in var_:
+                continue
+            key_str = ''
+            if (  var_ in df[key_]['df'].keys() ) :
+                key_str = 'df'
+            elif (var_ in df[key_]['val'].keys()) :
+                key_str = 'val'
+            elif (var_ in df[key_]['ak8'].keys()) :
+                key_str = 'ak8'
+            else:
+                print(var_+' NOT FOUND IN '+key_+'!!!, FIX NOW AND RERUN!!!')
+                exit()
+            try:
+                temp_df_[var_] = df[key_][key_str][var_][base_cuts].values
+            except (AttributeError):
+                temp_df_[var_] = df[key_][key_str][var_][base_cuts]
+            #
+        pred = nn_model.predict(temp_df_.values).flatten()
+
+        df[key_]['val']['NN'] = -1.
+        df[key_]['val']['NN'][base_cuts] = pred
+        #
+        year   = key_[key_.index('201'):key_.index('201')+4]
+        sample = key_.split('_201')[0]
+        df[key_]['val'].to_pickle(outDir_+'result_'+year+'_'+sample+'_val.pkl')
+            
 if __name__ == '__main__':   
     files_samples_outDir = cfg.ZHbbFitCfg
     ##
@@ -282,5 +360,19 @@ if __name__ == '__main__':
     ##
     ##
     #preProcess_DNN(*files_samples_outDir)    
-    corr_study(    *cfg.dnn_ZH_dir)
+    #corr_study(    *cfg.dnn_ZH_dir)
+    #
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.python.keras import layers
+    #tf.compat.v1.set_random_seed(2)
+    print(tf.__version__)
+    from tensorflow.python.keras import backend as K
+    from keras import backend as k
+    from tensorflow.python.ops import math_ops
+    from keras.models import Sequential
+    from keras.layers import Dense
+    #
     #train_DNN(     *cfg.dnn_ZH_dir)
+    pred_all_samples(*files_samples_outDir)
+

@@ -113,7 +113,19 @@ def calc_mtb(pt_, phi_, m_pt, m_phi):
          mtb2 =  2*m_pt*pt_*(1 - np.cos(deltaPhi(phi_, m_phi)))
     return np.sqrt(mtb2)
     #
-
+def calc_SandA(pt_,eta_,phi_):
+    S_      = np.zeros((pt_.shape[0],3,3))
+    pxyz_   = np.array([pt_*np.cos(phi_),pt_*np.sin(phi_),pt_*np.sinh(eta_)])
+    p2_sum  = np.nansum(np.power(pt_*np.cosh(eta_),2),axis=1)
+    for i_ in range(0,3):
+        for j_ in range(0,3):
+            S_[:,i_,j_] = np.nansum(pxyz_[i_]*pxyz_[j_], axis = 1)/p2_sum
+    #
+    eig_= -np.sort(-(np.linalg.eig(S_[:])[0]), axis = 1) # calc eig vals and sort by descending
+    s_ = (3/2)*(eig_[:,1]+eig_[:,2])
+    a_ = (3/2)*eig_[:,2]
+    return s_, a_
+#
 def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     from matplotlib import rc
     #
@@ -153,10 +165,11 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             #(df_[key_]['ak8']['best_rt_score'] >= .5)    &
             #(df_[key_]['val']['matchedGen'] == False)   &
             #(df_[key_]['ak8']['n_b_Hbb'] >= 1)     &
-            #(df_[key_]['ak8']['n_jnonHbb'] >= 1)     &
+            #(df_[key_]['ak8']['n_H_sj_btag'] == 1)     &
             (df_[key_]['ak8']['nhbbFatJets'] > 0)  &
             (df_[key_]['ak8']['H_M']         > 50) &  
             (df_[key_]['ak8']['H_M']         < 200)& 
+            #(df_[key_]['ak8']['H_pt']       >= 300)& 
             #(df_[key_]['ak8']['H_Wscore']     < .80)&
             #(((df_[key_]['ak8']['best_Wb_invM']<= 175)&(df_[key_]['ak8']['H_Wscore']<.85))|(df_[key_]['ak8']['best_Wb_invM']> 175))&
             #(df_[key_]['ak8']['best_Wb_invM']> 200)&
@@ -164,6 +177,8 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             #(df_[key_]['ak8']['H_score']     > .75)&
             #(df_[key_]['ak8']['nbbFatJets'] == 1) &
             #(df_[key_]['val']['nResolvedTops'] == 1) &
+            #(df_[key_]['val']['NN'] <  .85) & 
+            (df_[key_]['val']['NN'] >= .95) & 
             (df_[key_]['val']['MET_pt']      >= 0))# &
         if ('_GenMatch' in key_):
             base_cuts = base_cuts & (df_[key_]['val']['matchedGen_ZHbb'] == True)
@@ -199,6 +214,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
                                   bins=bins, stacked=False,# fill=True,
                                   #range=range_,
                                   histtype='step',
+                                  density=False,
                                   #linewidth=0,
                                   weights= w,
                                   color  = colors,
@@ -221,3 +237,97 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     plt.close(fig)
     #    
 # 
+def calc_Kappa(df_,nn_range):
+    sig = 'TTZH'
+    bkg = 'TTBarLep'
+    suffix = '_2017'
+    def bin_counts(key_):
+        base_cuts = (
+            (df_[key_]['ak8']['n_nonHbb'] >= 2)    &
+            (df_[key_]['ak8']['nhbbFatJets'] > 0)  &
+            (df_[key_]['ak8']['H_M']         > 50) &
+            (df_[key_]['ak8']['H_M']         < 200))
+        if ('TTZH' in key_ ):
+            base_cuts = base_cuts & (df_[key_]['val']['matchedGen_ZHbb'] == True)
+        w = df_[key_]['val']['weight'][base_cuts] * np.sign(df_[key_]['val']['genWeight'][base_cuts]) * (137/41.9)
+        a_cut = (
+            (df_[key_]['ak8']['H_M'] > 70) & (df_[key_]['ak8']['H_M'] < 145) &
+            (df_[key_]['val']['NN'] >= .95))
+        az_cut, ah_cut = a_cut & (df_[key_]['ak8']['H_M'] <= 100), a_cut & (df_[key_]['ak8']['H_M'] > 100)
+        b_cut = (
+            (((df_[key_]['ak8']['H_M']> 50) & (df_[key_]['ak8']['H_M'] <= 70)) | ((df_[key_]['ak8']['H_M'] >= 145) & (df_[key_]['ak8']['H_M'] < 200))) &
+            (df_[key_]['val']['NN'] >= .95))
+        bl_cut, br_cut = b_cut & (df_[key_]['ak8']['H_M'] <= 70), b_cut & (df_[key_]['ak8']['H_M'] >= 145)
+        c_cut = (
+            (df_[key_]['ak8']['H_M'] > 70) & (df_[key_]['ak8']['H_M'] < 145) &
+            (df_[key_]['val']['NN'] < nn_range[1]) & (df_[key_]['val']['NN'] >= nn_range[0]))
+        cz_cut, ch_cut = c_cut & (df_[key_]['ak8']['H_M'] <= 100), c_cut & (df_[key_]['ak8']['H_M'] > 100)
+        d_cut = (
+            (((df_[key_]['ak8']['H_M']> 50) & (df_[key_]['ak8']['H_M'] <= 70)) | ((df_[key_]['ak8']['H_M'] >= 145) & (df_[key_]['ak8']['H_M'] < 200))) &
+            (df_[key_]['val']['NN'] < nn_range[1]) & (df_[key_]['val']['NN'] >= nn_range[0]))
+        dl_cut, dr_cut = d_cut & (df_[key_]['ak8']['H_M'] <= 70), d_cut & (df_[key_]['ak8']['H_M'] >= 145)
+        return [w[a_cut].sum(), w[az_cut].sum(), w[ah_cut].sum(),
+                w[b_cut].sum(), w[bl_cut].sum(), w[br_cut].sum(),
+                w[c_cut].sum(), w[cz_cut].sum(), w[ch_cut].sum(),
+                w[d_cut].sum(), w[dl_cut].sum(), w[dr_cut].sum()]
+    #
+    a_sig, az_sig, ah_sig, b_sig, bl_sig, br_sig, c_sig, cz_sig, ch_sig, d_sig, dl_sig, dr_sig = bin_counts(sig+suffix)
+    a_sig_err, az_sig_err, ah_sig_err, b_sig_err, bl_sig_err, br_sig_err, c_sig_err, cz_sig_err, ch_sig_err, d_sig_err, dl_sig_err, dr_sig_err = np.sqrt([
+        a_sig, az_sig, ah_sig, b_sig, bl_sig, br_sig, c_sig, cz_sig, ch_sig, d_sig, dl_sig, dr_sig])
+    a_bkg, az_bkg, ah_bkg, b_bkg, bl_bkg, br_bkg, c_bkg, cz_bkg, ch_bkg, d_bkg, dl_bkg, dr_bkg = bin_counts(bkg+suffix)
+    a_bkg_err, az_bkg_err, ah_bkg_err, b_bkg_err, bl_bkg_err, br_bkg_err, c_bkg_err, cz_bkg_err, ch_bkg_err, d_bkg_err, dl_bkg_err, dr_bkg_err = np.sqrt([
+        a_bkg, az_bkg, ah_bkg, b_bkg, bl_bkg, br_bkg, c_bkg, cz_bkg, ch_bkg, d_bkg, dl_bkg, dr_bkg])
+    #
+    k_bkg     = (b_bkg * c_bkg)/(a_bkg * d_bkg)
+    k_bkg_err = abs(k_bkg)*np.sqrt(np.power(a_bkg_err/a_bkg,2) + np.power(b_bkg_err/b_bkg,2) + np.power(c_bkg_err/c_bkg,2) + np.power(d_bkg_err/d_bkg,2)) 
+    a_eff     = (a_sig/a_bkg)
+    a_eff_err = abs(a_eff)*np.sqrt(np.power(a_sig_err/a_sig,2) + np.power(a_bkg_err/a_bkg,2))
+    c_eff = (c_sig/c_bkg)
+    c_eff_err = abs(c_eff)*np.sqrt(np.power(c_sig_err/c_sig,2) + np.power(c_bkg_err/c_bkg,2))
+    print('\nFor NN score range: {0:1.2f}-->{1:1.2f}\n'\
+          '=========================================\n'\
+          'Bin_A sig/bkg efficiency: {2:2.2f} +/- {3:2.2f}%\n'\
+          'Bin_C sig/bkg efficiency: {4:2.2f} +/- {5:2.2f}%\n'\
+          'Kappa: {6:1.2f} +/- {7:1.2f}\n'.format(nn_range[0], nn_range[1], a_eff*100, a_eff_err*100, c_eff*100, c_eff_err*100, k_bkg, k_bkg_err))
+    kz_bkg = (bl_bkg * br_bkg  * cz_bkg)/(az_bkg * dl_bkg * dr_bkg)
+    kz_bkg_err = abs(kz_bkg)*np.sqrt(np.power(az_bkg_err/az_bkg,2) + np.power(bl_bkg_err/bl_bkg,2) + np.power(br_bkg_err/br_bkg,2) + 
+                                     np.power(cz_bkg_err/cz_bkg,2) + np.power(dl_bkg_err/dl_bkg,2) + np.power(dr_bkg_err/dr_bkg,2))
+    kh_bkg = (bl_bkg * br_bkg  * ch_bkg)/(ah_bkg * dl_bkg * dr_bkg)
+    kh_bkg_err = abs(kh_bkg)*np.sqrt(np.power(ah_bkg_err/ah_bkg,2) + np.power(bl_bkg_err/bl_bkg,2) + np.power(br_bkg_err/br_bkg,2) + 
+                                     np.power(ch_bkg_err/ch_bkg,2) + np.power(dl_bkg_err/dl_bkg,2) + np.power(dr_bkg_err/dr_bkg,2))
+    az_eff, ah_eff = (az_sig/az_bkg), (ah_sig/ah_bkg)
+    az_eff_err, ah_eff_err = abs(az_eff)*np.sqrt(np.power(az_sig_err/az_sig,2) + np.power(az_bkg_err/az_bkg,2)), abs(ah_eff)*np.sqrt(np.power(ah_sig_err/ah_sig,2) + np.power(ah_bkg_err/ah_bkg,2))
+    cz_eff, ch_eff = (cz_sig/cz_bkg), (ch_sig/ch_bkg)
+    cz_eff_err, ch_eff_err = abs(cz_eff)*np.sqrt(np.power(cz_sig_err/cz_sig,2) + np.power(cz_bkg_err/cz_bkg,2)), abs(ch_eff)*np.sqrt(np.power(ch_sig_err/ch_sig,2) + np.power(ch_bkg_err/ch_bkg,2))
+    print(
+        '=========================================\n'\
+        'Bin_AZ sig/bkg efficiency: {2:2.2f} +/- {3:2.2f}%\n'\
+        'Bin_CZ sig/bkg efficiency: {4:2.2f} +/- {5:2.2f}%\n'\
+        'KappaZ: {6:1.2f} +/- {7:1.2f}\n'\
+        '--\t--\t--\t--\t--\t--\n'\
+        'Bin_AH sig/bkg efficiency: {8:2.2f} +/- {9:2.2f}%\n'\
+        'Bin_CH sig/bkg efficiency: {10:2.2f} +/- {11:2.2f}%\n'\
+        'KappaH: {12:1.2f} +/- {13:1.2f}\n'.format(
+            nn_range[0], nn_range[1],
+            az_eff*100, az_eff_err*100, 
+            cz_eff*100, cz_eff_err*100, 
+            kz_bkg, kz_bkg_err, 
+            ah_eff*100, ah_eff_err*100, 
+            ch_eff*100, ch_eff_err*100, 
+            kh_bkg, kh_bkg_err))
+    #
+    #return k_bkg, k_bkg_err, c_eff, c_eff_err
+    bdl_bkg , bdl_bkg_err = bl_bkg/dl_bkg, abs(bl_bkg/dl_bkg)*np.sqrt(np.power(bl_bkg_err/bl_bkg,2) + np.power(dl_bkg_err/dl_bkg,2))
+    bdr_bkg , bdr_bkg_err = br_bkg/dr_bkg, abs(br_bkg/dr_bkg)*np.sqrt(np.power(br_bkg_err/br_bkg,2) + np.power(dr_bkg_err/dr_bkg,2))
+    acz_bkg , acz_bkg_err = az_bkg/cz_bkg, abs(az_bkg/cz_bkg)*np.sqrt(np.power(az_bkg_err/az_bkg,2) + np.power(cz_bkg_err/cz_bkg,2))
+    ach_bkg , ach_bkg_err = ah_bkg/ch_bkg, abs(ah_bkg/ch_bkg)*np.sqrt(np.power(ah_bkg_err/ah_bkg,2) + np.power(ch_bkg_err/ch_bkg,2))
+    #
+    bl_eff, br_eff = (bl_sig/bl_bkg), (br_sig/br_bkg)
+    bl_eff_err, br_eff_err = abs(bl_eff)*np.sqrt(np.power(bl_sig_err/bl_sig,2) + np.power(bl_bkg_err/bl_bkg,2)), abs(br_eff)*np.sqrt(np.power(br_sig_err/br_sig,2) + np.power(br_bkg_err/br_bkg,2))
+    #
+    return [
+        [bdl_bkg,acz_bkg,ach_bkg,bdr_bkg],
+        [bdl_bkg_err,acz_bkg_err,ach_bkg_err,bdr_bkg_err],
+        [bl_eff,az_eff,ah_eff,br_eff],
+        [bl_eff_err,az_eff_err,ah_eff_err,br_eff_err]
+    ]

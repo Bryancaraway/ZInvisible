@@ -13,7 +13,9 @@ MCsamples         = ['TTZ','DY','TTX','DiBoson','TTBarLep']
 skim_dir          = master_file_path+'skim/'
 skim_kinemFit_dir = master_file_path+'skim_kinemFit/'
 skim_Zinv_dir     = master_file_path+'skim_Zinv/'
-skim_ZHbb_dir     = master_file_path+'skim_ZHbb/'
+##
+skim_ZHbb_dir     = master_file_path+'skim_ZHbb_200/' # skim_ZHbb
+##
 ##############
 sample_maxJets  = {'DiLep':{'DY':14, 'TTZ':14, 'TTX':14, 'TTBarLep':11, 'DiBoson':11, 'TriBoson':10},
                    'ZInv':{'WJets':14, 'ZJets':13, 'DiBoson':11, 'TriBoson':11, 'TTX':14, 'QCD':13, 
@@ -104,20 +106,32 @@ CNNoutputName  = 'first_try.h5'
 CNNmodelName   = 'first_model.h5'
 
 ##### DNN backend for Z/H -> bb #####
-dnn_ZH_dir  = (master_file_path+'train_ZH/', master_file_path+'test_ZH/', master_file_path+'val_ZH/')
-aux_ZH_dir  = master_file_path+'aux_ZH/'
+dnn_ZH_dir  = (skim_ZHbb_dir+'train_ZH/', skim_ZHbb_dir+'test_ZH/', skim_ZHbb_dir+'val_ZH/')
+aux_ZH_dir  = skim_ZHbb_dir+'aux_ZH/'
 # only event level variables
 dnn_ZH_vars = [
-    'max_lb_dr','min_lb_dr','max_lb_invm','min_lb_invm', 'n_H_sj_btag', 'nJets30', 'H_score', 'best_rt_score',
-    'n_qnonHbb', 'n_nonHbb', 'H_M','Hl_dr', 'Hl_invm_sd', 'n_H_sj', 'n_b_Hbb', 'H_sj_bestb', 'H_sj_worstb',
-    'H_eta','H_bbscore','b1_outH_score', 'b2_outH_score', 'best_Wb_invM_sd', 'Hb_invM1_sd', 'Hb_invM2_sd',
-    'H_Wscore', 'H_Tscore', 'MET_pt', 'nhbbFatJets', 'nFatJets', 'nJets', 'nonHbb_b1_dr', 'nonHbb_b2_dr', 
+    'max_lb_dr','max_lb_invm', 'n_H_sj_btag', 'nJets30', 'H_score', 'best_rt_score',
+    'n_qnonHbb', 'n_nonHbb', 'Hl_dr', 'n_H_sj', 'n_b_Hbb', 'H_sj_bestb', 'H_sj_worstb',
+    'H_eta','H_bbscore','b1_outH_score', 'best_Wb_invM_sd', 'Hb_invM1_sd', 'Hb_invM2_sd','Hl_invm_sd',
+    'H_Wscore', 'H_Tscore', 'nhbbFatJets', 'nFatJets', 'nJets', 'nonHbb_b1_dr', 'nonHbb_b2_dr', 
+    'H_sj_bbscore', 
+    'b1oHZpt', 'bboHZpt',
+    'spher','aplan',
+    #'H_M',
+    #'H_pt',
+    #'min_lb_invm', 'MET_pt', 'b2oHZpt' 
+    #'lb_mtb1', 'lb_invm1', 'lb_dr1',
     'n_q_Hbb', 'weight', 'genWeight']
+uncor_dnn_ZH_vars = [ # tests_failed >= 4 
+    'min_lb_dr', 'b2_outH_score'
+]
 #
-dnn_ZH_alpha      = 0.0001
-dnn_ZH_batch_size = 1024
-dnn_ZH_epochs     = 120 # 120
-DNNoutputDir      = './DNN_ZH_output/'
-DNNoutputName     = 'best_case7_noweight.h5'
-DNNmodelName      = 'best_case7_noweight_model.h5' 
+dnn_ZH_alpha      = 0.00003 # 200: 0.0003 # 300 : 0.00003
+dnn_ZH_batch_size = 512
+fl_gamma          = .2 # 200: .1    , 300: 1.5 / .4
+fl_alpha          = .85 # 200: .85 , 300: .80 /.85
+dnn_ZH_epochs     = 210 # 200: 120, 300: 100
+DNNoutputDir      = skim_ZHbb_dir+'DNN_ZH_output/'
+DNNoutputName     = 'corr_noweight_noM.h5'
+DNNmodelName      = 'corr_noweight_model_noM.h5' 
 DNNuseWeights     = False
