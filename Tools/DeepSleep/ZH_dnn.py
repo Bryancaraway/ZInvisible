@@ -352,6 +352,50 @@ def pred_all_samples(files_, samples_, outDir_):
         year   = key_[key_.index('201'):key_.index('201')+4]
         sample = key_.split('_201')[0]
         df[key_]['val'].to_pickle(outDir_+'result_'+year+'_'+sample+'_val.pkl')
+
+def find_best_score(files_, samples_, outDir_):
+    df_ = kFit.retrieveData(files_, samples_, outDir_, getak8_ = True)
+    sig = 'TTZH'
+    suf = '_2017'
+    #
+    sig_df = pd.DataFrame()
+    bkg_df = pd.DataFrame()
+    for key_ in df_.keys():
+        def get_weight(cut):
+            weight = (df_[key_]['val']['weight']*np.sign(df_[key_]['val']['genWeight']) * (137/41.9))[cut]
+            return weight
+        def add_toDF(df, cut, name=key_.split('_201')[0]):
+            df = df.append(pd.DataFrame({'NN':df_[key_]['val']['NN'][cut], 'Weight':get_weight(cut), 'Name':name}), ignore_index=True)
+            return(df)
+        #
+        base_cuts =(
+            (df_[key_]['ak8']['n_nonHbb'] >= 2)    &
+            (df_[key_]['ak8']['nhbbFatJets'] > 0)  &
+            #(df_[key_]['ak8']['H_pt']       >= 300)&
+            (df_[key_]['ak8']['H_M']         > 50) &
+            (df_[key_]['ak8']['H_M']         < 200))
+        
+        if (sig in key_):
+            ttZbb   = base_cuts & (df_[key_]['val']['Zbb'] == True)
+            ttHbb   = base_cuts & (df_[key_]['val']['Hbb'] == True)
+            ttZqq   = base_cuts & (df_[key_]['val']['Zqq'] == True)
+            #
+            sig_df = add_toDF(sig_df,ttZbb,'ttZbb')
+            sig_df = add_toDF(sig_df,ttHbb,'ttHbb')
+            bkg_df = add_toDF(bkg_df,ttZqq,'ttZqq')
+        else:
+            bkg_df = add_toDF(bkg_df,base_cuts)
+    #
+    fig,ax = plt.subplots(nrows=2)
+    n, bins, _ = ax[0].hist([sig_df['NN'],bkg_df['NN']], weights = [sig_df['Weight'],bkg_df['Weight']], label=['Sig','Bkg'],
+                            bins= 50, range=(0,1), histtype='step', cumulative=-1)
+    ax[1].scatter(bins[1:], n[0]/n[1], label='sig/bkg')
+    ax[1].scatter(bins[1:], n[0]/(np.sqrt(n[1])), label='sig/sqrt(bkg)')
+    ax[1].legend()
+    plt.xlabel('NN_score')
+    ax[0].set_yscale('log')
+    ax[0].legend()
+    plt.show()
             
 if __name__ == '__main__':   
     files_samples_outDir = cfg.ZHbbFitCfg
@@ -362,17 +406,17 @@ if __name__ == '__main__':
     #preProcess_DNN(*files_samples_outDir)    
     #corr_study(    *cfg.dnn_ZH_dir)
     #
-    import tensorflow as tf
-    from tensorflow import keras
-    from tensorflow.python.keras import layers
-    #tf.compat.v1.set_random_seed(2)
-    print(tf.__version__)
-    from tensorflow.python.keras import backend as K
-    from keras import backend as k
-    from tensorflow.python.ops import math_ops
-    from keras.models import Sequential
-    from keras.layers import Dense
+    #import tensorflow as tf
+    #from tensorflow import keras
+    #from tensorflow.python.keras import layers
+    ##tf.compat.v1.set_random_seed(2)
+    #print(tf.__version__)
+    #from tensorflow.python.keras import backend as K
+    #from keras import backend as k
+    #from tensorflow.python.ops import math_ops
+    #from keras.models import Sequential
+    #from keras.layers import Dense
     #
     #train_DNN(     *cfg.dnn_ZH_dir)
-    pred_all_samples(*files_samples_outDir)
-
+    #pred_all_samples(*files_samples_outDir)
+    find_best_score(*files_samples_outDir)

@@ -344,9 +344,9 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
             pickle.dump(df[key_]['ak8'], handle, protocol=pickle.HIGHEST_PROTOCOL)
     
 def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
-    df = kFit.retrieveData(files_, ['TTZH', 'TTBarLep'], outDir_, getgen_=False, getak8_=True)
-    genMatched = True
-    sepGen     = True
+    df = kFit.retrieveData(files_, samples_, outDir_, getgen_=False, getak8_=True)
+    genMatched = False
+    sepGen     = False
     print(df.keys())
     suf = '_2017'
     if (genMatched):
@@ -361,7 +361,7 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         del df['TTZH'+suf], df['TTZH_GenMatch'+suf]
     #
     from fun_library import StackedHisto
-    StackedHisto(df, 'NN',              (0,1), 'NN_output',   80)
+    #StackedHisto(df, 'NN',              (0,1), 'NN_output',   80)
     #StackedHisto(df, 'spher',          (0,1),  'sphericity',   20)
     #StackedHisto(df, 'aplan',          (0,.5), 'aplanarity',   20)
     #StackedHisto(df, 'nonHbb_b1_dr',    (0,5), 'nonHbb_b1_dr', 20)
@@ -440,7 +440,7 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
 
 def Bkg_Est(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     from fun_library import calc_Kappa
-    df = kFit.retrieveData(files_, ['TTZH', 'TTBarLep'], outDir_, getgen_=False, getak8_=True)
+    df = kFit.retrieveData(files_, samples_, outDir_, getgen_=False, getak8_=True)
     sig = 'TTZH'
     bkg = 'TTBarLep'
     suf = '_2017'
@@ -492,15 +492,15 @@ def Bkg_Est(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
                 
                 return bkg_cr, bkg_sr, bkg_srW, bkg_cr_gw, bkg_sr_gw
         #
-        def shapePlot(y_,y_err_,title_,ylabel_):
+        def shapePlot(y_,y_err_,label_,ylabel_):
             bin_c = (m_bins[1:] + m_bins[:-1])/2
             bin_w = m_bins[1:] - m_bins[:-1]
             plt.errorbar(x=bin_c, y=y_, xerr=bin_w/2, yerr=y_err_,
-                         fmt='o',barsabove=True,capsize=5) 
-            plt.title(title_)
+                         fmt='o',barsabove=True,capsize=5, label=label_) 
+            #plt.title(title_)
             plt.xlabel('M_SD')
             plt.ylabel(ylabel_)
-            plt.ylim(0,1)
+            plt.ylim(0,None)
             #plt.show()
             #plt.clf()
         def normed(x_,val_):
@@ -522,18 +522,46 @@ def Bkg_Est(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
                 a_hist, b_hist = normed(a_hist,a_hist), normed(b_hist,b_hist)
             c_err_ = abs(c_)*np.sqrt(np.power(a_err/a_hist,2)+np.power(b_err/b_hist,2))
             return c_,c_err_
+        def histvals(vals_,val_w=None,norm=False):
+            hist_vals,_ =  np.histogram(vals_,m_bins,weights=val_w)
+            val_sumw2,_ = np.histogram(vals_,m_bins,weights=np.power(val_w,2))
+            hist_vals_err = np.sqrt(val_sumw2)
+            if norm:
+                return normed(hist_vals,hist_vals), normed(hist_vals_err,hist_vals)
+            return hist_vals, hist_vals_err
         #
         bkg_cr, bkg_sr, bkg_srW, bkg_cr_gw, bkg_sr_gw = applyCuts(df,bkg+suf)
+        bkg_df = pd.DataFrame(columns=['bkg_sr','bkg_srW'])
+        for key_ in df.keys():
+            if sig in key_: continue
+            _cr, _sr, _srW, cr_gw, sr_gw = applyCuts(df,key_)
+            if _sr.size == 0 : continue            
+            bkg_df = bkg_df.append(pd.DataFrame({'bkg_sr':_sr,'bkg_srW':_srW}),  ignore_index = True) 
+        #bkg_df = pd.DataFrame.from_records([applyCuts(df,x) if sig not in x else np.array([[],[],[],[],[]]) for x in df.keys()], columns=['cr','sr','srW','cr_gw','sr_gw'])
         if (i_ >= 0):
             sig_genm, sig_nogenm, sig_genZ, sig_genH, sig_genmW, sig_nogenmW, sig_genZW, sig_genHW = applyCuts(df,sig+suf)
             #shapePlot(*calc_ratioE(sig_genm,bkg_sr,  a_w=sig_genmW,    b_w=bkg_srW, norm=True),    'Sig/Bkg SR(genM)',   'Sig/Bkg SR(genM)')
             #shapePlot(*calc_ratioE(sig_nogenm,bkg_sr,a_w=sig_nogenmW,  b_w=bkg_srW, norm=True),'Sig/Bkg SR(nogenM)', 'Sig/Bkg SR(nogenM)')
-            shapePlot(*calc_ratioE(sig_genZ,bkg_sr,  a_w=sig_genZW,    b_w=bkg_srW, norm=True),    'Sig/Bkg SR(genZ)',   'Sig/Bkg SR(genZ)')
-            shapePlot(*calc_ratioE(sig_genH,bkg_sr,  a_w=sig_genHW,    b_w=bkg_srW, norm=True),    'Sig/Bkg SR(genH)',   'Sig/Bkg SR(genH)')
+            #shapePlot(*calc_ratioE(sig_genZ,bkg_sr,  a_w=sig_genZW,    b_w=bkg_srW, norm=True),    'Sig/Bkg SR(genZ)',   'Sig/Bkg SR(genZ)')
+            #shapePlot(*calc_ratioE(sig_genH,bkg_sr,  a_w=sig_genHW,    b_w=bkg_srW, norm=True),    'Sig/Bkg SR(genH)',   'Sig/Bkg SR(genH)')
+            # For Ken: Shape in Sig Region
+            # 1: Shape of ttH, ttZ, tt
+            shapePlot(*histvals(bkg_df['bkg_sr'],  val_w=bkg_df['bkg_srW'],   norm=False),    'bkg',   '')    
+            shapePlot(*histvals(sig_genH,          val_w=sig_genHW,        norm=False),    'ttH',   '')    
+            shapePlot(*histvals(sig_genZ,          val_w=sig_genZW,        norm=False),    'ttZ',   '')    
+
+            plt.legend()
+            plt.show()
+            plt.clf()
+            # 2: Shape of genM vs noGenM
+            shapePlot(*histvals(sig_genm,   val_w=sig_genmW,   norm=False),    'norm(GenMatch)',     '')    
+            shapePlot(*histvals(sig_nogenm, val_w=sig_nogenmW, norm=False),    'norm(noGenMatch)',   '')    
+            plt.legend()
+            plt.show()
+            plt.clf()
         #
         shapePlot(*calc_ratioE(bkg_sr,bkg_cr, a_w=bkg_sr_gw, b_w=bkg_cr_gw, norm=True), 'BKG_SR/BKG_CR NN score range {:.2f}-->{:.2f}'.format(bins[i_],bins[i_]+steps), 'BKG_SR/BKG_CR')
-        plt.show()
-        plt.clf()
+
 
         
         
@@ -1018,7 +1046,11 @@ def matchLep(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
                 ##
                 zh_match = ((fj_pt >= pt_cut ) & (fj_Hscore >= 0.0) & 
                             (zh_match_dR <= 0.8) & (zh_pt >= (pt_cut-100.)) & (zh_eta <= 2.6) & (zh_eta >= -2.6))
-
+                #
+                df_[key_]['val']['Zbb']= (isZbb.sum() > 0)
+                df_[key_]['val']['Hbb']= (isHbb.sum() > 0)
+                df_[key_]['val']['Zqq']= (isZqq.sum() > 0)
+                #
                 df_[key_]['val']['matchedGenZH'] = (zh_match).sum() > 0 
                 df_[key_]['val']['matchedGen_ZHbb'] = (((zh_match).sum() > 0) & ((lep_match_dR <= .1).sum() > 0)& (isZqq.sum() == 0))
                 df_[key_]['val']['matchedGen_Zbb'] = (((zh_match).sum() > 0) & ((lep_match_dR <= .1).sum() > 0) & (isZbb.sum() > 0))
@@ -1112,5 +1144,5 @@ if __name__ == '__main__':
     #GenAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
     #GenAna_ttbar(*files_samples_outDir, cfg.ZHbbFitoverlap)
     ########
-    #plotAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
-    Bkg_Est(*files_samples_outDir, cfg.ZHbbFitoverlap)
+    plotAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
+    #Bkg_Est(*files_samples_outDir, cfg.ZHbbFitoverlap)

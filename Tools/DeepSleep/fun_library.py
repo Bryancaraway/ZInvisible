@@ -178,7 +178,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             #(df_[key_]['ak8']['nbbFatJets'] == 1) &
             #(df_[key_]['val']['nResolvedTops'] == 1) &
             #(df_[key_]['val']['NN'] <  .85) & 
-            (df_[key_]['val']['NN'] >= .95) & 
+            (df_[key_]['val']['NN'] >= .96) & 
             (df_[key_]['val']['MET_pt']      >= 0))# &
         if ('_GenMatch' in key_):
             base_cuts = base_cuts & (df_[key_]['val']['matchedGen_ZHbb'] == True)

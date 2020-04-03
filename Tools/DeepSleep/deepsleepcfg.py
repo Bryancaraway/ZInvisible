@@ -43,6 +43,14 @@ ZHbbFitCfg    = (['result_2017'],
 ZHbbFitCut    = (operator.ge, 0)
 ZHbbFitoverlap = 0
 ZHbbFitMaxJets = 14
+# ttZ/H->bb SM x-section
+ZHbbXsec = {'ttZbb': .1157,
+            'ttHbb': .2934 }
+ZHbbtotXsec = ZHbbXsec['ttZbb'] + ZHbbXsec['ttHbb']
+# ttZ/H->bb MC count 2017
+n_ZHbbMC_dict      = {'ttZbb': 163876,
+                      'ttHbb': 5698653 }
+n_ZHbbMC           = n_ZHbbMC_dict['ttZbb'] + n_ZHbbMC_dict['ttHbb']
 # Train Overhead #
 train_dir      = master_file_path+'train/'
 train_over_dir = master_file_path+'train_overSample/'
