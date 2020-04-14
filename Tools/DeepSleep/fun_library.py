@@ -26,6 +26,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 np.random.seed(0)
 
+
+######## Basic Calculations ########
 def fill1e(one_d_array):
     return pd.DataFrame.from_records(one_d_array).values.flatten()
 def fillne(n_d_array):
@@ -125,6 +127,15 @@ def calc_SandA(pt_,eta_,phi_):
     s_ = (3/2)*(eig_[:,1]+eig_[:,2])
     a_ = (3/2)*eig_[:,2]
     return s_, a_
+########### Auxihilary Functions #############
+def getZHbbBaseCuts(dict_):
+    base_cuts = (
+        (dict_['ak8']['n_nonHbb'] >= 2)    &
+        (dict_['ak8']['nhbbFatJets'] > 0)  &
+        (dict_['ak8']['H_pt']       >= 200)&
+        (dict_['ak8']['H_M']         > 50) &
+        (dict_['ak8']['H_M']         < 200))
+    return base_cuts
 #
 def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     from matplotlib import rc
@@ -178,7 +189,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             #(df_[key_]['ak8']['nbbFatJets'] == 1) &
             #(df_[key_]['val']['nResolvedTops'] == 1) &
             #(df_[key_]['val']['NN'] <  .85) & 
-            (df_[key_]['val']['NN'] >= .96) & 
+            #(df_[key_]['val']['NN'] >= .96) & 
             (df_[key_]['val']['MET_pt']      >= 0))# &
         if ('_GenMatch' in key_):
             base_cuts = base_cuts & (df_[key_]['val']['matchedGen_ZHbb'] == True)
@@ -214,7 +225,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
                                   bins=bins, stacked=False,# fill=True,
                                   #range=range_,
                                   histtype='step',
-                                  density=False,
+                                  density=True,
                                   #linewidth=0,
                                   weights= w,
                                   color  = colors,

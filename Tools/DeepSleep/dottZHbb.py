@@ -131,7 +131,7 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         df[key_]['ak8']['n_nonHZ_W'] = w_tag[(hbb_tag <.5) & (w_tag >= 0.8)].counts
         df[key_]['ak8']['n_nonHZ_T'] = w_tag[(hbb_tag <.5) & (t_tag >= 0.8)].counts
         #########
-        hz_kinem_cut = ((fj_pt>=pt_cut) & (sd_M > 50) & (sd_M < 200) & (hbb_tag >= 0.0))
+        hz_kinem_cut = ((fj_pt >= pt_cut) & (sd_M > 50) & (sd_M < 200) & (hbb_tag >= 0.0))
         H_hbbtag,H_pt,H_eta,H_phi,H_E,H_M,H_wtag,H_ttag,H_bbtag=lib.sortbyscore([hbb_tag    ,
                                                                                  fj_pt      ,
                                                                                  fj_eta     ,
@@ -344,7 +344,7 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
             pickle.dump(df[key_]['ak8'], handle, protocol=pickle.HIGHEST_PROTOCOL)
     
 def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
-    df = kFit.retrieveData(files_, samples_, outDir_, getgen_=False, getak8_=True)
+    df = kFit.retrieveData(files_, ['TTBarLep','TTZH'], outDir_, getgen_=False, getak8_=True)
     genMatched = False
     sepGen     = False
     print(df.keys())
@@ -361,7 +361,7 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         del df['TTZH'+suf], df['TTZH_GenMatch'+suf]
     #
     from fun_library import StackedHisto
-    #StackedHisto(df, 'NN',              (0,1), 'NN_output',   80)
+    StackedHisto(df, 'NN',              (0,1), 'NN_output',   50)
     #StackedHisto(df, 'spher',          (0,1),  'sphericity',   20)
     #StackedHisto(df, 'aplan',          (0,.5), 'aplanarity',   20)
     #StackedHisto(df, 'nonHbb_b1_dr',    (0,5), 'nonHbb_b1_dr', 20)
@@ -386,7 +386,7 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     #StackedHisto(df, 'best_rt_score', (.5,1), 'best_rt_score', 20)
     #StackedHisto(df, 'n_qnonHbb', (0,6),     'nq_nonHZbb',  6)
     #StackedHisto(df, 'n_nonHbb', (0,6),     'nb_nonHZbb',  6)  
-    StackedHisto(df, 'H_M',     (0,300),    'HZ_M',  60)
+    StackedHisto(df, 'H_M',     (40,210),    'HZ_M',  40)
     #StackedHisto(df, 'Hl_dr',    (0,5),     'HZl_dr',  20)
     #StackedHisto(df, 'Hl_invm',  (0,700),   'HZl_invm',  50)
     #StackedHisto(df, 'Hl_invm_sd',  (0,700),   'HZl_invm_sd',  50)
@@ -399,7 +399,7 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     #StackedHisto(df, 'nMergedTops', (0,5),'nMergedTops',5)
     #StackedHisto(df, 'n_nonHZ_W', (0,4),       'n_nonHZ_W', 4)
     #StackedHisto(df, 'n_nonHZ_T', (0,4),       'n_nonHZ_T', 4)
-    #StackedHisto(df, 'H_eta',     (-3.2,3.2),    'HZ_eta',  50)
+    StackedHisto(df, 'H_eta',     (-3.2,3.2),    'HZ_eta',  50)
     #StackedHisto(df, 'H_bbscore', (0,1), 'H_bbscore', 20)
     #StackedHisto(df, 'b1_outH_score', (0,1), 'b1_outH_score', 20)
     #StackedHisto(df, 'b2_outH_score', (0,1), 'b2_outH_score', 20)
@@ -790,10 +790,11 @@ def GenAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     df = kFit.retrieveData(files_, ['TTZH'], outDir_, getgen_=True, getak8_=True)
     df = df['TTZH_2017']
     w  = df['val']['weight'].values * np.sign(df['val']['genWeight'].values) * (137/41.9)
+    pt_cut = int(cfg.skim_ZHbb_dir.split('_')[-1][:3])
     #
     gen_df = df['gen']
     fat_df = df['ak8']
-
+    val_df = df['val']
     #
     zh_ids = gen_df['GenPart_pdgId']
     zh_mom = gen_df['GenPart_genPartIdxMother']
@@ -810,7 +811,7 @@ def GenAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     isZbb  = ((zh_ids == 23) & (isbb_fromZ.sum() > 0))
     isZHbb = (isHbb | isZbb)
     #
-    zh_pt  = fill1e(zh_pt[isZHbb]).flatten()
+    zh_pt = fill1e(zh_pt[isZHbb]).flatten()
     zh_eta = fill1e(zh_eta[isZHbb]).flatten()
     zh_phi = fill1e(zh_phi[isZHbb]).flatten()
     zh_E   = fill1e(zh_E[isZHbb]).flatten()    
@@ -827,12 +828,11 @@ def GenAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     #
     gen_dr = deltaR(zh_eta,zh_phi,fj_eta,fj_phi)
     gen_dr_match = np.nanmin(gen_dr,axis=1)
-    gen_match    = ((gen_dr_match < 0.8) & (zh_pt >= pt_cut) & (zh_eta <= 2.4) & (zh_eta >= -2.4))
+    gen_match    = ((gen_dr_match < 0.8) & (zh_pt >= pt_cut)) #& (zh_eta <= 2.6) & (zh_eta >= -2.6))
     #
     def matchkinem(kinem_):
         ind_=np.argsort(gen_dr,axis=1)
         return np.take_along_axis(kinem_,ind_,axis=1)[:,0]
-    #
     reco_zh_pt    = matchkinem(fj_pt)[gen_match]
     reco_zh_M     = matchkinem(sd_M)[gen_match]
     reco_zh_score = matchkinem(hbb_tag)[gen_match]
@@ -840,7 +840,6 @@ def GenAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     reco_zh_bscore= matchkinem(fj_b_tag)[gen_match]
     reco_zh_wb_invM  = best_wb[gen_match]
     reco_zh_w     = w[gen_match]
-    #
     #isZ = (isZ.counts == 1)[gen_match]
     gen_matchZ = (gen_match & (isZbb.sum() == 1))
     reco_z_pt    = matchkinem(fj_pt)[gen_matchZ]
@@ -859,6 +858,22 @@ def GenAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     reco_h_bscore= matchkinem(fj_b_tag)[gen_matchH]
     reco_h_wb_invM  = best_wb[gen_matchH]
     reco_h_w     = w[gen_matchH]
+    #
+    # look at the ratio of events at higher eta
+    # look at the efficiency for Z/H tagging at eta > 2.4
+    print('\n H/Z >=',pt_cut)
+    print('# of H eta total: ', len(zh_eta[(isHbb.sum() == 1) & (zh_pt >= pt_cut)]))
+    print('# of H |eta| >= 2.4: ', len(zh_eta[(isHbb.sum() == 1) & (zh_pt >= pt_cut) & (abs(zh_eta) >= 2.4)]))
+    print('# of H |eta| >= 2.4, |eta| <= 2.5: ', len(zh_eta[(isHbb.sum() == 1) & (zh_pt >= pt_cut) & (abs(zh_eta) >= 2.4) & (abs(zh_eta) <= 2.5)]))
+    print('# of H |eta| >= 2.4, |eta| <= 2.5, dr matched to fatjet: ', len(zh_eta[(isHbb.sum() == 1) & (zh_pt >= pt_cut) & (abs(zh_eta) >= 2.4) & (abs(zh_eta) <= 2.5) & (gen_match)]))
+    print('# of H |eta| >= 2.4, |eta| <= 2.5, dr matched to fatjet, NN >= 0: ', len(zh_eta[(isHbb.sum() == 1) & (zh_pt >= pt_cut) & (abs(zh_eta) >= 2.4) & (abs(zh_eta) <= 2.5) & (gen_match) & (val_df['NN'] >= 0)]))
+    print('\n')
+    print('# of Z eta total: ', len(zh_eta[(isZbb.sum() == 1) & (zh_pt >= pt_cut)]))
+    print('# of Z |eta| >= 2.4: ', len(zh_eta[(isZbb.sum() == 1) & (zh_pt >= pt_cut) & (abs(zh_eta) >= 2.4)]))
+    print('# of Z |eta| >= 2.4, |eta| <= 2.5: ', len(zh_eta[(isZbb.sum() == 1) & (zh_pt >= pt_cut) & (abs(zh_eta) >= 2.4) & (abs(zh_eta) <= 2.5)]))
+    print('# of Z |eta| >= 2.4, |eta| <= 2.5, dr matched to fatjet: ', len(zh_eta[(isZbb.sum() == 1) & (zh_pt >= pt_cut) & (abs(zh_eta) >= 2.4) & (abs(zh_eta) <= 2.5) & (gen_match)]))
+    print('# of Z |eta| >= 2.4, |eta| <= 2.5, dr matched to fatjet, NN >= 0: ', len(zh_eta[(isZbb.sum() == 1) & (zh_pt >= pt_cut) & (abs(zh_eta) >= 2.4) & (abs(zh_eta) <= 2.5) & (gen_match) & (val_df['NN'] >= 0)]))
+    exit()
     #
     from matplotlib.ticker import AutoMinorLocator
     def simpleplot(x_,l_,w_):
@@ -1050,6 +1065,8 @@ def matchLep(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
                 df_[key_]['val']['Zbb']= (isZbb.sum() > 0)
                 df_[key_]['val']['Hbb']= (isHbb.sum() > 0)
                 df_[key_]['val']['Zqq']= (isZqq.sum() > 0)
+                df_[key_]['val']['genZHpt']  = zh_pt
+                df_[key_]['val']['genZHeta'] = zh_eta
                 #
                 df_[key_]['val']['matchedGenZH'] = (zh_match).sum() > 0 
                 df_[key_]['val']['matchedGen_ZHbb'] = (((zh_match).sum() > 0) & ((lep_match_dR <= .1).sum() > 0)& (isZqq.sum() == 0))
