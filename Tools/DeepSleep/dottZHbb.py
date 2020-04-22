@@ -345,8 +345,8 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     
 def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     df = kFit.retrieveData(files_, ['TTBarLep','TTZH'], outDir_, getgen_=False, getak8_=True)
-    genMatched = False
-    sepGen     = False
+    genMatched = True
+    sepGen     = True
     print(df.keys())
     suf = '_2017'
     if (genMatched):
