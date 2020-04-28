@@ -174,9 +174,9 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         H_sjpt2_over_fjpt  = (H_sj_pt12[:,1])/H_pt[:,0]
         df[key_]['ak8']['n_H_sj_btag'] = np.sum(H_sj_b12 >= b_wp, axis=1)
         df[key_]['ak8']['n_H_sj']      = np.sum(H_sj_b12 >= 0, axis=1)
-        df[key_]['ak8']['H_sj_bestb']  = np.nan_to_num(np.nanmax(H_sj_b12, axis=1), nan = 0)
-        df[key_]['ak8']['H_sj_worstb'] = np.nan_to_num(np.min(H_sj_b12, axis=1), nan = 0)
-        df[key_]['ak8']['H_sj_bbscore']= np.sum(np.nan_to_num(H_sj_b12, nan=0), axis=1)
+        df[key_]['ak8']['H_sj_bestb']  = np.nan_to_num(np.nanmax(H_sj_b12, axis=1))
+        df[key_]['ak8']['H_sj_worstb'] = np.nan_to_num(np.min(H_sj_b12, axis=1))
+        df[key_]['ak8']['H_sj_bbscore']= np.sum(np.nan_to_num(H_sj_b12), axis=1)
         df[key_]['ak8']['H_sjpt12_over_fjpt'] = H_sjpt12_over_fjpt
         df[key_]['ak8']['H_sjpt1_over_fjpt'] = H_sjpt1_over_fjpt
         df[key_]['ak8']['H_sjpt2_over_fjpt'] = H_sjpt2_over_fjpt
@@ -344,24 +344,31 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
             pickle.dump(df[key_]['ak8'], handle, protocol=pickle.HIGHEST_PROTOCOL)
     
 def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
-    df = kFit.retrieveData(files_, ['TTBarLep','TTZH'], outDir_, getgen_=False, getak8_=True)
-    genMatched = True
-    sepGen     = True
+    df = kFit.retrieveData(files_, ['TTZH'], outDir_, getgen_=False, getak8_=True)
+    genMatched    = False
+    sepGenMatched = False
+    sepGen        = True
     print(df.keys())
     suf = '_2017'
     if (genMatched):
         df['TTZH_GenMatch'+suf]   = df['TTZH'+suf]
         df['TTZH_noGenMatch'+suf] = df['TTZH'+suf]
-        if ( not sepGen) : 
+        if ( not sepGenMatched) : 
             del df['TTZH'+suf]
-    if (genMatched and sepGen):                   
+    if (genMatched and sepGenMatched):                   
         df['TTZH_genZbb'+suf]       = df['TTZH'+suf]
         df['TTZH_genHbb'+suf]       = df['TTZH'+suf]
         df['TTZH_genZqq'+suf]       = df['TTZH'+suf]
         del df['TTZH'+suf], df['TTZH_GenMatch'+suf]
     #
+    if (sepGen):
+        df['TTZH_Zbb'+suf]       = df['TTZH'+suf]
+        df['TTZH_Hbb'+suf]       = df['TTZH'+suf]
+        df['TTZH_Zqq'+suf]       = df['TTZH'+suf]
+        del df['TTZH'+suf]
     from fun_library import StackedHisto
-    StackedHisto(df, 'NN',              (0,1), 'NN_output',   50)
+    #StackedHisto(df, 'genZHpt',              (0,450), 'genZHpt',   15)
+    #StackedHisto(df, 'NN',              (0,1), 'NN_output',   50)
     #StackedHisto(df, 'spher',          (0,1),  'sphericity',   20)
     #StackedHisto(df, 'aplan',          (0,.5), 'aplanarity',   20)
     #StackedHisto(df, 'nonHbb_b1_dr',    (0,5), 'nonHbb_b1_dr', 20)
@@ -1142,7 +1149,8 @@ def fixttH_weight(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     #
     # divide by current bad cross-section (.153) and multiply by the correct cross section (.2934)
     # original weight stored, this is to keep from double weighting if run over more than 2x
-    fixed_w = np.where(isHbb,np.sign(w)*0.001128*(.2934/.153),w)
+    print(w[isHbb])
+    fixed_w = np.where(isHbb,np.sign(w)*0.001127809*(.2934/.153),w)
     df_['TTZH_2017']['val']['weight'] = fixed_w
     df_['TTZH_2017']['val'].to_pickle(outDir_+'result_2017_TTZH_val.pkl')
     
@@ -1151,7 +1159,7 @@ if __name__ == '__main__':
     files_samples_outDir = cfg.ZHbbFitCfg
     #
     #prD.getData(         *files_samples_outDir, *cfg.ZHbbFitCut, cfg.ZHbbFitMaxJets, treeDir_ = cfg.tree_dir+'_bb', getGenData_ = True, getak8var_=True)
-    ##prD.interpData(      *files_samples_outDir, cfg.ZHbbFitMaxJets)  
+    ####prD.interpData(      *files_samples_outDir, cfg.ZHbbFitMaxJets)  
     #fixttH_weight(*files_samples_outDir, cfg.ZHbbFitoverlap)
     #lepCleaned_v2(*files_samples_outDir, cfg.ZHbbFitoverlap)
     #matchLep(*files_samples_outDir, cfg.ZHbbFitoverlap)

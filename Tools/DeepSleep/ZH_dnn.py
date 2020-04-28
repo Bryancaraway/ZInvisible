@@ -316,7 +316,8 @@ def pred_all_samples(files_, samples_, outDir_):
     df = kFit.retrieveData(files_, samples_, outDir_, getak8_ = True)
     train_dir, test_dir, val_dir = cfg.dnn_ZH_dir
     train_df = pd.read_pickle(train_dir+'train.pkl')
-    trainX = resetIndex(train_df.drop(columns=[ 'Signal',*re.findall(r'\w*weight', ' '.join(train_df.keys()))]))
+    train_df = pd.read_pickle(train_dir+'train.pkl')
+    trainX   = resetIndex(train_df.drop(columns=[ 'Signal',*re.findall(r'\w*weight', ' '.join(train_df.keys()))]))
     nn_model = Build_Model(len(trainX.keys()),1,trainX.mean().values,trainX.std().values)
     nn_model.load_weights(str(cfg.DNNoutputDir+cfg.DNNoutputName))
     for key_ in df.keys():
@@ -406,17 +407,17 @@ if __name__ == '__main__':
     #preProcess_DNN(*files_samples_outDir)    
     #corr_study(    *cfg.dnn_ZH_dir)
     #
-    #import tensorflow as tf
-    #from tensorflow import keras
-    #from tensorflow.python.keras import layers
-    ##tf.compat.v1.set_random_seed(2)
-    #print(tf.__version__)
-    #from tensorflow.python.keras import backend as K
-    #from keras import backend as k
-    #from tensorflow.python.ops import math_ops
-    #from keras.models import Sequential
-    #from keras.layers import Dense
+    import tensorflow as tf
+    from tensorflow import keras
+    from tensorflow.python.keras import layers
+    #tf.compat.v1.set_random_seed(2)
+    print(tf.__version__)
+    from tensorflow.python.keras import backend as K
+    from keras import backend as k
+    from tensorflow.python.ops import math_ops
+    from keras.models import Sequential
+    from keras.layers import Dense
     #
     #train_DNN(     *cfg.dnn_ZH_dir)
-    #pred_all_samples(*files_samples_outDir)
-    find_best_score(*files_samples_outDir)
+    pred_all_samples(*files_samples_outDir)
+    #find_best_score(*files_samples_outDir)

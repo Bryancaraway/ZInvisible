@@ -21,7 +21,7 @@ import pandas as pd
 from itertools import combinations
 ##
 
-def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 6, maxJets_ = 6 , ZptCut_ = 0, treeDir_ = cfg.tree_dir, getGenData_ = False, getak8var_ = False):
+def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir, blOps_ = operator.eq, njets_ = 2, maxJets_ = 6 , ZptCut_ = 0, treeDir_ = cfg.tree_dir, getGenData_ = False, getak8var_ = False):
     files = files_
     for file_ in files:
         if not os.path.exists(cfg.file_path+file_+'.root') : continue
@@ -54,7 +54,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                             key = key.replace('Jet_', '')
                         elif ('FatJet_' in key) :
                             key = key.replace('FatJet_', '')
-                        dict_[key] = t.array(key_)[((selvar['nJets'] >= (njets_-1)) & (selvar['nJets'] <= maxJets_))]
+                        dict_[key] = t.array(key_)[((selvar['nJets'] >= (njets_)) & (selvar['nJets'] <= maxJets_))]
                         #
                     #
                 #
@@ -78,7 +78,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 defineKeys(valRCvars, cfg.valRCvars)
                 #
                 defineKeys(ak4vars,cfg.ak4vars)
-                defineKeys(valvars,cfg.valvars)
+                defineKeys(valvars,cfg.valvars+cfg.sysvars)
                 defineKeys(label,  cfg.label)
                 #
                 if (getak8var_):
@@ -92,30 +92,30 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 # Cuts for initial round of training #
                 # Ak4 Jet Pt > 30, Ak4 Jet Eta < 2.6 #
                 # after which nJet cut, check cfg    #
-                ak4_cuts = ((ak4lvec['pt'] > 20) & (abs(ak4lvec['eta']) < 2.6) 
+                ak4_cuts = ((ak4lvec['pt'] >= 20) & (abs(ak4lvec['eta']) <= 2.6) 
                             & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
-                zptcut = (valvars['bestRecoZPt'] >= ZptCut_)
+                #zptcut = (valvars['bestRecoZPt'] >= ZptCut_)
                 #
-                def applyAK4Cuts(dict_, cuts_, zptcut_, isak4=False):
+                def applyAK4Cuts(dict_, cuts_, zptcut_=None, isak4=False):
                     for key in dict_.keys():
                         if isak4 : 
                             dict_[key] = dict_[key][cuts_] ## bool switch might work better with try! statement
-                        dict_[key]  = dict_[key][(blOps_((cuts_).sum(), njets_)) & (cuts_.sum() <= maxJets_) & (zptcut_)]
+                        dict_[key]  = dict_[key][(blOps_((cuts_).sum(), njets_)) & (cuts_.sum() <= maxJets_)] #& (zptcut)]
                 #
-                applyAK4Cuts(ak4vars,   ak4_cuts, zptcut, isak4=True)
-                applyAK4Cuts(ak4lvec,   ak4_cuts, zptcut, isak4=True)
-                applyAK4Cuts(valRCvars, ak4_cuts, zptcut)
-                applyAK4Cuts(valvars,   ak4_cuts, zptcut)
-                applyAK4Cuts(label,     ak4_cuts, zptcut)
+                applyAK4Cuts(ak4vars,   ak4_cuts,  isak4=True)
+                applyAK4Cuts(ak4lvec,   ak4_cuts,  isak4=True)
+                applyAK4Cuts(valRCvars, ak4_cuts, )
+                applyAK4Cuts(valvars,   ak4_cuts, )
+                applyAK4Cuts(label,     ak4_cuts, )
                 #
                 if (getak8var_):
-                    applyAK4Cuts(ak8vars, ak4_cuts, zptcut)
-                    applyAK4Cuts(ak8lvec, ak4_cuts, zptcut)
+                    applyAK4Cuts(ak8vars, ak4_cuts)
+                    applyAK4Cuts(ak8lvec, ak4_cuts)
                 #
                 if (getGenData):
-                    applyAK4Cuts(genData, ak4_cuts, zptcut)
+                    applyAK4Cuts(genData, ak4_cuts)
                 #
-                del ak4_cuts, zptcut
+                del ak4_cuts#, zptcut
                 #
                 sample_maxJets    = max(ak4lvec['pt'].counts)
                 if (getak8var_):

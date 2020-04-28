@@ -204,27 +204,20 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
         except:
             pass
         base_cuts = (
-            #(( (df_[key_]['ak8']['nbbFatJets']  == 1) & (df_[key_]['ak8']['nhbbFatJets'] == 0) ) |
-            # ( (df_[key_]['ak8']['nbbFatJets']  == 0) & (df_[key_]['ak8']['nhbbFatJets'] == 1) )) &
-            #(df_[key_]['ak8']['n_nonfjbb'] >= 2) &
+            #(df_[key_]['val']['NN'] <  .85) & 
+            #(df_[key_]['val']['NN'] >= .96) & 
+            
+            (df_[key_]['ak8']['H_pt'] >= 300)       &
+            (df_[key_]['ak8']['H_pt'] < 350)       &
+            (df_[key_]['val']['genZHpt'] >= 300)       &
+            (df_[key_]['val']['genZHpt'] < 350)       &
+            #(df_[key_]['ak8']['n_H_sj_btag'] == 2) &
+            #(df_[key_]['ak8']['n_b_Hbb'] == 2) &
+            
             (df_[key_]['ak8']['n_nonHbb'] >= 2)    &
-            #(df_[key_]['ak8']['best_rt_score'] >= .5)    &
-            #(df_[key_]['val']['matchedGen'] == False)   &
-            #(df_[key_]['ak8']['n_b_Hbb'] >= 1)     &
-            #(df_[key_]['ak8']['n_H_sj_btag'] == 1)     &
             (df_[key_]['ak8']['nhbbFatJets'] > 0)  &
             (df_[key_]['ak8']['H_M']         > 50) &  
             (df_[key_]['ak8']['H_M']         < 200)& 
-            #(df_[key_]['ak8']['H_pt']       >= 300)& 
-            #(df_[key_]['ak8']['H_Wscore']     < .80)&
-            #(((df_[key_]['ak8']['best_Wb_invM']<= 175)&(df_[key_]['ak8']['H_Wscore']<.85))|(df_[key_]['ak8']['best_Wb_invM']> 175))&
-            #(df_[key_]['ak8']['best_Wb_invM']> 200)&
-            #(df_[key_]['ak8']['Hb_invM1']    > 175)&
-            #(df_[key_]['ak8']['H_score']     > .75)&
-            #(df_[key_]['ak8']['nbbFatJets'] == 1) &
-            #(df_[key_]['val']['nResolvedTops'] == 1) &
-            #(df_[key_]['val']['NN'] <  .85) & 
-            #(df_[key_]['val']['NN'] >= .96) & 
             (df_[key_]['val']['MET_pt']      >= 0))# &
         if ('_GenMatch' in key_):
             base_cuts = base_cuts & (df_[key_]['val']['matchedGen_ZHbb'] == True)
@@ -236,6 +229,12 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             base_cuts = base_cuts & (df_[key_]['val']['matchedGen_Zqq'] == True)
         if ('_genHbb' in key_):
             base_cuts = base_cuts & (df_[key_]['val']['matchedGen_Hbb'] == True)
+        if ('_Zbb' in key_):
+            base_cuts = base_cuts & (df_[key_]['val']['Zbb'] == True)
+        if ('_Zqq' in key_):
+            base_cuts = base_cuts & (df_[key_]['val']['Zqq'] == True)
+        if ('_Hbb' in key_):
+            base_cuts = base_cuts & (df_[key_]['val']['Hbb'] == True)
         ########
         h.append( np.clip(kinem[base_cuts], bins[0], bins[-1]))
         w.append( df_[key_]['val']['weight'][base_cuts] * np.sign(df_[key_]['val']['genWeight'][base_cuts]) * (137/41.9))
@@ -260,7 +259,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
                                   bins=bins, stacked=False,# fill=True,
                                   #range=range_,
                                   histtype='step',
-                                  density=True,
+                                  density=False,
                                   #linewidth=0,
                                   weights= w,
                                   color  = colors,
@@ -276,6 +275,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     plt.ylabel('Events / '+str((range_[-1])/n_bins)+' GeV', fontsize = fontsize)
     plt.xlim(range_)
     plt.yscale('log')
+    plt.grid(True)
     #plt.setp(patches_, linewidth=0)
     plt.legend(framealpha = 0.2)
     plt.savefig('money_pdf/moneyplot'+xlabel_+'_.pdf', dpi = 300)

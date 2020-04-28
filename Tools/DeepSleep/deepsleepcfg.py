@@ -35,10 +35,12 @@ ZinvFitCfg    = (['result_2017'],
 ZinvFitCut     = (operator.ge, 5)
 ZinvFitoverlap = 0
 ZinvFitMaxJets = 14
-##### TTZ, Z to MET CONFIG #####
-ZHbbFitCfg    = (['result_2017'],
+##### TTZ, Z to bb CONFIG #####
+ZHbbFitCfg    = (['result_2017'],#
                  #['WJets','ZJets','DY','DiBoson','TriBoson','TTX','QCD','TTBarHad','TTBarLep','TTZ/H'],
-                 [ 'TTZH', 'QCD',  'TTX',  'DY',  'TTBarLep',  'WJets', 'TTBarHad',  'DiBoson',  'TriBoson',  'ZJets'],
+                 [ 'TTZH', 'QCD',  'TTX',  'DY',  'TTBarLep', 'WJets', 'TTBarHad',  'DiBoson',  'TriBoson',  'ZJets'],
+                 
+#                 ['TTBarLep'],
                  skim_ZHbb_dir)
 ZHbbFitCut    = (operator.ge, 0)
 ZHbbFitoverlap = 0
@@ -62,9 +64,14 @@ val_dir        = master_file_path+'val/'
 LC = '_drLeptonCleaned'
 #
 ak4vars = ['Jet_btagCSVV2'+LC,'Jet_btagDeepB'+LC,'Jet_qgl'+LC]
-ak4lvec = {'TLV'      :['JetTLV'+LC],
-           'TLVarsLC' :['Jet_pt'+LC, 'Jet_eta'+LC, 'Jet_phi'+LC, 'Jet_E'+LC],
-           'TLVars'   :['Jet_pt', 'Jet_eta', 'Jet_phi', 'Jet_E']}
+ak4lvec = {'TLV'         :['JetTLV'+LC],
+           'TLVarsLC'    :['Jet_pt'+LC, 'Jet_eta'+LC, 'Jet_phi'+LC, 'Jet_E'+LC],
+           'TLVars'      :['Jet_pt', 'Jet_eta', 'Jet_phi', 'Jet_E'],
+           'jesTotUp'    :['Jet_pt_jesTotalUp', 'Jet_eta' 'Jet_phi', 'Jet_mass_jesTotalUp'],
+           'jesTotDown'  :['Jet_pt_jesTotalDown', 'Jet_eta' 'Jet_phi', 'Jet_mass_jesTotalDown'],
+           'jerUp'       :['Jet_pt_jerUp', 'Jet_eta' 'Jet_phi', 'Jet_mass_jerUp'],
+           'jerDown'     :['Jet_pt_jerDown', 'Jet_eta' 'Jet_phi', 'Jet_mass_jerDown'],
+       }
 #
 ak8vars = ['FatJet_tau1'+LC,'FatJet_tau2'+LC,'FatJet_tau3'+LC,'FatJet_tau4'+LC,
            'FatJet_deepTag_WvsQCD'+LC,'FatJet_deepTag_TvsQCD'+LC,'FatJet_deepTag_ZvsQCD'+LC,
@@ -80,6 +87,8 @@ valvars    = ['nResolvedTops'+LC,'nMergedTops'+LC,'nBottoms'+LC,'nSoftBottoms'+L
               'bestRecoZPt', 'bestRecoZEta', 'bestRecoZPhi', 'bestRecoZM',
               'MET_phi', 'MET_pt', 'Lep_pt', 'Lep_eta', 'Lep_phi', 'Lep_E',
               'passElecZinvSelOnZMassPeak','passMuZinvSelOnZMassPeak','genWeight','weight']
+sysvars   = ['BTagWeight_Up', 'BTagWeight_Down', 'puWeight_Up','puWeight_Down', 'pdfWeight_Up','pdfWeight_Down',
+             'ISRWeight_Up','ISRWeight_Down','PrefireWeight_Up','PrefireWeight_Down']
 valRCvars  = ['ResolvedTopCandidate_discriminator', 'ResolvedTopCandidate_j1Idx', 'ResolvedTopCandidate_j2Idx', 'ResolvedTopCandidate_j3Idx']
 label      = ['isTAllHad']
 # Derived Varialbes #

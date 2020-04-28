@@ -152,6 +152,15 @@ def getLaLabel(str_):
     elif ('TTZH_genHbb' == str_):
         la_str = r't$\mathregular{\bar{t}}$Z/H_genMatchedHbb'
         col_str = 'gold'
+    elif ('TTZH_Zbb' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z/H_genZbb'
+        col_str = 'tab:blue'
+    elif ('TTZH_Zqq' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z/H_genZqq'
+        col_str = 'darkgreen'
+    elif ('TTZH_Hbb' == str_):
+        la_str = r't$\mathregular{\bar{t}}$Z/H_genHbb'
+        col_str = 'gold'
     elif ('DY' in str_):
         la_str = 'Drell-Yan'
         col_str = 'tab:orange'
