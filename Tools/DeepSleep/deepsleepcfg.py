@@ -38,13 +38,13 @@ ZinvFitMaxJets = 14
 ##### TTZ, Z to bb CONFIG #####
 ZHbbFitCfg    = (['result_2017'],#
                  #['WJets','ZJets','DY','DiBoson','TriBoson','TTX','QCD','TTBarHad','TTBarLep','TTZ/H'],
-                 [ 'TTZH', 'QCD',  'TTX',  'DY',  'TTBarLep', 'WJets', 'TTBarHad',  'DiBoson',  'TriBoson',  'ZJets'],
+                 [ 'TTZH', 'QCD',  'TTX',  'DY', 'WJets', 'TTBarHad',  'DiBoson',  'TriBoson', 'TTBarLep'],#'ZJets'],
                  
 #                 ['TTBarLep'],
                  skim_ZHbb_dir)
 ZHbbFitCut    = (operator.ge, 0)
 ZHbbFitoverlap = 0
-ZHbbFitMaxJets = 14
+ZHbbFitMaxJets = 100
 # ttZ/H->bb SM x-section
 ZHbbXsec = {'ttZbb': .1157,
             'ttHbb': .2934 }
@@ -86,7 +86,7 @@ genLevCuts = ['passGenCuts','isZToLL']
 valvars    = ['nResolvedTops'+LC,'nMergedTops'+LC,'nBottoms'+LC,'nSoftBottoms'+LC,'nJets30'+LC,
               'bestRecoZPt', 'bestRecoZEta', 'bestRecoZPhi', 'bestRecoZM',
               'MET_phi', 'MET_pt', 'Lep_pt', 'Lep_eta', 'Lep_phi', 'Lep_E',
-              'passElecZinvSelOnZMassPeak','passMuZinvSelOnZMassPeak','genWeight','weight']
+              'passElecZinvSelOnZMassPeak','passMuZinvSelOnZMassPeak','genWeight','weight','BTagWeight','puWeight','ISRWeight','PrefireWeight']
 sysvars   = ['BTagWeight_Up', 'BTagWeight_Down', 'puWeight_Up','puWeight_Down', 'pdfWeight_Up','pdfWeight_Down',
              'ISRWeight_Up','ISRWeight_Down','PrefireWeight_Up','PrefireWeight_Down']
 valRCvars  = ['ResolvedTopCandidate_discriminator', 'ResolvedTopCandidate_j1Idx', 'ResolvedTopCandidate_j2Idx', 'ResolvedTopCandidate_j3Idx']
@@ -147,8 +147,8 @@ dnn_ZH_alpha      = 0.00003 # 200: 0.0003 # 300 : 0.00003
 dnn_ZH_batch_size = 512
 fl_gamma          = .2 # 200: .1    , 300: 1.5 / .4
 fl_alpha          = .85 # 200: .85 , 300: .80 /.85
-dnn_ZH_epochs     = 210 # 200: 120, 300: 100
+dnn_ZH_epochs     = 0 #210 ### 200: 120, 300: 100
 DNNoutputDir      = skim_ZHbb_dir+'DNN_ZH_output/'
 DNNoutputName     = 'corr_noweight_noM.h5'
 DNNmodelName      = 'corr_noweight_model_noM.h5' 
-DNNuseWeights     = False
+DNNuseWeights     = True

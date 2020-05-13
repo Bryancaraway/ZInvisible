@@ -13,6 +13,8 @@ import os
 import math
 import pickle
 import operator
+import time
+import concurrent.futures
 import deepsleepcfg as cfg
 #
 import numpy as np
@@ -29,6 +31,7 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
             print('Opening File:\t{}'.format(file_))
             t_ = f_.get(treeDir_)
             for sample in samples_:
+                start = time.perf_counter()
             #for sample in samples_:
                 print(sample)
                 t = t_.get(sample)
@@ -73,6 +76,8 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 #    defineKeys(ak4lvec,cfg.ak4lvec['TLV'])
                 #    extractLVecInfo(ak4lvec)
                 #except:
+                #dKeys_args = [[ak4lvec, cfg.ak4lvec['TLVarsLC']], [valRCvars, cfg.ak4lvec['TLVars']], [valRCvars, cfg.valRCvars], 
+                #              [ak4vars,cfg.ak4vars], [valvars,cfg.valvars+cfg.sysvars], [label,  cfg.label]]
                 defineKeys(ak4lvec,   cfg.ak4lvec['TLVarsLC'])
                 defineKeys(valRCvars, cfg.ak4lvec['TLVars'])
                 defineKeys(valRCvars, cfg.valRCvars)
@@ -84,15 +89,22 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 if (getak8var_):
                     defineKeys(ak8vars,cfg.ak8vars)
                     defineKeys(ak8lvec,cfg.ak8lvec['TLVarsLC'])
+                    #dKeys_args.append([ak8vars,cfg.ak8vars])
+                    #dKeys_args.append([ak8lvec,cfg.ak8lvec['TLVarsLC']])
                 #
                 if (getGenData):
                     defineKeys(genData,cfg.genpvars)
+                    #dKeys_args.append([genData,cfg.genpvars])
+                #
+                #with concurrent.futures.ThreadPoolExecutor() as execute:
+                #    #execute.map(defineKeys,dKeys_args)
+                #    {execute.submit(defineKeys,*args) for args in dKeys_args}
                 #
                 del selvar
                 # Cuts for initial round of training #
                 # Ak4 Jet Pt > 30, Ak4 Jet Eta < 2.6 #
                 # after which nJet cut, check cfg    #
-                ak4_cuts = ((ak4lvec['pt'] >= 20) & (abs(ak4lvec['eta']) <= 2.6) 
+                ak4_cuts = ((ak4lvec['pt'] >= 30) & (abs(ak4lvec['eta']) <= 2.4) # used to be 20, 2.6
                             & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
                 #zptcut = (valvars['bestRecoZPt'] >= ZptCut_)
                 #
@@ -102,18 +114,27 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                             dict_[key] = dict_[key][cuts_] ## bool switch might work better with try! statement
                         dict_[key]  = dict_[key][(blOps_((cuts_).sum(), njets_)) & (cuts_.sum() <= maxJets_)] #& (zptcut)]
                 #
+                Ak4Cuts_args = [[ak4vars,   ak4_cuts,  True],[ak4lvec,   ak4_cuts,  True], 
+                                [valRCvars, ak4_cuts], [valvars,   ak4_cuts], [label,     ak4_cuts]]
                 applyAK4Cuts(ak4vars,   ak4_cuts,  isak4=True)
                 applyAK4Cuts(ak4lvec,   ak4_cuts,  isak4=True)
-                applyAK4Cuts(valRCvars, ak4_cuts, )
-                applyAK4Cuts(valvars,   ak4_cuts, )
-                applyAK4Cuts(label,     ak4_cuts, )
+                applyAK4Cuts(valRCvars, ak4_cuts )
+                applyAK4Cuts(valvars,   ak4_cuts )
+                applyAK4Cuts(label,     ak4_cuts )
                 #
                 if (getak8var_):
                     applyAK4Cuts(ak8vars, ak4_cuts)
                     applyAK4Cuts(ak8lvec, ak4_cuts)
+                    #Ak4Cuts_args.append([ak8vars, ak4_cuts])
+                    #Ak4Cuts_args.append([ak8lvec, ak4_cuts])
                 #
                 if (getGenData):
                     applyAK4Cuts(genData, ak4_cuts)
+                    #Ak4Cuts_args.append([genData, ak4_cuts])
+                #
+                #with concurrent.futures.ThreadPoolExecutor() as execute:
+                #    #execute.map(applyAK4Cuts, Ak4Cuts_args)
+                #    {execute.submit(applyAK4Cuts, *args) for args in Ak4Cuts_args}
                 #
                 del ak4_cuts#, zptcut
                 #
@@ -239,6 +260,8 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 del val_dfs
                 del valRCvars
                 del genData
+                finish = time.perf_counter()
+                print(f'\nTime to finish {sample}: {finish-start:.1f}\n')
                 #
             #
         #

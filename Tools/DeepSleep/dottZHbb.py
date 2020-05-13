@@ -344,31 +344,40 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
             pickle.dump(df[key_]['ak8'], handle, protocol=pickle.HIGHEST_PROTOCOL)
     
 def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
-    df = kFit.retrieveData(files_, ['TTZH'], outDir_, getgen_=False, getak8_=True)
+    df = kFit.retrieveData(files_, samples_,#
+                           #['TTZH','TTBarLep'], 
+                           outDir_, getgen_=False, getak8_=True)
     genMatched    = False
     sepGenMatched = False
     sepGen        = True
-    print(df.keys())
     suf = '_2017'
+    df_ = {}
     if (genMatched):
-        df['TTZH_GenMatch'+suf]   = df['TTZH'+suf]
-        df['TTZH_noGenMatch'+suf] = df['TTZH'+suf]
+        df_['TTZH_GenMatch'+suf]   = df['TTZH'+suf]
+        df_['TTZH_noGenMatch'+suf] = df['TTZH'+suf]
         if ( not sepGenMatched) : 
             del df['TTZH'+suf]
     if (genMatched and sepGenMatched):                   
-        df['TTZH_genZbb'+suf]       = df['TTZH'+suf]
-        df['TTZH_genHbb'+suf]       = df['TTZH'+suf]
-        df['TTZH_genZqq'+suf]       = df['TTZH'+suf]
-        del df['TTZH'+suf], df['TTZH_GenMatch'+suf]
+        df_['TTZH_genZbb'+suf]       = df['TTZH'+suf]
+        df_['TTZH_genHbb'+suf]       = df['TTZH'+suf]
+        df_['TTZH_genZqq'+suf]       = df['TTZH'+suf]
+        del df['TTZH'+suf], df_['TTZH_GenMatch'+suf]
     #
     if (sepGen):
-        df['TTZH_Zbb'+suf]       = df['TTZH'+suf]
-        df['TTZH_Hbb'+suf]       = df['TTZH'+suf]
-        df['TTZH_Zqq'+suf]       = df['TTZH'+suf]
-        del df['TTZH'+suf]
+        df_['TTZH_Zbb'+suf]       = df['TTZH'+suf]
+        df_['TTZH_Hbb'+suf]       = df['TTZH'+suf]
+        #df_['TTZH_Zqq'+suf]       = df['TTZH'+suf]
+        del df['TTZH'+suf] 
+    if (sepGen or genMatched) : 
+        df_.update(df)
+        df = df_
+        del df_
+    print(df.keys())
     from fun_library import StackedHisto
+    #StackedHisto(df, 'PrefireWeight_Down',              (-1,1), 'PrefireWeight_Down',   15)
+    #StackedHisto(df, 'ISRWeight_Down',              (-2,-2), 'ISRWeight_Down',   15)
     #StackedHisto(df, 'genZHpt',              (0,450), 'genZHpt',   15)
-    #StackedHisto(df, 'NN',              (0,1), 'NN_output',   50)
+    StackedHisto(df, 'NN',              (0,1), 'NN_output',   20)
     #StackedHisto(df, 'spher',          (0,1),  'sphericity',   20)
     #StackedHisto(df, 'aplan',          (0,.5), 'aplanarity',   20)
     #StackedHisto(df, 'nonHbb_b1_dr',    (0,5), 'nonHbb_b1_dr', 20)
@@ -393,7 +402,7 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     #StackedHisto(df, 'best_rt_score', (.5,1), 'best_rt_score', 20)
     #StackedHisto(df, 'n_qnonHbb', (0,6),     'nq_nonHZbb',  6)
     #StackedHisto(df, 'n_nonHbb', (0,6),     'nb_nonHZbb',  6)  
-    StackedHisto(df, 'H_M',     (40,210),    'HZ_M',  40)
+    StackedHisto(df, 'H_M',     (50,200),    'HZ_M',  15)
     #StackedHisto(df, 'Hl_dr',    (0,5),     'HZl_dr',  20)
     #StackedHisto(df, 'Hl_invm',  (0,700),   'HZl_invm',  50)
     #StackedHisto(df, 'Hl_invm_sd',  (0,700),   'HZl_invm_sd',  50)
@@ -423,7 +432,7 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     #StackedHisto(df, 'Hb_invM1_E',      (0,1000), 'Hb_invM1_E',      50)
     #StackedHisto(df, 'Hb_invM2_E',      (0,1000), 'Hb_invM2_E',      50)
     #StackedHisto(df, 'H2_M',     (0,300),    'HZ2_M',  40)
-    StackedHisto(df, 'H_pt',     (200,600), 'HZ_pt',  24)
+    StackedHisto(df, 'H_pt',     (200,600), 'HZ_pt',  20)
     #StackedHisto(df, 'H2_pt',     (200,600), 'HZ2_pt',  20)
     #StackedHisto(df, 'H2_score', (-1,1),     'HZbb2_score',  20)
     StackedHisto(df, 'H_Wscore', (0,1),     'H_Wscore',  20)

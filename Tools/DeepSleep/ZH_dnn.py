@@ -147,18 +147,21 @@ def train_DNN(train_dir, test_dir, val_dir):
                        validation_data = (valX,valY.values.astype('int')),#valW['DNNweight'].values), 
                        #callbacks  = cbks,
                        verbose         = 1)
-    import train as Tr
     if (cfg.dnn_ZH_epochs > 0):
         hist = pd.DataFrame(history.history)
         hist['epoch'] = history.epoch
 
-        Tr.plot_history(hist)
+        plot_history(hist)
         #
         model.save_weights(cfg.DNNoutputDir+cfg.DNNoutputName)
         model.save(cfg.DNNoutputDir+cfg.DNNmodelName)
     #
     loss ,acc, auc = model.evaluate(testX.values,testY.values)#, sample_weight = testW['DNNweight'].values)
-    print("Test Set Acc: {0:.4f}\nTest Set AUC: {1:.4f}".format(acc,auc))
+    tr_loss ,tr_acc, tr_auc = model.evaluate(trainX.values,trainY.values)
+    val_loss ,val_acc, val_auc = model.evaluate(valX.values,valY.values)
+    print("\n\nTrain Set Loss: {0:.4f}\t Train Set Acc: {1:.4f}\t Train Set AUC: {2:.4f}".format(tr_loss,tr_acc,tr_auc))
+    print("Val   Set Loss: {0:.4f}\t Val   Set Acc: {1:.4f}\t Val   Set AUC: {2:.4f}".format(val_loss,val_acc,val_auc))
+    print("Test  Set Loss: {0:.4f}\t Test  Set Acc: {1:.4f}\t Test  Set AUC: {2:.4f}\n\n".format(loss,acc,auc))
     X = pd.concat([testX,trainX,valX], ignore_index=True)
     Y = pd.concat([testY,trainY,valY], ignore_index=True)
     W = pd.concat([testW['weight'],trainW['weight'],valW['weight']], ignore_index=True)
@@ -168,13 +171,13 @@ def train_DNN(train_dir, test_dir, val_dir):
     import seaborn as sns
     plt.figure(figsize=(16,9))
     sns.set(font_scale=0.5)
-    sns.heatmap(df.corr(), annot=True, fmt= '1.2f',annot_kws={"size": 6}, cmap=plt.cm.Reds, cbar=False, square= False)
-    plt.title(sys.argv[1] if len(sys.argv) > 1 else 'General')
-    #plt.show()
+    sns.heatmap(abs(df.corr()), annot=True, fmt= '1.2f',annot_kws={"size": 6}, cmap=plt.cm.Reds, cbar=False, square= False)
+    plt.title(sys.argv[1] if len(sys.argv) > 1 else 'Linear Correlation')
+    plt.show()
     plt.close()
     #
     fpr, tpr, thresholds = metrics.roc_curve(Y.astype('int'), pred)
-    Tr.plot_roc(fpr,tpr)
+    plot_roc(fpr,tpr)
     plt.hist(
         [pred[Y == True],pred[Y == False]] , 
         histtype='step',
@@ -187,6 +190,42 @@ def train_DNN(train_dir, test_dir, val_dir):
     plt.show()
     
 #
+def plot_history(hist):
+    fig, [loss, acc] = plt.subplots(1, 2, figsize=(12, 6))
+    loss.set_xlabel('Epoch')
+    loss.set_ylabel('Loss')
+    loss.grid(True)
+    loss.plot(hist['epoch'], hist['loss'],
+              label='Train Loss')
+    loss.plot(hist['epoch'], hist['val_loss'],
+              label = 'Val Loss')
+    #loss.set_yscale('log')                                                                                                                                                                            
+    loss.legend
+    
+    acc.set_xlabel('Epoch')
+    acc.set_ylabel('Acc')
+    acc.grid(True)
+    acc.plot(hist['epoch'], hist['acc'],
+                     label='Train Acc')
+    acc.plot(hist['epoch'], hist['val_acc'],
+                     label = 'Val Acc')
+    #acc.set_yscale('log')                                                                                                                                                                     
+    acc.legend()
+    plt.show()
+    plt.close()
+    plt.clf()
+#
+def plot_roc(fpr_,tpr_):
+    plt.plot([0,1],[0,1], 'k--')
+    plt.plot(fpr_,tpr_, 
+             label='ROC curve (area = {:.4f})'.format(metrics.auc(fpr_,tpr_)))
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.legend()
+    plt.show()
+    plt.close()
+    plt.clf()
+
 def resetIndex(df_):
     return df_.reset_index(drop=True).copy()
 #
@@ -241,16 +280,20 @@ def corr_study(train_dir, test_dir, val_dir):
     case_df = df.filter(regex='case_\d', axis=1)
     df = df.drop(columns=case_df.keys())
     df = df.drop(columns='weight')
+    p_corr = df.corr()
+    p_corr = p_corr.drop(index='Signal')
     #
     corr_df = pd.DataFrame()
     corr_df = pd.concat([df.corr()['Signal'].rename('General')]+list(df[case_df[key_] == True].corr()['Signal'].rename(key_) for key_ in case_df.keys()), axis=1)
     #
     import seaborn as sns
     from matplotlib.colors import LogNorm
-    def plot_heatmap(score_df,title, norm_=False):
+    def plot_heatmap(score_df,title, norm_=False, col_norm_=False):
         plt.figure(figsize=(12,8))
         sns.set(font_scale=0.75)
-        sns.heatmap(score_df, annot=True, fmt= '1.3f',annot_kws={"size": 6}, 
+        
+        sns.heatmap(((score_df-score_df.mean())/score_df.std() if col_norm_ else score_df), 
+                    annot=True, fmt= '1.3f',annot_kws={"size": 6}, 
                     cmap=plt.cm.Reds, cbar=False, square= False, norm=(LogNorm() if norm_ else None))
         plt.title(title)
         plt.show()
@@ -262,7 +305,7 @@ def corr_study(train_dir, test_dir, val_dir):
     df = df.drop(columns=df_target.name)
     def plot_norm():
         for key_ in df.keys():
-            n_,edges_,_ = plt.hist([df[key_][df_target == True], df[key_][df_target == False]],density=True, histtype='step', label=['True','False'])
+            n_,edges_,_ = plt.hist([df[key_][df_target == True], df[key_][df_target == False]],density=True, histtype='step', label=['ttZ/H','ttbar'])
             bin_centers = (edges_[1:]+edges_[:-1])/2
             bin_width   = edges_[1]-edges_[0]
             plt.errorbar(bin_centers,n_[0],yerr=np.sqrt(n_[0]/(sum(df_target == True) *bin_width)), color='tab:blue',   fmt='.')
@@ -274,9 +317,16 @@ def corr_study(train_dir, test_dir, val_dir):
             #
     #plot_norm()
     #
+
     chi2_score, chi_2_p_value = chi2(abs(df),df_target)
     f_score, f_p_value = f_classif(df,df_target)
     mut_info_score = mutual_info_classif(df,df_target)
+    #
+    stat_sum_df = pd.DataFrame(
+        [abs(p_corr['Signal'].values),abs(chi2_score),abs(chi_2_p_value),abs(f_score),abs(f_p_value),abs(mut_info_score)],
+        columns = df.keys(), index = ['P_corr','Chi2','Chi2_p','Fscore','Fscore_p','mut_info']).transpose()
+    plot_heatmap(stat_sum_df, 'Statistical Test Metric Summary', col_norm_=False)
+    exit()
     #
     chi2_df   = pd.DataFrame(
         [chi2(abs(df),df_target)[0]]+list(chi2(abs(df[case_df[key_] == True]),df_target[case_df[key_] == True])[0] for key_ in case_df.keys()), 

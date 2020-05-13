@@ -1,4 +1,4 @@
-#     OA                 #  
+#     OA                 #  A
 ##                    ##
 ########################                               
 ### TTZ/H, Z/H to bb ###
@@ -33,55 +33,53 @@ np.random.seed(1)
 ##
 pt_bins = [200,300,400] # [200,300,400]
 #pt_bin_dict = {'200':'lopt', '300':'hipt'}
+dc_dir = 'Higgs-Combine-Tool'
+output_rootfile = 'input_'+str(pt_bins[-1])+'inc.root'
 
 
 def sepSigBKgdf(df_,sig_):
     sig_df = pd.DataFrame()
     bkg_df = pd.DataFrame()
-    for key_ in df_.keys():
+    for key_ in df_:
         def get_weight():
-                weight = (df_[key_]['val']['weight']*np.sign(df_[key_]['val']['genWeight']) * (137/41.9))
+            weight = (df_[key_]['val']['weight']*np.sign(df_[key_]['val']['genWeight']) * (137/41.9)*\
+                      df_[key_]['val']['BTagWeight']*df_[key_]['val']['puWeight']*df_[key_]['val']['PrefireWeight'])#*df_[key_]['val']['ISRWeight'])
             return weight
         def add_toDF(df, cut=None, name=key_.split('_201')[0], isSig=False):
-            if cut == None:
-                cut = []
             temp_df = pd.DataFrame({ 
                 'HZ_pt':   df_[key_]['ak8']['H_pt'],
                 'M_sd':    df_[key_]['ak8']['H_M'], 
                 'NN':      df_[key_]['val']['NN'],
                 'Weight':  get_weight(),
+                'BTagWeight'   : df_[key_]['val']['BTagWeight'],
+                'PrefireWeight': df_[key_]['val']['PrefireWeight'],
+                'puWeight'     : df_[key_]['val']['puWeight'],
+                'pdfWeight'    : 1.0,
                 'Name':name}) 
             # add systematics to df
             for syst in cfg.sysvars:
-                temp_df[sys] = df_[key_]['val'][syst]
+                temp_df[syst] = df_[key_]['val'][syst]
             if isSig:
                 temp_df['HZ_genpt'] = df_[key_]['val']['genZHpt']
-            if len(cut) > 0:
+            if cut is not None:
                 df = df.append(pd.DataFrame(temp_df[cut]), ignore_index=True)
             else:
                 df = df.append(pd.DataFrame(temp_df), ignore_index=True)
             return(df)
         #
         if (sig_ in key_):
-            bin2         = ((df_[key_]['val']['genZHpt'] >= 200) & (df_[key_]['val']['genZHpt'] < 300))
-            bin3         = ((df_[key_]['val']['genZHpt'] >= 300) & (df_[key_]['val']['genZHpt'] < 400))
-            bin4         = ((df_[key_]['val']['genZHpt'] >= 400) & (df_[key_]['val']['genZHpt'] < np.inf))
-            bin1         = ((~bin2) & (~bin3) & (~bin4))
-            gen_bin_dict = { 'bin1':bin1,'bin2':bin2,'bin2':bin3,'bin3':bin4, }
+            gen_bin_dict = {'bin1': ((df_[key_]['val']['genZHpt'] >= 0) & (df_[key_]['val']['genZHpt'] < pt_bins[0]))}
+            for i, pt_bin in enumerate(pt_bins[:-1],1):
+                gen_bin_dict['bin'+str(i+1)] = ((df_[key_]['val']['genZHpt'] >= pt_bin) & (df_[key_]['val']['genZHpt'] < pt_bins[i]))
+            gen_bin_dict['bin'+str(len(pt_bins)+1)] = ((df_[key_]['val']['genZHpt'] >= pt_bins[-1]) & (df_[key_]['val']['genZHpt'] < np.inf))
             #
             ttZbb   = (df_[key_]['val']['Zbb'] == True)
             ttHbb   = (df_[key_]['val']['Hbb'] == True)
             ttZqq   = (df_[key_]['val']['Zqq'] == True)
             #
-            for bin, bin_cut in gen_bin_dict.items():
-                for sig, sig_cut in {'ttZ':ttZbb, 'ttH':ttHbb}.items():
-                    sig_df = add_toDF(sig_df,cut=sig_cut & bin_cut, name=sig+bin, isSig=True)
-            #sig_df = add_toDF(sig_df,cut=ttZbb & lo,       name='ttZgenlopt', isSig=True)
-            #sig_df = add_toDF(sig_df,cut=ttZbb & hi,       name='ttZgenhipt', isSig=True)
-            #sig_df = add_toDF(sig_df,cut=ttHbb & lo,       name='ttHgenlopt', isSig=True)
-            #sig_df = add_toDF(sig_df,cut=ttHbb & hi,       name='ttHgenhipt', isSig=True)
-            #sig_df = add_toDF(sig_df,cut=ttZbb & ~lo & ~hi,name='ttZelse',    isSig=True)
-            #sig_df = add_toDF(sig_df,cut=ttHbb & ~lo & ~hi,name='ttHelse',    isSig=True)
+            for bin_, bin_cut in gen_bin_dict.items():
+                for sig_, sig_cut in {'ttZ':ttZbb, 'ttH':ttHbb}.items():
+                    sig_df = add_toDF(sig_df,cut=sig_cut & bin_cut, name=sig_+bin_, isSig=True)
             #
             bkg_df = add_toDF(bkg_df,cut=ttZqq,name='ttZqq')
         else:
@@ -101,8 +99,7 @@ def makeDataCard(files_, samples_, outDir_):
     del df
     #
     # Create a root file to store the shapes for shape fit
-    dc_dir = 'Higgs-Combine-Tool'
-    root_file = TFile(dc_dir+'/input.root', 'recreate')
+    root_file = TFile(dc_dir+'/'+output_rootfile, 'recreate')
     def setupDC(dc_name, channel):
         _txt = open(dc_name, 'w')
         _txt.writelines(['max\t1\n',
@@ -165,11 +162,10 @@ def makeDataCard(files_, samples_, outDir_):
                                                 bins=[bins_dict['NN'],bins_dict['M_sd']],
                                                 weights=df_['Weight'][pt_cut_apl]) 
                 #print(np.sum(h_bins.flatten()),'\n')
-                return np.where(h_bins.flatten() < 0, 0.0, h_bins.flatten())
+                return np.where(h_bins.flatten() < 0, 0.00001, h_bins.flatten())
             #
             if ispData:
                 h_data = TH1F('data_obs','data_obs',*bins_min_max)
-                #[h_data.Fill(entry,w) for entry, w in zip(df_[kinem][pt_cut_apl], df_['Weight'][pt_cut_apl])]
                 h_bins = getflat2dHist(df_)
                 [h_data.SetBinContent(i+1,entry) for i,entry in enumerate(h_bins)]
                 h_data.Write()
@@ -179,13 +175,11 @@ def makeDataCard(files_, samples_, outDir_):
             for j_,sample_ in enumerate(set(df_['Name'])):
                 sample_df = df_[df_['Name'] == sample_]
                 #
-                #if issig:
-                #    sample_ = sample_+'_'+pt_bin_dict[str(pt_bin)]
+                h_bins = getflat2dHist(sample_df)
+                if not h_bins.any() : continue
+                print(sample_)
                 h_tuple = (sample_,sample_,*bins_min_max)
                 h_temp  = TH1F(*h_tuple)
-                #[h_temp.Fill(entry, w) for entry, w in zip(sample_df[kinem][pt_cut_apl], sample_df['Weight'][pt_cut_apl])]
-                #print(sample_)
-                h_bins = getflat2dHist(sample_df)
                 [h_temp.SetBinContent(i+1,entry) for i,entry in enumerate(h_bins)]
                 #
                 nonlocal channel_name
@@ -217,14 +211,30 @@ def makeDataCard(files_, samples_, outDir_):
         # and setup systmatics class attributes
         Systematic.set_processline(process_line1)
         Systematic.set_current_dc(dc_txt)
-        ShapeSystematic.set_ptcut_bindict(pt_cut,bin_dict)
+        ShapeSystematic.set_ptcut_bindict(pt_cut,bins_dict)
         ShapeSystematic.set_dataframe(pdata_df)
-        #
-        tt_sys = Systematic('dummy_tt_sys','lnN', channel_name, ['TTBarLep','TTBarHad'], 1.05, 'Testing logNorm systematic')
-        #
-        sig_sys = ShapeSystematic('dummy_ttH_sys','shape', channel_name, ['ttHelse','ttHgenlopt','ttHgenhipt'], 1, 1.008, .993, 'Testing shape systematic')
-        sig_sys.scaleHists(root_file)
-        del sig_sys
+        sig   = ['ttZbin1','ttZbin2','ttZbin3','ttZbin4','ttHbin1','ttHbin2','ttHbin3','ttHbin4']
+        tt    = ['TTBarLep']
+        other = ['ttZqq', 'TTBarHad', 'QCD', 'WJets', 'TTX', 'DiBoson', 'ZJets', 'TriBoson', 'DY']
+        # Cross section norm unc on ttbar (placeholder)
+        dc_txt.write('# X-sec noramlization uncertainty for ttbar as a rough estimate \n')
+        Systematic('xsec_tt', 'lnN', channel_name, tt, 1.05)
+        dc_txt.write(100*'-'+'\n')
+        # Shape Systematics on signal, ttbar, other
+        dc_txt.write('# Shape Systematics on signal, ttbar, and other backgrounds\n')
+        ShapeSystematic('btg',     'shape', channel_name, sig+tt+other, 1, 'BTagWeight_Up', 'BTagWeight_Down')
+        ShapeSystematic('pu',      'shape', channel_name, sig+tt+other, 1, 'puWeight_Up','puWeight_Down')
+        ShapeSystematic('pdf',     'shape', channel_name, sig+tt+other, 1, 'pdfWeight_Up','pdfWeight_Down')
+        ShapeSystematic('prefire', 'shape', channel_name, sig+tt+other, 1, 'PrefireWeight_Up','PrefireWeight_Down')
+        #ShapeSystematic('isr',     'shape', channel_name, sig+tt+other, 1, 'ISRWeight_Up','ISRWeight_Down')
+        dc_txt.write(100*'-'+'\n')
+        # MCstat Systematics on signal, ttbar, other
+        dc_txt.write('# MC statistical variation on shape plots for signal, ttbar, and other backgrounds\n')
+        ShapeSystematic('mcstat_sig',   'shape', channel_name, sig,   1)
+        ShapeSystematic('mcstat_tt',    'shape', channel_name, tt,    1)
+        ShapeSystematic('mcstat_other', 'shape', channel_name, other, 1)
+        dc_txt.write(100*'-'+'\n')
+        #tt_sys = Systematic('dummy_tt_sys','lnN', channel_name, ['TTBarLep','TTBarHad'], 1.05, 'Testing logNorm systematic')
         dc_txt.close()
     #
     root_file.Close()
@@ -235,7 +245,7 @@ class Systematic: # Class to handle Datacard systematics
     --- Possible Processes ---
     (*OLD*) Signal: ttZelse, ttHelse, ttZgenlopt, ttHgenlopt, ttZgenhipt, ttHgenhipt
     (*NEW*) Signal: ttZbin1, ttZbin2, ttZbin3, ttZbin4, ttHbin1, ttHbin2, ttHbin3, ttHbin4,
-    Bkg:    TTBarLep, ttZqq, TTBarHad, QCD, WJets, TTX, DiBoson, ZJets, TriBoson
+    Bkg:    TTBarLep, ttZqq, TTBarHad, QCD, WJets, TTX, DiBoson, ZJets, TriBoson, DY
     '''
     dc_root_dir = 'Higgs-Combine-Tool/'
     datacard     = None
@@ -247,9 +257,9 @@ class Systematic: # Class to handle Datacard systematics
         self.ids      = process_ids
         self.channel  = channel
         self.value    = value
-        self.info     = '' if info == None else info
+        self.info     = '' if info is None else info
         #
-        if self.datacard != None: 
+        if self.datacard is not None: 
             self.datacard.write(self.get_DC_line()) # write to datacard file upon instance creation
 
     @property
@@ -267,8 +277,7 @@ class Systematic: # Class to handle Datacard systematics
     def get_DC_line(self):
         _line = self.line
         for p in self.process_line[1:]:
-            # reformat process to exclude \t 
-            _process = p.replace('\t', '').replace(' ','' )
+            _process = p.replace('\t', '').replace(' ','' )# reformat process to exclude \t 
             if _process in self.ids: 
                 _line +='{0:14}'.format(str(self.value))
             else :
@@ -283,10 +292,10 @@ class ShapeSystematic(Systematic): # Class to handle Datacard shape systematics
     Create additional histograms with systematic variations and writes them to root file
     Supports MCStats
     Inheirits from the Systematics Class
-    Need to set cut_op and bin_dict to make effective use of this class
+    Need to set cut_op and bins_dict to make effective use of this class
     '''
 
-    bin_dict = None
+    bins_dict = None
     cut_op   = None
     df       = None
 
@@ -297,7 +306,7 @@ class ShapeSystematic(Systematic): # Class to handle Datacard shape systematics
         #
         if   'mcstat' in name:
             self.makeMCStatHist()
-        elif    type(up).__name__   == 'int' or type(up).__name__ == 'float' or \
+        elif    type(up).__name__   == 'int' or type(up).__name__   == 'float' or \
                 type(down).__name__ == 'int' or type(down).__name__ == 'float':
             self.scaleHists()
         elif    type(up).__name__   == 'str' or type(down).__name__ == 'str':
@@ -306,30 +315,30 @@ class ShapeSystematic(Systematic): # Class to handle Datacard shape systematics
 
     @property
     def bins_min_max(self):
-        if self.bin_dict == None:
+        if self.bins_dict is None:
             return None
         _n = (len(self.bins_dict['NN'])-1)*(len(self.bins_dict['M_sd'])-1)
         return (_n,0,_n)
 
     @classmethod
     def set_ptcut_bindict(cls,_cut,_dict):
-        cls.bin_dict=_dict
+        cls.bins_dict=_dict
         cls.cut_op=_cut
         
     @classmethod
     def set_dataframe(cls,df_):
         cls.df = df_
 
-    def FillandWrite(self, bin_content, add_str=None):
-        add_str = '' if add_str == None else add_str
-        h_tuple = (process+'_'+self.name+add_str, process+'_'+self.name+add_str, *self.bins_min_max)
+    def FillandWrite(self, bin_content, hist_str=None):
+        hist_str = '' if hist_str is None else hist_str
+        h_tuple = (hist_str,hist_str, *self.bins_min_max)
         h_temp = TH1F(*h_tuple)
-        [h_temp.SetBinCOntent(i+1,entry) for i,entry in enumerate(bin_content)]
+        [h_temp.SetBinContent(i+1,entry) for i,entry in enumerate(bin_content)]
         h_temp.Write()
         del h_temp
 
     def pt_cut(self,df_):
-        if cut_op == None:
+        if self.cut_op is None:
             return None
         _min = self.cut_op[0][0](df_['HZ_pt'],self.cut_op[0][1])
         _max = self.cut_op[1][0](df_['HZ_pt'],self.cut_op[1][1])
@@ -338,51 +347,45 @@ class ShapeSystematic(Systematic): # Class to handle Datacard shape systematics
 
     def makeScaleHist(self, rfile): # return renamed, scaled hists
         for process in self.ids:
-            df_ = self.df[self.df['Name'] == process].copy()
+            df_ = self.df[self.df['Name'] == process]
             pt_cut = self.pt_cut(df_)
             h_bins, *_ =  np.histogram2d(x=df_['NN'][pt_cut], y=df_['M_sd'][pt_cut],
                                              bins=[self.bins_dict['NN'],self.bins_dict['M_sd']],
                                              weights=df_['Weight'][pt_cut])
             for ud_str, ud_bins in zip(['Up','Down'],[h_bins.flatten()*self.up,h_bins.flatten()*self.down]):
-                temp_bins = np.where(ud_bins < 0, 0.0, ud_bins)
-                self.FillandWrite(temp_bins, ud_str)
-            #hist_ = rfile.Get(self.channel+'/'+process)
-            #hist_up   = hist_.Clone()#.Scale(self.up)
-            #hist_down = hist_.Clone()#.Scale(self.down)
-            #del hist_
-            #up   = 1 if self.up   == None else self.up
-            #down = 1 if self.down == None else self.down
-            #hist_up.Scale(  up)
-            #hist_down.Scale(down)
-            #hist_up.Write(process+'_'+self.name+'Up')
-            #hist_down.Write(process+'_'+self.name+'Down')
-            #del hist_up, hist_down
+                temp_bins = np.where(ud_bins < 0, 0.00001, ud_bins)
+                self.FillandWrite(temp_bins, process+'_'+self.name+ud_str)
             
     def makeUpDownHist(self):
         for process in self.ids:
-            df_ = self.df[self.df['Name'] == process].copy() 
+            df_ = self.df[self.df['Name'] == process]
             pt_cut = self.pt_cut(df_)
             for ud_str, ud in zip(['Up','Down'],[self.up,self.down]):
                 ud_bins, *_ =  np.histogram2d(x=df_['NN'][pt_cut], y=df_['M_sd'][pt_cut],
-                                             bins=[self.bins_dict['NN'],self.bins_dict['M_sd']],
-                                             weights=df_['Weight'][pt_cut]*df_[ud][pt_cut])
-                ud_bins = np.where(ud_bins.flatten() < 0, 0.0, ud_bins.flatten())                           
-                self.FillandWrite(ud_bins, ud_str)
+                                              bins=[self.bins_dict['NN'],self.bins_dict['M_sd']],
+                                              weights=(df_['Weight'][pt_cut]*df_[ud][pt_cut])/df_[ud.split('_')[0]][pt_cut])
+                ud_bins = np.where(ud_bins.flatten() < 0, 0.00001, ud_bins.flatten())                           
+                if not ud_bins.any(): continue
+                self.FillandWrite(ud_bins, process+'_'+self.name+ud_str)
 
     def makeMCStatHist(self):
         for process in self.ids:
-            df_ = self.df[self.df['Name'] == process].copy()
+            df_ = self.df[self.df['Name'] == process]
             pt_cut = self.pt_cut(df_)
             mcstat_bins, *_ =  np.histogram2d(x=df_['NN'][pt_cut], y=df_['M_sd'][pt_cut],
                                               bins=[self.bins_dict['NN'],self.bins_dict['M_sd']])
-            mcstat_bins = np.where(mcstat_bins.flatten() < 0, 0.0, np.sqrt(mcstat_bins.flatten()))
+            mcstat_bins = np.where(mcstat_bins.flatten() <= 0., 0.00001, mcstat_bins.flatten())
+            mcstat_bins_up   = (mcstat_bins+np.sqrt(mcstat_bins))/mcstat_bins
+            mcstat_bins_down = (mcstat_bins-np.sqrt(mcstat_bins))/mcstat_bins
             #
             h_bins, *_ =  np.histogram2d(x=df_['NN'][pt_cut], y=df_['M_sd'][pt_cut],
                                              bins=[self.bins_dict['NN'],self.bins_dict['M_sd']],
                                              weights=df_['Weight'][pt_cut])
-            for ud_str, ud_bins in zip(['Up','Down'],[np.add(h_bins.flatten(),mcstat_bins),np.add(h_bins.flatten(),-1*mcstat_bins)]):
-                temp_bins = np.where(ud_bins < 0, 0.0, ud_bins)
-                self.FillandWrite(temp_bins, ud_str)
+            h_bins = h_bins.flatten()
+            if not h_bins.any(): continue
+            for ud_str, ud_bins in zip(['Up','Down'],[h_bins*mcstat_bins_up,h_bins*mcstat_bins_down]):
+                temp_bins = np.where(ud_bins < 0, 0.00001, ud_bins)
+                self.FillandWrite(temp_bins, process+'_'+self.name+ud_str)
                 
 if __name__ == '__main__':
     files_samples_outDir = cfg.ZHbbFitCfg

@@ -205,12 +205,12 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             pass
         base_cuts = (
             #(df_[key_]['val']['NN'] <  .85) & 
-            #(df_[key_]['val']['NN'] >= .96) & 
+            (df_[key_]['val']['NN'] >= 0.00) & 
             
-            (df_[key_]['ak8']['H_pt'] >= 300)       &
-            (df_[key_]['ak8']['H_pt'] < 350)       &
-            (df_[key_]['val']['genZHpt'] >= 300)       &
-            (df_[key_]['val']['genZHpt'] < 350)       &
+            #(df_[key_]['ak8']['H_pt'] >= 300)       &
+            #(df_[key_]['ak8']['H_pt'] < 350)       &
+            #(df_[key_]['val']['genZHpt'] >= 300)       &
+            #(df_[key_]['val']['genZHpt'] < 350)       &
             #(df_[key_]['ak8']['n_H_sj_btag'] == 2) &
             #(df_[key_]['ak8']['n_b_Hbb'] == 2) &
             
@@ -237,7 +237,8 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             base_cuts = base_cuts & (df_[key_]['val']['Hbb'] == True)
         ########
         h.append( np.clip(kinem[base_cuts], bins[0], bins[-1]))
-        w.append( df_[key_]['val']['weight'][base_cuts] * np.sign(df_[key_]['val']['genWeight'][base_cuts]) * (137/41.9))
+        w.append( df_[key_]['val']['weight'][base_cuts] * np.sign(df_[key_]['val']['genWeight'][base_cuts]) * (137/41.9)*\
+                  df_[key_]['val']['BTagWeight'][base_cuts]*df_[key_]['val']['puWeight'][base_cuts]*df_[key_]['val']['PrefireWeight'][base_cuts])
         n_, bins_,_ = plt.hist(h[i_], weights=w[i_])
         integral.append( sum(n_[:]))
         la_label, color = kFit.getLaLabel(key_)
@@ -272,7 +273,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     fig.text(0.12,0.89, r"$\bf{CMS}$ $Simulation$",   fontsize = fontsize)
     fig.text(0.64,0.89, r'137 fb$^{-1}$ (13 TeV)', fontsize = fontsize)
     plt.xlabel(xlabel_, fontsize = fontsize)
-    plt.ylabel('Events / '+str((range_[-1])/n_bins)+' GeV', fontsize = fontsize)
+    plt.ylabel(f'Events / {range_[-1]/n_bins:.2f}', fontsize = fontsize)
     plt.xlim(range_)
     plt.yscale('log')
     plt.grid(True)
