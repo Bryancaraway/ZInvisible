@@ -42,7 +42,7 @@ ZHbbFitCfg    = (['result_2017'],#
                  
 #                 ['TTBarLep'],
                  skim_ZHbb_dir)
-ZHbbFitCut    = (operator.ge, 0)
+ZHbbFitCut    = (operator.ge, 4)
 ZHbbFitoverlap = 0
 ZHbbFitMaxJets = 100
 # ttZ/H->bb SM x-section
@@ -63,7 +63,7 @@ val_dir        = master_file_path+'val/'
 # Input Variables #
 LC = '_drLeptonCleaned'
 #
-ak4vars = ['Jet_btagCSVV2'+LC,'Jet_btagDeepB'+LC,'Jet_qgl'+LC]
+ak4vars = ['Jet_btagCSVV2'+LC,'Jet_btagDeepB'+LC]#'Jet_qgl'+LC]
 ak4lvec = {'TLV'         :['JetTLV'+LC],
            'TLVarsLC'    :['Jet_pt'+LC, 'Jet_eta'+LC, 'Jet_phi'+LC, 'Jet_E'+LC],
            'TLVars'      :['Jet_pt', 'Jet_eta', 'Jet_phi', 'Jet_E'],
@@ -91,6 +91,7 @@ sysvars   = ['BTagWeight_Up', 'BTagWeight_Down', 'puWeight_Up','puWeight_Down', 
              'ISRWeight_Up','ISRWeight_Down','PrefireWeight_Up','PrefireWeight_Down']
 valRCvars  = ['ResolvedTopCandidate_discriminator', 'ResolvedTopCandidate_j1Idx', 'ResolvedTopCandidate_j2Idx', 'ResolvedTopCandidate_j3Idx']
 label      = ['isTAllHad']
+
 # Derived Varialbes #
 ak4comb = 'true'
 ak8comb = 'true'
