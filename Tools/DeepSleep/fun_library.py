@@ -205,7 +205,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
             pass
         base_cuts = (
             #(df_[key_]['val']['NN'] <  .85) & 
-            (df_[key_]['val']['NN'] >= 0.00) & 
+            (df_[key_]['val']['NN'] >= 0.0) & 
             
             #(df_[key_]['ak8']['H_pt'] >= 300)       &
             #(df_[key_]['ak8']['H_pt'] < 350)       &
@@ -278,7 +278,7 @@ def StackedHisto(df_, kinem_, range_, xlabel_, n_bins=20):
     plt.yscale('log')
     plt.grid(True)
     #plt.setp(patches_, linewidth=0)
-    plt.legend(framealpha = 0.2)
+    plt.legend(framealpha = 1, ncol=2)
     plt.savefig('money_pdf/moneyplot'+xlabel_+'_.pdf', dpi = 300)
     plt.show()
     plt.close(fig)

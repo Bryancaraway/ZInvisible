@@ -104,8 +104,8 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 # Cuts for initial round of training #
                 # Ak4 Jet Pt > 30, Ak4 Jet Eta < 2.6 #
                 # after which nJet cut, check cfg    #
-                ak4_cuts = ((ak4lvec['pt'] >= 30) & (abs(ak4lvec['eta']) <= 2.4) # used to be 20, 2.6
-                            & (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
+                ak4_cuts = ((ak4lvec['pt'] >= 30) & (abs(ak4lvec['eta']) <= 2.4)) # used to be 20, 2.6
+                            #& (abs(ak4vars['btagCSVV2']) <= 1) & (abs(ak4vars['btagDeepB']) <= 1) & (abs(ak4vars['qgl']) <= 1))
                 #zptcut = (valvars['bestRecoZPt'] >= ZptCut_)
                 #
                 def applyAK4Cuts(dict_, cuts_, zptcut_=None, isak4=False):
@@ -240,8 +240,9 @@ def getData(files_ = cfg.files, samples_ = cfg.MCsamples, outDir_ = cfg.skim_dir
                 #
                 dfs     = reduceDF(dfs)
                 val_dfs = reduceDF(val_dfs)
-                print(dfs)
-                print(val_dfs)
+                #print(dfs)
+                #print(val_dfs)
+                outDir='test/'
                 dfs.to_pickle(      outDir_+file_+'_'+sample+'.pkl')
                 val_dfs.to_pickle(  outDir_+file_+'_'+sample+'_val.pkl')
                 with open(outDir_+file_+'_'+sample+'_valRC.pkl', 'wb') as handle:

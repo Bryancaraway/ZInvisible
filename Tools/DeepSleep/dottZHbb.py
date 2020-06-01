@@ -1,4 +1,4 @@
-#                      #  
+ #                      #  
 ##                    ##
 ########################                               
 ### Process TTZ/H,   ###
@@ -344,8 +344,8 @@ def ZHbbAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
             pickle.dump(df[key_]['ak8'], handle, protocol=pickle.HIGHEST_PROTOCOL)
     
 def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
-    df = kFit.retrieveData(files_, samples_,#
-                           #['TTZH','TTBarLep'], 
+    df = kFit.retrieveData(files_, #samples_,
+                           ['TTZH','TTBarLep'], 
                            outDir_, getgen_=False, getak8_=True)
     genMatched    = False
     sepGenMatched = False
@@ -377,7 +377,7 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     #StackedHisto(df, 'PrefireWeight_Down',              (-1,1), 'PrefireWeight_Down',   15)
     #StackedHisto(df, 'ISRWeight_Down',              (-2,-2), 'ISRWeight_Down',   15)
     #StackedHisto(df, 'genZHpt',              (0,450), 'genZHpt',   15)
-    StackedHisto(df, 'NN',              (0,1), 'NN_output',   20)
+    #StackedHisto(df, 'NN',              (0,1), 'NN_output',   20)
     #StackedHisto(df, 'spher',          (0,1),  'sphericity',   20)
     #StackedHisto(df, 'aplan',          (0,.5), 'aplanarity',   20)
     #StackedHisto(df, 'nonHbb_b1_dr',    (0,5), 'nonHbb_b1_dr', 20)
@@ -397,7 +397,7 @@ def plotAna(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
     #StackedHisto(df, 'lb_dr1',       (0,5),    'lb_dr1',      10)
     #StackedHisto(df, 'lb_dr2',       (0,5),    'lb_dr2',      10)
     #StackedHisto(df, 'n_H_sj_btag', (0,6),     'n_H_sj_btag',  6) 
-    #StackedHisto(df, 'nJets30',         (0,12),     'nJets30', 12)
+    StackedHisto(df, 'nJets30',         (0,12),     'nJets30', 12)
     #StackedHisto(df, 'H_score', (.4,1),     'HZbb_score',  20)
     #StackedHisto(df, 'best_rt_score', (.5,1), 'best_rt_score', 20)
     #StackedHisto(df, 'n_qnonHbb', (0,6),     'nq_nonHZbb',  6)
@@ -934,7 +934,8 @@ def matchLep(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
         val_df = df['val']
         gen_df = df['gen']
         fj_df  = df['ak8']
-        weight = df['val']['weight']*np.sign(df['val']['genWeight'])*(137/41.9)
+        weight = df['val']['weight']*np.sign(df['val']['genWeight'])*(137/41.9)*\
+                 df_[key_]['val']['BTagWeight']*df_[key_]['val']['puWeight']*df_[key_]['val']['PrefireWeight']
         #
         gen_ids = gen_df['GenPart_pdgId']
         gen_mom = gen_df['GenPart_genPartIdxMother']
@@ -1020,18 +1021,30 @@ def matchLep(files_, samples_, outDir_, overlap_ = cfg.ZHbbFitoverlap):
                 print('isZbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6)] ))
                 print('isZqq, ZH_pt >= 100, abs(ZH_eta) <= 2.6',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6)] ))
                 print('isHbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6)] ))
-                print('isZbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj,',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & ((zh_match_dR <= 0.8).sum() > 0)] ))
-                print('isZqq, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj,',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & ((zh_match_dR <= 0.8).sum() > 0)] ))
-                print('isHbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj,',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & ((zh_match_dR <= 0.8).sum() > 0)] ))
-                print('isZbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200,',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut)).sum() > 0)] ))
-                print('isZqq, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200,',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut)).sum() > 0)] ))
-                print('isHbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200,',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut)).sum() > 0)] ))
-                print('isZbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
-                print('isZqq, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
-                print('isHbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
-                print('isZbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,lep_match_dr,',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0) & ((lep_match_dR <= 0.1).sum() > 0)] ))
-                print('isZqq, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,lep_match_dr,',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0) & ((lep_match_dR <= 0.1).sum() > 0)] ))
-                print('isHbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,lep_match_dr,',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0) & ((lep_match_dR <= 0.1).sum() > 0)] ))
+                print('isZbb, ZH_pt >= 100, abs(ZH_eta) 2.0 - 2.6',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (abs(zh_eta) >= 2.0)] ))
+                print('isZqq, ZH_pt >= 100, abs(ZH_eta) 2.0 - 2.6',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (abs(zh_eta) >= 2.0)] ))
+                print('isHbb, ZH_pt >= 100, abs(ZH_eta) 2.0 - 2.6',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (abs(zh_eta) >= 2.0)] ))
+                print('isZbb, ZH_pt >= 100, abs(ZH_eta) 2.0 - 2.6, reco matched',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (abs(zh_eta) >= 2.0) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
+                print('isZqq, ZH_pt >= 100, abs(ZH_eta) 2.0 - 2.6, reco matched',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (abs(zh_eta) >= 2.0) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
+                print('isHbb, ZH_pt >= 100, abs(ZH_eta) 2.0 - 2.6, reco matched',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (abs(zh_eta) >= 2.0) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
+                print('isZbb, ZH_pt >= 100, abs(ZH_eta) 0.0 - 2.0',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.0) & (abs(zh_eta) >= 0.0)] ))
+                print('isZqq, ZH_pt >= 100, abs(ZH_eta) 0.0 - 2.0',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.0) & (abs(zh_eta) >= 0.0)] ))
+                print('isHbb, ZH_pt >= 100, abs(ZH_eta) 0.0 - 2.0',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.0) & (abs(zh_eta) >= 0.0)] ))
+                print('isZbb, ZH_pt >= 100, abs(ZH_eta) 0.0 - 2.0, reco matched',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.0) & (abs(zh_eta) >= 0.0) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
+                print('isZqq, ZH_pt >= 100, abs(ZH_eta) 0.0 - 2.0, reco matched',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.0) & (abs(zh_eta) >= 0.0) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
+                print('isHbb, ZH_pt >= 100, abs(ZH_eta) 0.0 - 2.0, reco matched',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.0) & (abs(zh_eta) >= 0.0) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
+                #print('isZbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj,',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & ((zh_match_dR <= 0.8).sum() > 0)] ))
+                #print('isZqq, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj,',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & ((zh_match_dR <= 0.8).sum() > 0)] ))
+                #print('isHbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj,',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & ((zh_match_dR <= 0.8).sum() > 0)] ))
+                #print('isZbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200,',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut)).sum() > 0)] ))
+                #print('isZqq, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200,',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut)).sum() > 0)] ))
+                #print('isHbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200,',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut)).sum() > 0)] ))
+                #print('isZbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
+                #print('isZqq, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
+                #print('isHbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0)] ))
+                #print('isZbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,lep_match_dr,',sum(weight[(isZbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0) & ((lep_match_dR <= 0.1).sum() > 0)] ))
+                #print('isZqq, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,lep_match_dr,',sum(weight[(isZqq.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0) & ((lep_match_dR <= 0.1).sum() > 0)] ))
+                #print('isHbb, ZH_pt >= 100, abs(ZH_eta) <= 2.6, dr_matched_fj, fj_pt >= 200, Hscore >= 0.0,lep_match_dr,',sum(weight[(isHbb.sum() > 0) & (zh_pt >= (pt_cut - 100.)) & (abs(zh_eta) <= 2.6) & (((zh_match_dR <= 0.8) & (fj_pt >= pt_cut) & (fj_Hscore >= 0.0)).sum() > 0) & ((lep_match_dR <= 0.1).sum() > 0)] ))
                 ## Test
                 ind_zh = np.argsort(fillne(zh_match_dR),axis=1)
                 zh_match_dr_sort = np.take_along_axis(fillne(zh_match_dR),ind_zh,axis=1)
@@ -1167,7 +1180,7 @@ if __name__ == '__main__':
 
     files_samples_outDir = cfg.ZHbbFitCfg
     #
-    #prD.getData(         *files_samples_outDir, *cfg.ZHbbFitCut, cfg.ZHbbFitMaxJets, treeDir_ = cfg.tree_dir+'_bb', getGenData_ = True, getak8var_=True)
+    prD.getData(         *files_samples_outDir, *cfg.ZHbbFitCut, cfg.ZHbbFitMaxJets, treeDir_ = cfg.tree_dir+'_bb', getGenData_ = True, getak8var_=True)
     ####prD.interpData(      *files_samples_outDir, cfg.ZHbbFitMaxJets)  
     #fixttH_weight(*files_samples_outDir, cfg.ZHbbFitoverlap)
     #lepCleaned_v2(*files_samples_outDir, cfg.ZHbbFitoverlap)
@@ -1178,5 +1191,5 @@ if __name__ == '__main__':
     #GenAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
     #GenAna_ttbar(*files_samples_outDir, cfg.ZHbbFitoverlap)
     ########
-    plotAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
+    #plotAna(*files_samples_outDir, cfg.ZHbbFitoverlap)
     #Bkg_Est(*files_samples_outDir, cfg.ZHbbFitoverlap)
