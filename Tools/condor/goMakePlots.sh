@@ -9,6 +9,7 @@ tar -xzf $2.tar.gz
 cd $2/
 mkdir -p src
 cd src
+export SCRAM_ARCH=slc7_amd64_gcc700
 scram b ProjectRename
 eval `scramv1 runtime -sh`
 

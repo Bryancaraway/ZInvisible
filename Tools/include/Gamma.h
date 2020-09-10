@@ -3,23 +3,11 @@
 
 #include "TypeDefinitions.h"
 #include "ZInvisible/Tools/PhotonTools.h"
-
 #include "SusyAnaTools/Tools/NTupleReader.h"
 #include "SusyAnaTools/Tools/customize.h"
 #include "SusyAnaTools/Tools/searchBins.h"
-#include "TopTagger/Tools/cpp/TaggerUtility.h"
-#include "TopTagger/Tools/cpp/PlotUtility.h"
 #include "ZInvisible/Tools/ScaleFactors.h"
 #include "ZInvisible/Tools/ScaleFactorsttBar.h"
-
-#include "TopTagger/TopTagger/interface/TopTagger.h"
-#include "TopTagger/TopTagger/interface/TTModule.h"
-#include "TopTagger/TopTagger/interface/TopTaggerUtilities.h"
-#include "TopTagger/TopTagger/interface/TopTaggerResults.h"
-#include "TopTagger/Tools/cpp/PlotUtility.h"
-
-#include "TopTagger/TopTagger/interface/TopObject.h"
-
 #include "TH1.h"
 #include "TH2.h"
 #include "TFile.h"
@@ -28,7 +16,6 @@
 #include "Math/VectorUtil.h"
 #include "TRandom3.h"
 #include "TVector2.h"
-
 #include <vector>
 #include <iostream>
 #include <string>
@@ -51,6 +38,7 @@ namespace plotterFunctions
         const auto& metphi                 = tr.getVar<data_t>("MET_phi");
         
         std::vector<TLorentzVector> GenPartTLV;
+        std::vector<int> GenPart_genPartIdxMother;
         std::vector<int> GenPart_pdgId;
         std::vector<int> GenPart_status;
         std::vector<int> GenPart_statusFlags;
@@ -62,22 +50,41 @@ namespace plotterFunctions
         enum ID myID = Medium;
         // the scale factors only exist in MC, not in Data
         std::vector<data_t> Photon_SF;
+        std::vector<data_t> Photon_SF_Err;
+            
+        data_t met_jesTotalUp       = 0.0;
+        data_t met_jesTotalDown     = 0.0;
+        data_t metphi_jesTotalUp    = 0.0;
+        data_t metphi_jesTotalDown  = 0.0;
         
         // get gen variables if they exist (MC only)
         bool isData = ! tr.checkBranch("GenPart_pt");
         if (! isData)
         {
-            GenPartTLV            = tr.getVec<TLorentzVector>("GenPartTLV"); // gen particles
-            GenPart_pdgId         = tr.getVec<int>("GenPart_pdgId");
-            GenPart_status        = tr.getVec<int>("GenPart_status");
-            GenPart_statusFlags   = tr.getVec<int>("GenPart_statusFlags");
+            GenPartTLV                  = tr.getVec<TLorentzVector>("GenPartTLV");
+            GenPart_genPartIdxMother    = tr.getVec<int>("GenPart_genPartIdxMother");
+            GenPart_pdgId               = tr.getVec<int>("GenPart_pdgId");
+            GenPart_status              = tr.getVec<int>("GenPart_status");
+            GenPart_statusFlags         = tr.getVec<int>("GenPart_statusFlags");
             //Photon_genPartIdx     = tr.getVec<int>("Photon_genPartIdx");
             //Photon_genPartFlav    = tr.getVec<unsigned char>("Photon_genPartFlav");
+            met_jesTotalUp              = tr.getVar<data_t>("MET_pt_jesTotalUp");
+            met_jesTotalDown            = tr.getVar<data_t>("MET_pt_jesTotalDown");
+            metphi_jesTotalUp           = tr.getVar<data_t>("MET_phi_jesTotalUp");
+            metphi_jesTotalDown         = tr.getVar<data_t>("MET_phi_jesTotalDown");
             
             // scale factor
             // Loose and Medium SF available; use Medium SF for Medium and Tight ID
-            if (myID == Loose) Photon_SF = tr.getVec<data_t>("Photon_LooseSF"); 
-            else               Photon_SF = tr.getVec<data_t>("Photon_MediumSF");
+            if (myID == Loose)
+            {
+                Photon_SF       = tr.getVec<data_t>("Photon_LooseSF"); 
+                Photon_SF_Err   = tr.getVec<data_t>("Photon_LooseSFErr"); 
+            }
+            else               
+            {
+                Photon_SF       = tr.getVec<data_t>("Photon_MediumSF");
+                Photon_SF_Err   = tr.getVec<data_t>("Photon_MediumSFErr");
+            }
         }
 
         // --- Photon ID --- //
@@ -89,7 +96,7 @@ namespace plotterFunctions
         std::vector<bool> Photon_PassMediumID;
         std::vector<bool> Photon_PassTightID;
         // 2016
-        if (year_.compare("2016") == 0)
+        if (year_.compare("2016") == 0 || tr.checkBranch("Photon_cutBased"))
         {
             tempID = tr.getVec<int>("Photon_cutBased");
             for (const auto& id : tempID)
@@ -127,16 +134,22 @@ namespace plotterFunctions
         //{
         //    std::cout << "ID = " << tempID[i] << "; (L, M, T) = (" << Photon_PassLooseID[i] << ", " << Photon_PassMediumID[i] << ", " << Photon_PassTightID[i] << "); myID = " << Photon_ID[i] << std::endl;
         //}
-        
-        float metWithPhoton = -999.9;
-        float metphiWithPhoton = -999.9;
-        float cutPhotonPt = -999.9;
-        float cutPhotonEta = -999.9;
-        float photonSF = 1.0;
+        float metWithPhoton                 = -999.9;
+        float metWithPhoton_jesTotalUp      = -999.9;
+        float metWithPhoton_jesTotalDown    = -999.9;
+        float metphiWithPhoton              = -999.9;
+        float metphiWithPhoton_jesTotalUp   = -999.9;
+        float metphiWithPhoton_jesTotalDown = -999.9;
+        float cutPhotonPt                   = -999.9;
+        float cutPhotonEta                  = -999.9;
+        float photonSF                      = 1.0;
+        float photonSF_Up                   = 1.0;
+        float photonSF_Down                 = 1.0;
         bool passPhotonSelection            = false;
         bool passPhotonSelectionDirect      = false;
         bool passPhotonSelectionFragmented  = false;
         bool passPhotonSelectionFake        = false;
+        bool passQCDSelection               = true;  // default should be true
         
         // if you use new, you need to register it or destroy it yourself to clear memory; otherwise there will be memory leaks
         // use createDerivedVec to avoid this issue 
@@ -160,12 +173,12 @@ namespace plotterFunctions
         auto& cutPhotonTLV                  = tr.createDerivedVec<TLorentzVector>("cutPhotonTLV");
         auto& cutPhotonJetIndex             = tr.createDerivedVec<int>("cutPhotonJetIndex");
         auto& cutPhotonSF                   = tr.createDerivedVec<float>("cutPhotonSF");
+        auto& cutPhotonSF_Up                = tr.createDerivedVec<float>("cutPhotonSF_Up");
+        auto& cutPhotonSF_Down              = tr.createDerivedVec<float>("cutPhotonSF_Down");
         auto& dR_GenPhotonGenParton         = tr.createDerivedVec<float>("dR_GenPhotonGenParton");
         auto& dR_RecoPhotonGenParton        = tr.createDerivedVec<float>("dR_RecoPhotonGenParton");
         auto& dR_RecoPhotonGenPhoton        = tr.createDerivedVec<float>("dR_RecoPhotonGenPhoton");
         
-        // don't use new if it will not be registered or destroyed
-        TLorentzVector metWithPhotonLVec;
 
         //NanoAOD Gen Particles Ref: https://cms-nanoaod-integration.web.cern.ch/integration/master-102X/mc102X_doc.html#GenPart
         //Particle Status Codes Ref: http://home.thep.lu.se/~torbjorn/pythia81html/ParticleProperties.html
@@ -176,26 +189,59 @@ namespace plotterFunctions
         {
             for (int i = 0; i < GenPartTLV.size(); ++i)
             {
-                int pdgId       = GenPart_pdgId[i];
-                int status      = GenPart_status[i];
-                int statusFlags = GenPart_statusFlags[i];
+                int genPartIdxMother    = GenPart_genPartIdxMother[i];
+                int pdgId               = GenPart_pdgId[i];
+                int status              = GenPart_status[i];
+                int statusFlags         = GenPart_statusFlags[i];
+                
+
+                // mother particle: default pdgId is 0 which means no mother particle found
+                int mother_pdgId        = 0;
+                // check that index is in range
+                if (genPartIdxMother >= 0 && genPartIdxMother < GenPart_pdgId.size())
+                {
+                    mother_pdgId        = GenPart_pdgId[genPartIdxMother];
+                }
+                
+                // testing
+                //printf("INFO: pdgId = %d, status = %d, statusFlags = %d, genPartIdxMother = %d, mother_pdgId = %d\n", pdgId, status, statusFlags, genPartIdxMother, mother_pdgId);
+                
+                
+                // --- old version for gen partons --- //
+                //if ( (abs(pdgId) > 0 && abs(pdgId) < 7) || pdgId == 9 || pdgId == 21 )
+                //{
+                //    // old version
+                //    if (status == 23 && (statusFlags & 0x80 == 0x80) )
+                //    {
+                //        if(verbose) printf("Found GenParton: pdgId = %d, status = %d, statusFlags = %d, genPartIdxMother = %d, mother_pdgId = %d\n", pdgId, status, statusFlags, genPartIdxMother, mother_pdgId);
+                //        GenPartonTLV.push_back(GenPartTLV[i]);
+                //    }
+                //}
+                
                 // Particle IDs
                 // quarks: +/- (1 to 6)
                 // gluons: + (9 and 21)
-                // outgoing particles of the hardest subprocess: status == 23
-                // stautsFlags is bitwise and already applied in post-processing
-                if ( (abs(pdgId) > 0 && abs(pdgId) < 7) || pdgId == 9 || pdgId == 21)
+                // statusFlag: isPrompt; statusFlag & 1 == 1
+                // outgoing particles of the hardest subprocess: GenPart_status = 23
+                // isHardProcess: GenPart_statusFlags & (0x80) == (0x80)
+                
+                if ( (abs(pdgId) > 0 && abs(pdgId) < 7) || pdgId == 9 || pdgId == 21 )
                 {
-                    //printf("Found GenParton: pdgId = %d, status = %d, statusFlags = %d\n", pdgId, status, statusFlags);
-                    GenPartonTLV.push_back(GenPartTLV[i]);
+                    if (statusFlags & 1 == 1)
+                    {
+                        if(verbose) printf("Found GenParton: pdgId = %d, status = %d, statusFlags = %d, genPartIdxMother = %d, mother_pdgId = %d\n", pdgId, status, statusFlags, genPartIdxMother, mother_pdgId);
+                        GenPartonTLV.push_back(GenPartTLV[i]);
+                    }
                 }
+
                 // Particle IDs
                 // photons: +22
                 // stable: status == 1
-                // stautsFlags is bitwise and already applied in post-processing
-                if (pdgId == 22 && status == 1)
+                // statusFlag: isPrompt; statusFlag & 1 == 1
+                
+                if (pdgId == 22 && status == 1 && (statusFlags & 1 == 1) )
                 {
-                    //printf("Found GenPhoton: pdgId = %d, status = %d, statusFlags = %d\n", pdgId, status, statusFlags);
+                    if(verbose) printf("Found GenPhoton: pdgId = %d, status = %d, statusFlags = %d, genPartIdxMother = %d, mother_pdgId = %d\n", pdgId, status, statusFlags, genPartIdxMother, mother_pdgId);
                     GenPhotonTLV.push_back(GenPartTLV[i]);
                 }
             }
@@ -222,6 +268,11 @@ namespace plotterFunctions
                 {
                     float dR = ROOT::Math::VectorUtil::DeltaR(GenPhotonTLV[i], genParton);
                     dR_GenPhotonGenParton.push_back(dR);
+                    if (dR > 0.4)
+                    {
+                        if (verbose) printf("Rejecting QCD event: DR(gen photon, gen parton) = %f\n", dR);
+                        passQCDSelection = false;
+                    }
                 }
             }
         }
@@ -270,6 +321,8 @@ namespace plotterFunctions
                         {
                             // get scale factor for MC
                             cutPhotonSF.push_back(Photon_SF[i]);
+                            cutPhotonSF_Up.push_back(Photon_SF[i] + Photon_SF_Err[i]);
+                            cutPhotonSF_Down.push_back(Photon_SF[i] - Photon_SF_Err[i]);
                             // calculate dR 
                             for (const auto& genParton : GenPartonTLV)
                             {
@@ -310,6 +363,8 @@ namespace plotterFunctions
                         {
                             // set scale factor to 1.0 for data
                             cutPhotonSF.push_back(1.0);
+                            cutPhotonSF_Up.push_back(1.0);
+                            cutPhotonSF_Down.push_back(1.0);
                         }
                     }
                 }
@@ -334,22 +389,45 @@ namespace plotterFunctions
         bool passPhotonSelectionLoose   = bool(LoosePhotonTLV.size() == 1);
         bool passPhotonSelectionMedium  = bool(MediumPhotonTLV.size() == 1);
         bool passPhotonSelectionTight   = bool(TightPhotonTLV.size() == 1);
+        
+        // -------------------- //
+        // --- Modified MET --- //
+        // -------------------- //
+        
+        // WARNING: don't use new if it will not be registered or destroyed
+        TLorentzVector metWithPhotonLVec;
+        TLorentzVector metWithPhotonLVec_jesTotalUp;
+        TLorentzVector metWithPhotonLVec_jesTotalDown;
 
         // set default met LVec using met and metphi
         // Pt, Eta, Phi, M
-        metWithPhotonLVec.SetPtEtaPhiM(met, 0.0, metphi, 0.0);
-        metWithPhoton     = metWithPhotonLVec.Pt();
-        metphiWithPhoton  = metWithPhotonLVec.Phi();
+        metWithPhotonLVec.SetPtEtaPhiM(                 met,                0.0, metphi,                0.0);
+        metWithPhotonLVec_jesTotalUp.SetPtEtaPhiM(      met_jesTotalUp,     0.0, metphi_jesTotalUp,     0.0);
+        metWithPhotonLVec_jesTotalDown.SetPtEtaPhiM(    met_jesTotalDown,   0.0, metphi_jesTotalDown,   0.0);
+        metWithPhoton                   = metWithPhotonLVec.Pt();
+        metWithPhoton_jesTotalUp        = metWithPhotonLVec_jesTotalUp.Pt();
+        metWithPhoton_jesTotalDown      = metWithPhotonLVec_jesTotalDown.Pt();
+        metphiWithPhoton                = metWithPhotonLVec.Phi();
+        metphiWithPhoton_jesTotalUp     = metWithPhotonLVec_jesTotalUp.Phi();
+        metphiWithPhoton_jesTotalDown   = metWithPhotonLVec_jesTotalDown.Phi();
         // pass photon selection and add to MET
         if (cutPhotonTLV.size() == 1)
         {
             cutPhotonPt  = cutPhotonTLV[0].Pt();
             cutPhotonEta = cutPhotonTLV[0].Eta();
             // Add LVecs of MET and Photon
-            metWithPhotonLVec  += cutPhotonTLV[0];
-            metWithPhoton       = metWithPhotonLVec.Pt();
-            metphiWithPhoton    = metWithPhotonLVec.Phi();
+            metWithPhotonLVec               += cutPhotonTLV[0];
+            metWithPhotonLVec_jesTotalUp    += cutPhotonTLV[0];
+            metWithPhotonLVec_jesTotalDown  += cutPhotonTLV[0];
+            metWithPhoton                   = metWithPhotonLVec.Pt();
+            metWithPhoton_jesTotalUp        = metWithPhotonLVec_jesTotalUp.Pt();
+            metWithPhoton_jesTotalDown      = metWithPhotonLVec_jesTotalDown.Pt();
+            metphiWithPhoton                = metWithPhotonLVec.Phi();
+            metphiWithPhoton_jesTotalUp     = metWithPhotonLVec_jesTotalUp.Phi();
+            metphiWithPhoton_jesTotalDown   = metWithPhotonLVec_jesTotalDown.Phi();
             photonSF            = cutPhotonSF[0];
+            photonSF_Up         = cutPhotonSF_Up[0];
+            photonSF_Down       = cutPhotonSF_Down[0];
             passPhotonSelection = true;
             // MC Only
             if (! isData)
@@ -359,23 +437,41 @@ namespace plotterFunctions
                 else if (FakePhotons.size() == 1)       passPhotonSelectionFake         = true;
             }                                               
         }
+        bool printEff = false;
+        if (printEff && passPhotonSelection)
+        {
+            printf("cutPhotonPt = %f ",             cutPhotonPt);
+            printf("cutPhotonEta = %f ",            cutPhotonEta);
+            printf("photonSF = %f ",                photonSF);
+            printf("photonSF_Up = %f ",             photonSF_Up);
+            printf("photonSF_Down = %f ",           photonSF_Down);
+            printf("passPhotonSelection = %i ",     passPhotonSelection);
+            printf("\n");
+        }
         
         // Register derived variables
-        tr.registerDerivedVar("metWithPhoton", metWithPhoton);
-        tr.registerDerivedVar("metphiWithPhoton", metphiWithPhoton);
-        tr.registerDerivedVar("photonSF", photonSF);
-        tr.registerDerivedVar("cutPhotonPt", cutPhotonPt);
-        tr.registerDerivedVar("cutPhotonEta", cutPhotonEta);
-        tr.registerDerivedVar("passPhotonSelectionLoose", passPhotonSelectionLoose);
-        tr.registerDerivedVar("passPhotonSelectionMedium", passPhotonSelectionMedium);
-        tr.registerDerivedVar("passPhotonSelectionTight", passPhotonSelectionTight);
-        tr.registerDerivedVar("passPhotonSelection", passPhotonSelection);
-        tr.registerDerivedVar("passPhotonSelectionDirect", passPhotonSelectionDirect);
-        tr.registerDerivedVar("passPhotonSelectionFragmented", passPhotonSelectionFragmented);
-        tr.registerDerivedVar("passPhotonSelectionFake", passPhotonSelectionFake);
-        tr.registerDerivedVar("min_dR_GenPhotonGenParton", min_dR_GenPhotonGenParton);
-        tr.registerDerivedVar("min_dR_RecoPhotonGenParton", min_dR_RecoPhotonGenParton);
-        tr.registerDerivedVar("min_dR_RecoPhotonGenPhoton", min_dR_RecoPhotonGenPhoton);
+        tr.registerDerivedVar("metWithPhoton",                  metWithPhoton);
+        tr.registerDerivedVar("metWithPhoton_jesTotalUp",       metWithPhoton_jesTotalUp);
+        tr.registerDerivedVar("metWithPhoton_jesTotalDown",     metWithPhoton_jesTotalDown);
+        tr.registerDerivedVar("metphiWithPhoton",               metphiWithPhoton);
+        tr.registerDerivedVar("metphiWithPhoton_jesTotalUp",    metphiWithPhoton_jesTotalUp);
+        tr.registerDerivedVar("metphiWithPhoton_jesTotalDown",  metphiWithPhoton_jesTotalDown);
+        tr.registerDerivedVar("photonSF",                       photonSF);
+        tr.registerDerivedVar("photonSF_Up",                    photonSF_Up);
+        tr.registerDerivedVar("photonSF_Down",                  photonSF_Down);
+        tr.registerDerivedVar("cutPhotonPt",                    cutPhotonPt);
+        tr.registerDerivedVar("cutPhotonEta",                   cutPhotonEta);
+        tr.registerDerivedVar("passPhotonSelectionLoose",       passPhotonSelectionLoose);
+        tr.registerDerivedVar("passPhotonSelectionMedium",      passPhotonSelectionMedium);
+        tr.registerDerivedVar("passPhotonSelectionTight",       passPhotonSelectionTight);
+        tr.registerDerivedVar("passPhotonSelection",            passPhotonSelection);
+        tr.registerDerivedVar("passPhotonSelectionDirect",      passPhotonSelectionDirect);
+        tr.registerDerivedVar("passPhotonSelectionFragmented",  passPhotonSelectionFragmented);
+        tr.registerDerivedVar("passPhotonSelectionFake",        passPhotonSelectionFake);
+        tr.registerDerivedVar("passQCDSelection",               passQCDSelection);
+        tr.registerDerivedVar("min_dR_GenPhotonGenParton",      min_dR_GenPhotonGenParton);
+        tr.registerDerivedVar("min_dR_RecoPhotonGenParton",     min_dR_RecoPhotonGenParton);
+        tr.registerDerivedVar("min_dR_RecoPhotonGenPhoton",     min_dR_RecoPhotonGenPhoton);
     }
 
     public:

@@ -466,7 +466,6 @@ void Plotter::createHistsFromTuple()
 				    tupledir->Write();
 				  }
 				tupledir->cd();
-				
 				bool tofill = false;
 				for(const AnaSamples::FileSummary& fileToComp : ds.files)
 				  {
@@ -475,7 +474,7 @@ void Plotter::createHistsFromTuple()
 					tofill = true;
 				      }
 				  }
-				std::cout<<tofill<<std::endl;
+				//std::cout<<tofill<<std::endl;
 				if(tofill)
 				  {
 				    TTree *tupletree = (TTree*) tupledir->Get(ds.label.c_str());

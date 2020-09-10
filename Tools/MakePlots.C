@@ -25,23 +25,24 @@ int main(int argc, char* argv[])
     int opt;
     int option_index = 0;
     static struct option long_options[] = {
-        {"plot",             no_argument, 0, 'p'},
-        {"savehist",         no_argument, 0, 's'},
-        {"savetuple",        no_argument, 0, 't'},
-        {"fromFile",         no_argument, 0, 'f'},
-        {"condor",           no_argument, 0, 'c'},
-        {"dophotons",        no_argument, 0, 'g'},
-        {"doleptons",        no_argument, 0, 'l'},
-        {"verbose",          no_argument, 0, 'v'},
-        {"filename",   required_argument, 0, 'I'},
-        {"dataSets",   required_argument, 0, 'D'},
-        {"numFiles",   required_argument, 0, 'N'},
-        {"startFile",  required_argument, 0, 'M'},
-        {"numEvts",    required_argument, 0, 'E'},
-        {"plotDir",    required_argument, 0, 'P'},
-        {"luminosity", required_argument, 0, 'L'},
-        {"sbEra",      required_argument, 0, 'S'},
-        {"era",        required_argument, 0, 'Y'}
+      {"doPre",            no_argument, 0, 'b'},
+      {"plot",             no_argument, 0, 'p'},
+      {"savehist",         no_argument, 0, 's'},
+      {"savetuple",        no_argument, 0, 't'},
+      {"fromFile",         no_argument, 0, 'f'},
+      {"condor",           no_argument, 0, 'c'},
+      {"dophotons",        no_argument, 0, 'g'},
+      {"doleptons",        no_argument, 0, 'l'},
+      {"verbose",          no_argument, 0, 'v'},
+      {"filename",   required_argument, 0, 'I'},
+      {"dataSets",   required_argument, 0, 'D'},
+      {"numFiles",   required_argument, 0, 'N'},
+      {"startFile",  required_argument, 0, 'M'},
+      {"numEvts",    required_argument, 0, 'E'},
+      {"plotDir",    required_argument, 0, 'P'},
+      {"luminosity", required_argument, 0, 'L'},
+      {"sbEra",      required_argument, 0, 'S'},
+      {"era",        required_argument, 0, 'Y'}
     };
 
     bool runOnCondor        = false;
@@ -57,6 +58,7 @@ int main(int argc, char* argv[])
     bool doPlots = true;
     bool doSave = true;
     bool doTuple = true;
+    bool doPre   = false;
     bool fromTuple = true;
     bool verbose = false;
     string filename = "histoutput.root", dataSets = "", sampleloc = AnaSamples::fileDir, plotDir = "plots";
@@ -68,12 +70,16 @@ int main(int argc, char* argv[])
     std::string sbEra = "SB_v1_2017";
     std::string era  = "";
     std::string year = "";
-    while((opt = getopt_long(argc, argv, "pstfcglvI:D:N:M:E:P:L:S:Y:", long_options, &option_index)) != -1)
+    while((opt = getopt_long(argc, argv, "bpstfcglvI:D:N:M:E:P:L:S:Y:", long_options, &option_index)) != -1)
     {
         switch(opt)
         {
+	case 'b':
+	  doPre = true;
+	  break;
+	  
         case 'p':
-            if(doPlots) doSave  = doTuple = false;
+	  if(doPlots) doSave  = doTuple = false;
             else        doPlots = true;
             break;
 
@@ -258,9 +264,15 @@ int main(int argc, char* argv[])
     // --- follow the syntax; order matters for your arguments --- //
     
     //SampleSet::SampleSet(std::string file, bool isCondor, double lumi)
-    AnaSamples::SampleSet        SS_2016("sampleSets_PostProcessed_2016.cfg", runOnCondor, lumi_2016);
-    AnaSamples::SampleSet        SS_2017("sampleSets_PostProcessed_2017.cfg", runOnCondor, lumi_2017);
-    AnaSamples::SampleSet        SS_2018("sampleSets_PostProcessed_2018.cfg", runOnCondor, lumi_2018);
+    std::string sample_step = "Post";
+    if (doPre)
+      {
+	sample_step = "Pre";
+      }
+     
+    AnaSamples::SampleSet        SS_2016("sampleSets_"+sample_step+"Processed_2016.cfg", runOnCondor, lumi_2016);
+    AnaSamples::SampleSet        SS_2017("sampleSets_"+sample_step+"Processed_2017.cfg", runOnCondor, lumi_2017);
+    AnaSamples::SampleSet        SS_2018("sampleSets_"+sample_step+"Processed_2018.cfg", runOnCondor, lumi_2018);
     
     //SampleCollection::SampleCollection(const std::string& file, SampleSet& samples)
     AnaSamples::SampleCollection SC_2016("sampleCollections_2016.cfg", SS_2016);
@@ -479,43 +491,232 @@ int main(int argc, char* argv[])
 
     //vector<Plotter::HistSummary> vh;
     vector<PHS> vh;
-    
+    //////////////===================================================================================================/////////////////////////
     std::vector<Plotter::Scanner> scanners;
     std::string tag = "Training";
     std::string lClean = "_drLeptonCleaned";
     std::set<std::string> vars = {
-      "passGenCuts", "isZToLL", "isTAllHad",                                                                                 // gen validation                
-      "GenPart_pdgId", "GenPart_genPartIdxMother", "GenPart_status" ,                                                        // gen validation
-      "GenPart_pt", "GenPart_eta", "GenPart_phi", "GenPart_E",                                                               // gen validation
+      
+      "nResolvedTops"+lClean, "nMergedTops"+lClean, "nBottoms"+lClean, "nSoftBottoms"+lClean, "nJets30"+lClean,              // validation
+      "MET_pt", "MET_phi", "Pass_IsoTrkVeto", "Pass_TauVeto", "Pass_ElecVeto", "Pass_MuonVeto",                              // validation
+      "passSingleLepElec", "passSingleLepMu", "Lep_pt", "Lep_eta" ,"Lep_phi", "Lep_E",                                       // validation
 
-      "nResolvedTops"+lClean, "nMergedTops"+lClean, "nBottoms"+lClean, "nJets30"+lClean,                                     // validation
-      "bestRecoZPt", "passElecZinvSelOnZMassPeak", "passMuZinvSelOnZMassPeak", "genWeight",                                  // validation
+      "Muon_pt","Muon_eta","Muon_phi","Muon_mass",
+      "Muon_miniPFRelIso_all",
+      "Muon_FlagId", "Muon_pfRelIso04_all",
+      "Electron_pt","Electron_eta","Electron_phi","Electron_mass",
+      "Electron_miniPFRelIso_all", "Electron_cutBasedNoIso", "Electron_cutBased", 
+
       "ResolvedTopCandidate_discriminator",                                                                                  // validation
       "ResolvedTopCandidate_j1Idx", "ResolvedTopCandidate_j2Idx", "ResolvedTopCandidate_j3Idx",                              // validation
+      //"ResolvedTopCandidate_pt", "ResolvedTopCandidate_eta", "ResolvedTopCandidate_phi", "ResolvedTopCandidate_mass",        // validation
 
-      "Jet_btagCSVV2"+lClean, "Jet_btagDeepB"+lClean, "Jet_qgl"+lClean,                                                      // training 1 (AK4)
-      "Jet_pt"+lClean, "Jet_eta"+lClean, "Jet_phi"+lClean, "Jet_E"+lClean,                                                   // training 1 (AK4)
-      "Jet_pt", "Jet_eta", "Jet_phi", "Jet_E",                                                                               // training 1 (AK4)
+      "Jet_btagDeepB"+lClean, "Jet_deepFlavourb"+lClean, "Jet_deepFlavourbb"+lClean,                                            // training 1 (AK4)
+      "Jet_deepFlavourlepb"+lClean, "Jet_deepFlavouruds"+lClean,                                                                // training 1 (AK4)
+      "Jet_pt"+lClean, "Jet_eta"+lClean, "Jet_phi"+lClean, "Jet_mass"+lClean,                                                   // training 1 (AK4)
+      //"Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass",                                                                               // training 1 (AK4)
+      "Jet_lepcleaned_idx", // test
 
-      "FatJet_pt"+lClean, "FatJet_eta"+lClean, "FatJet_phi"+lClean, "FatJet_E"+lClean,                                       // training 2 (AK8)
-      "FatJet_pt", "FatJet_eta", "FatJet_phi", "FatJet_E",                                                                   // training 2 (AK8)
-      "FatJet_msoftdrop"+lClean, "FatJet_mass"+lClean,                                                                       // training 2 (AK8)
-      "FatJet_tau1"+lClean, "FatJet_tau2"+lClean, "FatJet_tau3"+lClean, "FatJet_tau4"+lClean,                                // training 2 (AK8) 
-      "FatJet_deepTag_WvsQCD"+lClean, "FatJet_deepTag_TvsQCD"+lClean, "FatJet_deepTag_ZvsQCD"+lClean                         // training 2 (AK8) 
+      "FatJet_pt"+lClean, "FatJet_eta"+lClean, "FatJet_phi"+lClean, "FatJet_mass"+lClean,                                       // training 2 (AK8)
+      "FatJet_msoftdrop"+lClean, 
+      "FatJet_rawFactor"+lClean,"FatJet_area"+lClean,
+      "SubJet_rawFactor",
+
+      //"FatJet_pt", "FatJet_eta", "FatJet_phi", "FatJet_E",                                                                   // training 2 (AK8)
+      //"FatJet_tau1"+lClean, "FatJet_tau2"+lClean, "FatJet_tau3"+lClean, "FatJet_tau4"+lClean,                                // training 2 (AK8) 
+      "FatJet_deepTag_WvsQCD"+lClean, "FatJet_deepTag_TvsQCD"+lClean, "FatJet_deepTag_ZvsQCD"+lClean,                        // training 2 (AK8)
+      "FatJet_deepTagMD_H4qvsQCD"+lClean, "FatJet_deepTagMD_HbbvsQCD"+lClean, "FatJet_deepTagMD_TvsQCD"+lClean,              // training 2 (AK8)
+      "FatJet_deepTagMD_WvsQCD"+lClean, "FatJet_deepTagMD_ZHbbvsQCD"+lClean, "FatJet_deepTagMD_ZHccvsQCD"+lClean,            // training 2 (AK8)
+      "FatJet_deepTagMD_ZbbvsQCD"+lClean, "FatJet_deepTagMD_ZvsQCD"+lClean, "FatJet_deepTagMD_bbvsLight"+lClean,             // training 2 (AK8)
+      "FatJet_deepTagMD_ccvsLight"+lClean,                                                                                   // training 2 (AK8)
+      "FatJet_btagDeepB"+lClean, "FatJet_btagHbb"+lClean,                                                                    // training 2 (AK8)
+      "FatJet_subJetIdx1"+lClean, "FatJet_subJetIdx2"+lClean,                                                                // training 2 (ak8)
+      "SubJet_pt", "SubJet_eta", "SubJet_phi", "SubJet_mass", "SubJet_btagDeepB",                                            // training 2 (ak8) 
+      
+      "SAT_Pass_HEMVeto_DataOnly"+lClean, "SAT_Pass_HEMVeto_DataAndMC"+lClean, "SAT_HEMVetoWeight"+lClean, // 2018 only
+      "SAT_Pass_HEMVeto_DataOnly", "SAT_Pass_HEMVeto_DataAndMC", "SAT_HEMVetoWeight", // 2018 only
+      "run",
+      "Pass_trigger_muon", "Pass_trigger_electron",           // Trigger
+      "HLT_IsoMu24" , "HLT_IsoMu27", "HLT_Mu50", 
+      "HLT_Ele27_WPTight_Gsf", "HLT_Photon175",
+      "HLT_Ele115_CaloIdVT_GsfTrkIdT", "HLT_Ele50_CaloIdVT_GsfTrkIdT_PFJet165"
     };
+
+    std::set<std::string> mc_vars = {
+      "GenPart_pdgId", "GenPart_genPartIdxMother", "GenPart_status" , "genTtbarId",                                                     // gen validation
+      "GenPart_pt", "GenPart_eta", "GenPart_phi", "GenPart_mass","genWeight",
+
+      "GenJetAK8_pt", "GenJetAK8_eta", "GenJetAK8_phi", "GenJetAK8_mass",
+      //"SubGenJetAK8_pt", "SubGenJetAK8_eta", "SubGenJetAK8_phi", "SubGenJetAK8_mass",
+      
+
+      "LHEScaleWeight","PSWeight", // systematic
+
+      "BTagWeight","puWeight","ISRWeight",
+      "BTagWeightHeavy","BTagWeightLight",
+      "Stop0l_topptWeight","Stop0l_topMGPowWeight", //"Stop0l_topptOnly"    // Weights // for 2018
+      // JES JER related variables
+      "Jet_lepcleaned_idx_jesTotalUp","Jet_lepcleaned_idx_jesTotalDown","Jet_lepcleaned_idx_jerUp","Jet_lepcleaned_idx_jerDown", // test
+
+      "Jet_pt_jesTotalUp"+lClean, "Jet_pt_jesTotalDown"+lClean, "Jet_mass_jesTotalUp"+lClean, "Jet_mass_jesTotalDown"+lClean,// Systematics
+      "Jet_pt_jerUp"+lClean, "Jet_pt_jerDown"+lClean, "Jet_mass_jerUp"+lClean, "Jet_mass_jerDown"+lClean,                    // Systematics
+      //"Jet_pt_jesTotalUp", "Jet_pt_jesTotalDown", "Jet_mass_jesTotalUp", "Jet_mass_jesTotalDown",// Systematics
+      //"Jet_pt_jerUp", "Jet_pt_jerDown", "Jet_mass_jerUp", "Jet_mass_jerDown",                    // Systematics
+      "MET_pt_jesTotalUp", "MET_pt_jesTotalDown", "MET_pt_jerUp", "MET_pt_jerDown",
+
+      // HEM veto weight, njets , nbottoms
+      "nJets30_JESUp"+lClean,"nJets30_JESDown"+lClean,"nJets30_JERUp"+lClean,"nJets30_JERDown"+lClean,
+      "nBottoms_JESUp"+lClean,"nBottoms_JESDown"+lClean,"nBottoms_JERUp"+lClean,"nBottoms_JERDown"+lClean,
+
+      "ResolvedTopCandidate_JESUp_discriminator",                                                                                  // validation
+      "ResolvedTopCandidate_JESUp_j1Idx", "ResolvedTopCandidate_JESUp_j2Idx", "ResolvedTopCandidate_JESUp_j3Idx",                              // validation
+      //"ResolvedTopCandidate_JESUp_pt", "ResolvedTopCandidate_JESUp_eta", "ResolvedTopCandidate_JESUp_phi", "ResolvedTopCandidate_JESUp_mass",        // validation
+      "ResolvedTopCandidate_JESDown_discriminator",                                                                                  // validation
+      "ResolvedTopCandidate_JESDown_j1Idx", "ResolvedTopCandidate_JESDown_j2Idx", "ResolvedTopCandidate_JESDown_j3Idx",                              // validation
+      //"ResolvedTopCandidate_JESDown_pt", "ResolvedTopCandidate_JESDown_eta", "ResolvedTopCandidate_JESDown_phi", "ResolvedTopCandidate_JESDown_mass",        // validation
+      // end JES, JER variations
+      "BTagWeight_Up", "BTagWeight_Down",                                                                                    // Systematics
+      "BTagWeightLight_Up", "BTagWeightLight_Down",                                                                                    // Systematics
+      "BTagWeightHeavy_Up", "BTagWeightHeavy_Down",                                                                                    // Systematics
+      "puWeight_Up","puWeight_Down", "pdfWeight_Up","pdfWeight_Down",
+      //"Stop0l_topptOnly_Up","Stop0l_topptOnly_Down",   // dont work atm       // Systematics
+      "ISRWeight_Up","ISRWeight_Down",
+      //
+      "SAT_HEMVetoWeight_JESUp"+lClean, "SAT_HEMVetoWeight_JESDown"+lClean,
+      "SAT_HEMVetoWeight_JERUp"+lClean, "SAT_HEMVetoWeight_JERDown"+lClean,
+      "SAT_HEMVetoWeight_JESUp", "SAT_HEMVetoWeight_JESDown",
+      "SAT_HEMVetoWeight_JERUp", "SAT_HEMVetoWeight_JERDown"
+      
+      //"Stop0l_trigger_eff_Electron_pt", "Stop0l_trigger_eff_Muon_pt", 
+      //"Stop0l_trigger_eff_Electron_eta", "Stop0l_trigger_eff_Muon_eta", 
+      //"Stop0l_trigger_eff_Electron_pt_up", "Stop0l_trigger_eff_Muon_pt_up", 
+      //"Stop0l_trigger_eff_Electron_eta_up", "Stop0l_trigger_eff_Muon_eta_up", 
+      //"Stop0l_trigger_eff_Electron_pt_down", "Stop0l_trigger_eff_Muon_pt_down", 
+      //"Stop0l_trigger_eff_Electron_eta_down", "Stop0l_trigger_eff_Muon_eta_down", 
+      //
+      //"Stop0l_trigger_eff_Photon_pt", "Stop0l_trigger_eff_Photon_eta_up",
+      //"Stop0l_trigger_eff_Photon_pt_up",  "Stop0l_trigger_eff_Photon_pt_down", 
+      //"Stop0l_trigger_eff_Photon_eta_up", "Stop0l_trigger_eff_Photon_eta_down", 
+    };
+    std::set<std::string> hlt_vars_non2016 = {
+      "HLT_Ele35_WPTight_Gsf", "HLT_Ele32_WPTight_Gsf_L1DoubleEG",
+      "HLT_Photon200", "HLT_Ele28_eta2p1_WPTight_Gsf_HT150", "HLT_Ele32_WPTight_Gsf",
+      "HLT_OldMu100", "HLT_TkMu100"
+
+    };
+    //std::set<std::string> hlt_vars_non2017 = {
+    //  "HLT_Ele50_CaloIdVT_GsfTrkIdT_PFJet165",
+    //  "HLT_Ele115_CaloIdVT_GsfTrkIdT"
+    //};
+    std::set<std::string> mc_vars_non2018 = {
+      "PrefireWeight",
+      "PrefireWeight_Up","PrefireWeight_Down"
+    };
+    std::cout<<"\n"<<dataSets<<"\t"<<MuonDataset<<"\t"<<dataSets.find(MuonDataset)<<"\t"<<era<<"\n";
+    if (era.find("2016")!=std::string::npos){
+      vars.insert("HLT_IsoTkMu24");
+      vars.insert("HLT_TkMu50");
+      vars.insert("HLT_Ele45_CaloIdVT_GsfTrkIdT_PFJet200_PFJet50");
+      
+    }
+    //if (era.find("2018")!=std::string::npos){
+    //  //vars.insert("HLT_Ele32_WPTight_Gsf");
+    //  vars.insert("HLT_OldMu100");
+    //  vars.insert("HLT_TkMu100");
+    //}
+    if (era.find("2016")==std::string::npos){ 
+      vars.insert(hlt_vars_non2016.begin(),hlt_vars_non2016.end());
+    }
+    //if (era.find("2017")==std::string::npos){ 
+    //  vars.insert(hlt_vars_non2017.begin(),hlt_vars_non2017.end());
+    //}
+    if (era.find("2018")==std::string::npos){
+      mc_vars.insert(mc_vars_non2018.begin(), mc_vars_non2018.end());
+    }
+    // check if not data
+    if (dataSets.find(ElectronDataset)==std::string::npos && dataSets.find(MuonDataset)==std::string::npos){
+      vars.insert(mc_vars.begin(), mc_vars.end());
+    }
+
     //// fill in PDS here (DataSets to train on) 
     std::vector< std::pair<std::string,std::string> > lepTags = {
-      {tag,"passElecZinvSelOnZMassPeak"},
-      {tag,"passMuZinvSelOnZMassPeak"}};
+      //{tag,        "passElecZinvSelOnZMassPeak"},
+      //{tag,        "passMuZinvSelOnZMassPeak"},
+      //{tag+"_Inv", "Pass_LeptonVeto;MET_pt>200"},
+      //{tag+"_bb",  "passSingleLepMu;passFatJetPt;nBottoms_drLeptonCleaned>=2;nJets30_drLeptonCleaned>=4;MET_pt>=20"},
+      //{tag+"_bb",  "passSingleLepElec;passFatJetPt;nBottoms_drLeptonCleaned>=2;nJets30_drLeptonCleaned>=4;MET_pt>=20"}};
+      //{tag+"_bb",  "passLooseSingleLep;passFatJetPt;nBottoms_drLeptonCleaned>=2;nJets30_drLeptonCleaned>=4;MET_pt>=20"}};
+      //{tag+"_bb",  "passBCSingleLep;passFatJetPt;pass_BC_nbs_drLeptonCleaned;pass_BC_njet_drLeptonCleaned"}};
+      {tag+"_bb",  "passSingleLep;passBCFatJetPt_drLeptonCleaned;pass_BC_nbs_drLeptonCleaned;pass_BC_njet_drLeptonCleaned"}};
     for ( std::pair<std::string,std::string> lepType : lepTags) {
-      PDS dsDY    = PDS("DY",        fileMap["DYJetsToLL"+eraTag], lepType.second,              "");
-      PDS dsTTZ   = PDS("TTZ",       fileMap["TTZ"+eraTag],        lepType.second,              "");
-      PDS dsTTHad = PDS("TTBarHad",  fileMap["TTbarInc"+eraTag],   lepType.second+";isTAllHad", "");
-      PDS dsTTLep = PDS("TTBarLep",  fileMap["TTbar"+eraTag],      lepType.second,              "");
-      PDS dsVV    = PDS("DiBoson",   fileMap["Diboson"+eraTag],    lepType.second,              "");
-      PDS dsVVV   = PDS("TriBoson",  fileMap["TriBoson"+eraTag],   lepType.second,              "");
-      PDS dsTTX   = PDS("TTX",       fileMap["TTX"+eraTag],        lepType.second,              "");
-      scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsDY, dsTTZ, dsTTHad, dsTTLep, dsVV, dsVVV, dsTTX}));
+	PDS dsDY      = PDS("DY",        fileMap["DYJetsToLL"+eraTag],  lepType.second,              "");
+	PDS dsZJ      = PDS("ZJets",     fileMap["ZJetsToNuNu"+eraTag], lepType.second,              "");
+	PDS dsWJ      = PDS("WJets",     fileMap["WJetsToLNu"+eraTag],  lepType.second,              "");
+	PDS dsTTZ     = PDS("TTZ",       fileMap["TTZToLLNuNu"+eraTag], lepType.second,              "");
+	//PDS dsTTHad   = PDS("TTBarHad",  fileMap["TTbarHad"+eraTag],    lepType.second+";isTAllHad",  ""); // for non powheg
+	//PDS dsTTLep   = PDS("TTBarLep",  fileMap["TTbarNoHad"+eraTag],  lepType.second,              "");
+	PDS dsTTHad_pow   = PDS("TTBarHad_pow",  fileMap["TTbarHad_pow"+eraTag],    lepType.second,             "");
+	PDS dsTTSemi_pow   = PDS("TTBarSemi_pow",  fileMap["TTbarSemi_pow"+eraTag],  lepType.second,              "");
+	PDS dsTTDi_pow   = PDS("TTBarDi_pow",  fileMap["TTbarDi_pow"+eraTag],  lepType.second,              "");
+	PDS dsTTbbHad_pow   = PDS("TTbbHad_pow",  fileMap["TTbbHad_pow"+eraTag],  lepType.second,              "");
+	PDS dsTTbbSemi_pow   = PDS("TTbbSemi_pow",  fileMap["TTbbSemi_pow"+eraTag],  lepType.second,              "");
+	PDS dsTTbbDi_pow   = PDS("TTbbDi_pow",  fileMap["TTbbDi_pow"+eraTag],  lepType.second,              "");
+	// ttbar dedicated systematcis 
+	PDS dsTTHad_pow_erdOn   = PDS("TTBarHad_pow_erdOn",      fileMap["TTbarHad_pow_erdOn"+eraTag],    lepType.second,             "");
+	PDS dsTTHad_pow_UEDown   = PDS("TTBarHad_pow_UEDown",     fileMap["TTbarHad_pow_UEDown"+eraTag],    lepType.second,             "");
+	PDS dsTTHad_pow_UEUp   = PDS("TTBarHad_pow_UEDUp",      fileMap["TTbarHad_pow_UEUp"+eraTag],    lepType.second,             "");
+	PDS dsTTHad_pow_hdampDown   = PDS("TTBarHad_pow_hdampDown",  fileMap["TTbarHad_pow_hdampDown"+eraTag],    lepType.second,             "");
+	PDS dsTTHad_pow_hdampUp   = PDS("TTBarHad_pow_hdampUp",    fileMap["TTbarHad_pow_hdampUp"+eraTag],    lepType.second,             "");
+	//
+	PDS dsTTSemi_pow_erdOn   = PDS("TTBarSemi_pow_erdOn",      fileMap["TTbarSemi_pow_erdOn"+eraTag],    lepType.second,             "");
+	PDS dsTTSemi_pow_UEDown   = PDS("TTBarSemi_pow_UEDown",     fileMap["TTbarSemi_pow_UEDown"+eraTag],    lepType.second,             "");
+	PDS dsTTSemi_pow_UEUp   = PDS("TTBarSemi_pow_UEDUp",      fileMap["TTbarSemi_pow_UEUp"+eraTag],    lepType.second,             "");
+	PDS dsTTSemi_pow_hdampDown   = PDS("TTBarSemi_pow_hdampDown",  fileMap["TTbarSemi_pow_hdampDown"+eraTag],    lepType.second,             "");
+	PDS dsTTSemi_pow_hdampUp   = PDS("TTBarSemi_pow_hdampUp",    fileMap["TTbarSemi_pow_hdampUp"+eraTag],    lepType.second,             "");
+	//
+	PDS dsTTDi_pow_erdOn   = PDS("TTBarDi_pow_erdOn",      fileMap["TTbarDi_pow_erdOn"+eraTag],    lepType.second,             "");
+	PDS dsTTDi_pow_UEDown   = PDS("TTBarDi_pow_UEDown",     fileMap["TTbarDi_pow_UEDown"+eraTag],    lepType.second,             "");
+	PDS dsTTDi_pow_UEUp   = PDS("TTBarDi_pow_UEDUp",      fileMap["TTbarDi_pow_UEUp"+eraTag],    lepType.second,             "");
+	PDS dsTTDi_pow_hdampDown   = PDS("TTBarDi_pow_hdampDown",  fileMap["TTbarDi_pow_hdampDown"+eraTag],    lepType.second,             "");
+	PDS dsTTDi_pow_hdampUp   = PDS("TTBarDi_pow_hdampUp",    fileMap["TTbarDi_pow_hdampUp"+eraTag],    lepType.second,             "");
+	//
+	PDS dsTTbbHad_pow_hdampDown   = PDS("TTbbHad_pow_hdampDown",  fileMap["TTbbHad_pow_hdampDown"+eraTag],    lepType.second,             "");
+	PDS dsTTbbHad_pow_hdampUp   = PDS("TTbbHad_pow_hdampUp",    fileMap["TTbbHad_pow_hdampUp"+eraTag],    lepType.second,             "");
+	//
+	PDS dsTTbbSemi_pow_hdampDown   = PDS("TTbbSemi_pow_hdampDown",  fileMap["TTbbSemi_pow_hdampDown"+eraTag],    lepType.second,             "");
+	PDS dsTTbbSemi_pow_hdampUp   = PDS("TTbbSemi_pow_hdampUp",    fileMap["TTbbSemi_pow_hdampUp"+eraTag],    lepType.second,             "");
+	//
+	PDS dsTTbbDi_pow_hdampDown   = PDS("TTbbDi_pow_hdampDown",  fileMap["TTbbDi_pow_hdampDown"+eraTag],    lepType.second,             "");
+	PDS dsTTbbDi_pow_hdampUp   = PDS("TTbbDi_pow_hdampUp",    fileMap["TTbbDi_pow_hdampUp"+eraTag],    lepType.second,             "");
+	//
+	PDS dsVV      = PDS("DiBoson",   fileMap["Diboson"+eraTag],     lepType.second,              "");
+	PDS dsVVV     = PDS("TriBoson",  fileMap["Triboson"+eraTag],    lepType.second,              "");
+	PDS dsTTX     = PDS("TTX",       fileMap["TTX"+eraTag],         lepType.second,              "");
+	PDS dsTTXqq   = PDS("TTX",       fileMap["TTXqq"+eraTag],       lepType.second,              "");
+	PDS dsQCD     = PDS("QCD",       fileMap["QCD"+eraTag],         lepType.second,              "");	
+	PDS dsTTZH    = PDS("TTZH",      fileMap["TTZH"+eraTag],        lepType.second,              "");
+	PDS dsttZ_bb  = PDS("TTZ_bb",    fileMap["TTZtoBB"+eraTag],     lepType.second,              "");
+	PDS dsMuData  = PDS("MuData",    fileMap["Data_SingleMuon"+eraTag],              lepType.second,              "");
+	PDS dsEleData = PDS("EleData",   fileMap["Data_SingleElectron"+eraTag],          lepType.second,              "");
+	PDS dsEGamma  = PDS("EleData",   fileMap["Data_EGamma"+eraTag],                  lepType.second,              "");
+	//
+	//if (lepType.first == "Training"){
+	//  scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsDY, dsWJ, dsTTZ, dsTTHad, dsTTLep, dsVV, dsVVV, dsTTX}));
+	//}
+	//else if (lepType.first == "Training_Inv"){
+	//  scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsZJ, dsWJ, dsTTZ, dsTTHad, dsTTLep, dsVV, dsVVV, dsTTX, dsQCD}));
+	//}
+	if (lepType.first == "Training_bb"){
+	  scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsTTZH, dsttZ_bb, dsDY, dsZJ, dsWJ, 
+		  dsTTHad_pow, dsTTHad_pow_erdOn, dsTTHad_pow_UEDown, dsTTHad_pow_UEUp, dsTTHad_pow_hdampDown,  dsTTHad_pow_hdampUp,  
+		  dsTTSemi_pow, dsTTSemi_pow_erdOn, dsTTSemi_pow_UEDown, dsTTSemi_pow_UEUp, dsTTSemi_pow_hdampDown,  dsTTSemi_pow_hdampUp,  
+		  dsTTDi_pow, dsTTDi_pow_erdOn, dsTTDi_pow_UEDown, dsTTDi_pow_UEUp, dsTTDi_pow_hdampDown,  dsTTDi_pow_hdampUp,  
+		  dsTTbbSemi_pow, dsTTbbSemi_pow_hdampDown, dsTTbbSemi_pow_hdampUp,
+		  dsTTbbHad_pow, dsTTbbHad_pow_hdampDown, dsTTbbHad_pow_hdampUp,
+		  dsTTbbDi_pow, dsTTbbDi_pow_hdampDown, dsTTbbDi_pow_hdampUp,
+		  dsVV, dsVVV, dsTTXqq, dsQCD, dsMuData, dsEleData, dsEGamma}));
+	  //scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsTTZH, dsDY, dsZJ, dsWJ, dsTTHad, dsTTLep, dsVV, dsVVV, dsTTXqq, dsQCD, dsMuData, dsEleData}));
+	}
     }
     //////// TESTING SOMETHING ADDED BY BRYAN //////////////
     //////// CUTS :: DiLepton Cut ("passDiElecSel","passDiMuSel") , Tagged Top ("nMergedTops_drLeptonCleaned>0")

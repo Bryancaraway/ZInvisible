@@ -323,7 +323,9 @@ namespace plotterFunctions
             }
 	    
 	    // Bryan: if W plus/mius hadronic daughters found then save as all had TT
-	    if (foundWPlus && foundWMinus) isTAllHad = true;
+	    if (foundWPlus && foundWMinus){
+	      isTAllHad = true;
+	    }
 	    // if all gencuts are satisfied, pass the event
 	    
 	    if (isZToee   && isTAllHad && isZptg300) passGenCutsEE   = true;
@@ -396,10 +398,10 @@ namespace plotterFunctions
 
             double zMuMassCurrent = 1.0e300, zEff = 1.0e100, zAcc = 1.0e100;
             TLorentzVector bestRecoMuZ;
-            TLorentzVector Zrecopt;
+            //TLorentzVector Zrecopt;
             for(int i = 0; i < cutMuVec.size(); ++i){
-	      if (cutMuVec.size() == 2) printf("MuPt 1: %f\t MuPt 2: %f\n",cutMuVec[0].Pt(),cutMuVec[1].Pt());
-	      Zrecopt =  muonsLVec[0]+muonsLVec[1];//cutMuVec[0] + cutMuVec[1];
+	      //if (cutMuVec.size() == 2) printf("MuPt 1: %f\t MuPt 2: %f\n",cutMuVec[0].Pt(),cutMuVec[1].Pt());
+	      //Zrecopt =  muonsLVec[0]+muonsLVec[1];//cutMuVec[0] + cutMuVec[1];
 	      if(cutMuVec[i].Pt() < minMuPt) continue;
 	      for(int j = 0; j < i && j < cutMuVec.size(); ++j)
                 {
@@ -558,7 +560,7 @@ namespace plotterFunctions
 
             // Z values
             data_t bestRecoZPt  = bestRecoZ.Pt();
-            data_t Zrecoptpt    = Zrecopt.Pt();
+            //data_t Zrecoptpt    = Zrecopt.Pt();
             data_t metWithLL    = cleanMet.Pt();
             data_t metphiWithLL = cleanMet.Phi();
             
@@ -608,7 +610,7 @@ namespace plotterFunctions
                 }
             }
 
-            bool printEff = true;
+            bool printEff = false;
             if (printEff)
             {
                 if (cutMuVec.size() == 2)
@@ -643,7 +645,9 @@ namespace plotterFunctions
 	    // should create a new class/file to handle this gen analysis
 	    // ===========================================================================================
             tr.registerDerivedVar("bestRecoZPt", bestRecoZPt);
-            tr.registerDerivedVar("bestRecoZM", bestRecoZ.M());
+            tr.registerDerivedVar("bestRecoZM",   bestRecoZ.M());
+	    tr.registerDerivedVar("bestRecoZEta", bestRecoZ.Eta());
+	    tr.registerDerivedVar("bestRecoZPhi", bestRecoZ.Phi());
             tr.registerDerivedVar("metWithLL", metWithLL);
             tr.registerDerivedVar("metphiWithLL", metphiWithLL);
             tr.registerDerivedVar("cutMuPt1",    cutMuPt1);
@@ -712,7 +716,7 @@ namespace plotterFunctions
 	    
 	    //tr.registerDerivedVec("genTops", genTops);
 	    //tr.registerDerivedVec("genWs"  , genWs);
-            tr.registerDerivedVar("Zrecopt", Zrecoptpt);
+            //tr.registerDerivedVar("Zrecopt", Zrecoptpt);
         }
 
         double getEfficiency(std::string kinematic, std::vector<double> values)

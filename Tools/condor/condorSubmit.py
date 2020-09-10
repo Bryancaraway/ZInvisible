@@ -14,6 +14,8 @@ import json
 sys.path = [environ["CMSSW_BASE"] + "/src/SusyAnaTools/Tools/condor/",] + sys.path
 from samples import SampleCollection
 
+
+
 # main()
 def main():
     
@@ -55,7 +57,8 @@ def main():
     
     # TopTagger.cfg
     mvaFileName = ""
-    with file(environ["CMSSW_BASE"] + "/src/ZInvisible/Tools/TopTagger.cfg") as meowttcfgFile:
+    #with file(environ["CMSSW_BASE"] + "/src/ZInvisible/Tools/TopTagger.cfg") as meowttcfgFile:
+    with file(environ["CMSSW_BASE"] + "/src/ZInvisible/Tools/TopTagger_Tensorflow_"+yearWithoutPeriod+".cfg") as meowttcfgFile:
         for line in meowttcfgFile:
             line = line.split("#")[0]
             if "modelFile" in line:
@@ -85,6 +88,7 @@ def main():
                           environ["CMSSW_BASE"] + "/src/ZInvisible/Tools/allINone_ISRJets.root", 
                           environ["CMSSW_BASE"] + "/src/ZInvisible/Tools/PileupHistograms_0121_69p2mb_pm4p6.root",
                           environ["CMSSW_BASE"] + "/src/TopTagger/TopTagger/test/libTopTagger.so",
+                          environ["CMSSW_BASE"] + "/src/ZInvisible/Tools/TopTagSF_AltTWP.root",
                           environ["CMSSW_BASE"] + "/src/ZInvisible/Tools/TopTagger.cfg",
                           environ["CMSSW_BASE"] + "/src/ZInvisible/Tools/sampleSets_PostProcessed_2016.cfg",
                           environ["CMSSW_BASE"] + "/src/ZInvisible/Tools/sampleSets_PostProcessed_2017.cfg",
