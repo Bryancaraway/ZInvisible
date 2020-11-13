@@ -551,6 +551,7 @@ int main(int argc, char* argv[])
       
 
       "LHEScaleWeight","PSWeight", // systematic
+      "LHEReweightingWeight",
 
       "BTagWeight","puWeight","ISRWeight",
       "BTagWeightHeavy","BTagWeightLight",
@@ -652,7 +653,7 @@ int main(int argc, char* argv[])
 	PDS dsDY      = PDS("DY",        fileMap["DYJetsToLL"+eraTag],  lepType.second,              "");
 	PDS dsZJ      = PDS("ZJets",     fileMap["ZJetsToNuNu"+eraTag], lepType.second,              "");
 	PDS dsWJ      = PDS("WJets",     fileMap["WJetsToLNu"+eraTag],  lepType.second,              "");
-	PDS dsTTZ     = PDS("TTZ",       fileMap["TTZToLLNuNu"+eraTag], lepType.second,              "");
+	//PDS dsTTZ     = PDS("TTZ",       fileMap["TTZToLLNuNu"+eraTag], lepType.second,              "");
 	//PDS dsTTHad   = PDS("TTBarHad",  fileMap["TTbarHad"+eraTag],    lepType.second+";isTAllHad",  ""); // for non powheg
 	//PDS dsTTLep   = PDS("TTBarLep",  fileMap["TTbarNoHad"+eraTag],  lepType.second,              "");
 	PDS dsTTHad_pow   = PDS("TTBarHad_pow",  fileMap["TTbarHad_pow"+eraTag],    lepType.second,             "");
@@ -664,19 +665,19 @@ int main(int argc, char* argv[])
 	// ttbar dedicated systematcis 
 	PDS dsTTHad_pow_erdOn   = PDS("TTBarHad_pow_erdOn",      fileMap["TTbarHad_pow_erdOn"+eraTag],    lepType.second,             "");
 	PDS dsTTHad_pow_UEDown   = PDS("TTBarHad_pow_UEDown",     fileMap["TTbarHad_pow_UEDown"+eraTag],    lepType.second,             "");
-	PDS dsTTHad_pow_UEUp   = PDS("TTBarHad_pow_UEDUp",      fileMap["TTbarHad_pow_UEUp"+eraTag],    lepType.second,             "");
+	PDS dsTTHad_pow_UEUp   = PDS("TTBarHad_pow_UEUp",      fileMap["TTbarHad_pow_UEUp"+eraTag],    lepType.second,             "");
 	PDS dsTTHad_pow_hdampDown   = PDS("TTBarHad_pow_hdampDown",  fileMap["TTbarHad_pow_hdampDown"+eraTag],    lepType.second,             "");
 	PDS dsTTHad_pow_hdampUp   = PDS("TTBarHad_pow_hdampUp",    fileMap["TTbarHad_pow_hdampUp"+eraTag],    lepType.second,             "");
 	//
 	PDS dsTTSemi_pow_erdOn   = PDS("TTBarSemi_pow_erdOn",      fileMap["TTbarSemi_pow_erdOn"+eraTag],    lepType.second,             "");
 	PDS dsTTSemi_pow_UEDown   = PDS("TTBarSemi_pow_UEDown",     fileMap["TTbarSemi_pow_UEDown"+eraTag],    lepType.second,             "");
-	PDS dsTTSemi_pow_UEUp   = PDS("TTBarSemi_pow_UEDUp",      fileMap["TTbarSemi_pow_UEUp"+eraTag],    lepType.second,             "");
+	PDS dsTTSemi_pow_UEUp   = PDS("TTBarSemi_pow_UEUp",      fileMap["TTbarSemi_pow_UEUp"+eraTag],    lepType.second,             "");
 	PDS dsTTSemi_pow_hdampDown   = PDS("TTBarSemi_pow_hdampDown",  fileMap["TTbarSemi_pow_hdampDown"+eraTag],    lepType.second,             "");
 	PDS dsTTSemi_pow_hdampUp   = PDS("TTBarSemi_pow_hdampUp",    fileMap["TTbarSemi_pow_hdampUp"+eraTag],    lepType.second,             "");
 	//
 	PDS dsTTDi_pow_erdOn   = PDS("TTBarDi_pow_erdOn",      fileMap["TTbarDi_pow_erdOn"+eraTag],    lepType.second,             "");
 	PDS dsTTDi_pow_UEDown   = PDS("TTBarDi_pow_UEDown",     fileMap["TTbarDi_pow_UEDown"+eraTag],    lepType.second,             "");
-	PDS dsTTDi_pow_UEUp   = PDS("TTBarDi_pow_UEDUp",      fileMap["TTbarDi_pow_UEUp"+eraTag],    lepType.second,             "");
+	PDS dsTTDi_pow_UEUp   = PDS("TTBarDi_pow_UEUp",      fileMap["TTbarDi_pow_UEUp"+eraTag],    lepType.second,             "");
 	PDS dsTTDi_pow_hdampDown   = PDS("TTBarDi_pow_hdampDown",  fileMap["TTbarDi_pow_hdampDown"+eraTag],    lepType.second,             "");
 	PDS dsTTDi_pow_hdampUp   = PDS("TTBarDi_pow_hdampUp",    fileMap["TTbarDi_pow_hdampUp"+eraTag],    lepType.second,             "");
 	//
@@ -694,8 +695,14 @@ int main(int argc, char* argv[])
 	PDS dsTTX     = PDS("TTX",       fileMap["TTX"+eraTag],         lepType.second,              "");
 	PDS dsTTXqq   = PDS("TTX",       fileMap["TTXqq"+eraTag],       lepType.second,              "");
 	PDS dsQCD     = PDS("QCD",       fileMap["QCD"+eraTag],         lepType.second,              "");	
-	PDS dsTTZH    = PDS("TTZH",      fileMap["TTZH"+eraTag],        lepType.second,              "");
-	PDS dsttZ_bb  = PDS("TTZ_bb",    fileMap["TTZtoBB"+eraTag],     lepType.second,              "");
+	//PDS dsTTZH    = PDS("TTZH",      fileMap["TTZH"+eraTag],        lepType.second,              "");
+	PDS dsTTZ     = PDS("TTZ",       fileMap["TTZ"+eraTag],         lepType.second,              "");
+	PDS dsTTH     = PDS("TTH",       fileMap["TTH"+eraTag],         lepType.second,              "");
+	PDS dsttZ_bb  = PDS("TTZ_bb",    fileMap["TTZToBB"+eraTag],     lepType.second,              "");
+	//
+	PDS dsTTZ_EFT = PDS("TTZ_EFT",       fileMap["TTZ_EFT"+eraTag], lepType.second,              "");
+	PDS dsTTH_EFT = PDS("TTH_EFT",       fileMap["TTH_EFT"+eraTag], lepType.second,              "");
+	//
 	PDS dsMuData  = PDS("MuData",    fileMap["Data_SingleMuon"+eraTag],              lepType.second,              "");
 	PDS dsEleData = PDS("EleData",   fileMap["Data_SingleElectron"+eraTag],          lepType.second,              "");
 	PDS dsEGamma  = PDS("EleData",   fileMap["Data_EGamma"+eraTag],                  lepType.second,              "");
@@ -707,7 +714,8 @@ int main(int argc, char* argv[])
 	//  scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsZJ, dsWJ, dsTTZ, dsTTHad, dsTTLep, dsVV, dsVVV, dsTTX, dsQCD}));
 	//}
 	if (lepType.first == "Training_bb"){
-	  scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsTTZH, dsttZ_bb, dsDY, dsZJ, dsWJ, 
+	  scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsTTZ, dsTTH, dsTTZ_EFT, dsTTH_EFT,//dsTTZH, 
+		  dsttZ_bb, dsDY, dsZJ, dsWJ, 
 		  dsTTHad_pow, dsTTHad_pow_erdOn, dsTTHad_pow_UEDown, dsTTHad_pow_UEUp, dsTTHad_pow_hdampDown,  dsTTHad_pow_hdampUp,  
 		  dsTTSemi_pow, dsTTSemi_pow_erdOn, dsTTSemi_pow_UEDown, dsTTSemi_pow_UEUp, dsTTSemi_pow_hdampDown,  dsTTSemi_pow_hdampUp,  
 		  dsTTDi_pow, dsTTDi_pow_erdOn, dsTTDi_pow_UEDown, dsTTDi_pow_UEUp, dsTTDi_pow_hdampDown,  dsTTDi_pow_hdampUp,  
