@@ -19,11 +19,11 @@ class Pileup_Sys;
 namespace plotterFunctions
 {
     class GenerateWeight;
-    class GeneratePhotonEfficiency;
+    //class GeneratePhotonEfficiency;
     class LepInfo;
     class BasicLepton;
     class Fakebtagvectors;
-    class GetSearchBin;
+    //class GetSearchBin;
     class TriggerInfo;
     class PrepareMiniTupleVars;
     class NJetWeight;
@@ -34,7 +34,7 @@ namespace plotterFunctions
     class Taudiv;
     class NJetAk8;
     class Ak8DrMatch; 
-    class Gamma;
+    //class Gamma;
 }
 
 class SystWeights;
@@ -64,9 +64,9 @@ private:
     BaselineVessel *blv_drLeptonCleaned;
     BaselineVessel *blv_drLeptonCleaned_jetpt20;
     BaselineVessel *blv_drLeptonCleaned_jetpt30;
-    BaselineVessel *blv_drPhotonCleaned;
-    BaselineVessel *blv_drPhotonCleaned_jetpt20;
-    BaselineVessel *blv_drPhotonCleaned_jetpt30;
+    //BaselineVessel *blv_drPhotonCleaned;
+    //BaselineVessel *blv_drPhotonCleaned_jetpt20;
+    //BaselineVessel *blv_drPhotonCleaned_jetpt30;
     BaselineVessel *blvZinv;
     //BaselineVessel *blvZinv1b;
     //BaselineVessel *blvZinv2b;
@@ -79,19 +79,19 @@ private:
     CleanedJets                                 *cleanedJets;
     RunTopTagger                                *runTopTagger;
     RunTopTagger                                *runTopTagger_drLeptonCleaned;
-    RunTopTagger                                *runTopTagger_drPhotonCleaned;
-    plotterFunctions::Gamma                     *gamma;
+    //RunTopTagger                                *runTopTagger_drPhotonCleaned;
+    //plotterFunctions::Gamma                     *gamma;
     PDFUncertainty                              *myPDFUnc;
     BTagCorrector                               *bTagCorrector;
     ISRCorrector                                *ISRcorrector;
     Pileup_Sys                                  *pileup;
     plotterFunctions::GenerateWeight            *weights;
-    plotterFunctions::GeneratePhotonEfficiency  *generatePhotonEfficiency;
+    //plotterFunctions::GeneratePhotonEfficiency  *generatePhotonEfficiency;
     plotterFunctions::NJetWeight                *njWeight;
     plotterFunctions::BasicLepton               *basicLepton;
     plotterFunctions::LepInfo                   *lepInfo;
     plotterFunctions::Fakebtagvectors           *fakebtagvectors;
-    plotterFunctions::GetSearchBin              *getSearchBin;
+    //plotterFunctions::GetSearchBin              *getSearchBin;
     plotterFunctions::TriggerInfo               *triggerInfo;
     plotterFunctions::PrepareMiniTupleVars      *prepareMiniTupleVars;
     plotterFunctions::SystematicPrep            *systematicPrep;
@@ -131,9 +131,9 @@ private:
     GetVectors                                  *getVectors;
     CleanedJets                                 *cleanedJets;
     RunTopTagger                                *runTopTagger;
-    plotterFunctions::Gamma                     *gamma;
+    //plotterFunctions::Gamma                     *gamma;
     plotterFunctions::BasicLepton               *basicLepton;
-    plotterFunctions::GeneratePhotonEfficiency  *generatePhotonEfficiency;
+    //plotterFunctions::GeneratePhotonEfficiency  *generatePhotonEfficiency;
 
 public:
     RegisterFunctionsCalcEff();

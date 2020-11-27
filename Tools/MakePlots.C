@@ -497,7 +497,9 @@ int main(int argc, char* argv[])
     std::string lClean = "_drLeptonCleaned";
     std::set<std::string> vars = {
       
-      "nResolvedTops"+lClean, "nMergedTops"+lClean, "nBottoms"+lClean, "nSoftBottoms"+lClean, "nJets30"+lClean,              // validation
+      //"nMergedTops"+lClean, 
+      "nBottoms"+lClean, "nJets30"+lClean,              // validation
+      //"nSoftBottoms"+lClean, 
       "MET_pt", "MET_phi", "Pass_IsoTrkVeto", "Pass_TauVeto", "Pass_ElecVeto", "Pass_MuonVeto",                              // validation
       "passSingleLepElec", "passSingleLepMu", "Lep_pt", "Lep_eta" ,"Lep_phi", "Lep_E",                                       // validation
 
@@ -507,12 +509,16 @@ int main(int argc, char* argv[])
       "Electron_pt","Electron_eta","Electron_phi","Electron_mass",
       "Electron_miniPFRelIso_all", "Electron_cutBasedNoIso", "Electron_cutBased", 
 
+      "nResolvedTops"+lClean, 
       "ResolvedTopCandidate_discriminator",                                                                                  // validation
       "ResolvedTopCandidate_j1Idx", "ResolvedTopCandidate_j2Idx", "ResolvedTopCandidate_j3Idx",                              // validation
-      //"ResolvedTopCandidate_pt", "ResolvedTopCandidate_eta", "ResolvedTopCandidate_phi", "ResolvedTopCandidate_mass",        // validation
+      
 
-      "Jet_btagDeepB"+lClean, "Jet_deepFlavourb"+lClean, "Jet_deepFlavourbb"+lClean,                                            // training 1 (AK4)
-      "Jet_deepFlavourlepb"+lClean, "Jet_deepFlavouruds"+lClean,                                                                // training 1 (AK4)
+      ////"ResolvedTopCandidate_pt", "ResolvedTopCandidate_eta", "ResolvedTopCandidate_phi", "ResolvedTopCandidate_mass",        // validation
+
+      "Jet_btagDeepB"+lClean, 
+      //"Jet_deepFlavourb"+lClean, "Jet_deepFlavourbb"+lClean,                                            // training 1 (AK4)
+      //"Jet_deepFlavourlepb"+lClean, "Jet_deepFlavouruds"+lClean,                                                                // training 1 (AK4)
       "Jet_pt"+lClean, "Jet_eta"+lClean, "Jet_phi"+lClean, "Jet_mass"+lClean,                                                   // training 1 (AK4)
       //"Jet_pt", "Jet_eta", "Jet_phi", "Jet_mass",                                                                               // training 1 (AK4)
       "Jet_lepcleaned_idx", // test
@@ -570,11 +576,12 @@ int main(int argc, char* argv[])
       "nBottoms_JESUp"+lClean,"nBottoms_JESDown"+lClean,"nBottoms_JERUp"+lClean,"nBottoms_JERDown"+lClean,
 
       "ResolvedTopCandidate_JESUp_discriminator",                                                                                  // validation
-      "ResolvedTopCandidate_JESUp_j1Idx", "ResolvedTopCandidate_JESUp_j2Idx", "ResolvedTopCandidate_JESUp_j3Idx",                              // validation
-      //"ResolvedTopCandidate_JESUp_pt", "ResolvedTopCandidate_JESUp_eta", "ResolvedTopCandidate_JESUp_phi", "ResolvedTopCandidate_JESUp_mass",        // validation
+      "ResolvedTopCandidate_JESUp_j1Idx", "ResolvedTopCandidate_JESUp_j2Idx", "ResolvedTopCandidate_JESUp_j3Idx",                              // validation      
       "ResolvedTopCandidate_JESDown_discriminator",                                                                                  // validation
       "ResolvedTopCandidate_JESDown_j1Idx", "ResolvedTopCandidate_JESDown_j2Idx", "ResolvedTopCandidate_JESDown_j3Idx",                              // validation
-      //"ResolvedTopCandidate_JESDown_pt", "ResolvedTopCandidate_JESDown_eta", "ResolvedTopCandidate_JESDown_phi", "ResolvedTopCandidate_JESDown_mass",        // validation
+
+      ////"ResolvedTopCandidate_JESUp_pt", "ResolvedTopCandidate_JESUp_eta", "ResolvedTopCandidate_JESUp_phi", "ResolvedTopCandidate_JESUp_mass",        // validation
+      ////"ResolvedTopCandidate_JESDown_pt", "ResolvedTopCandidate_JESDown_eta", "ResolvedTopCandidate_JESDown_phi", "ResolvedTopCandidate_JESDown_mass",        // validation
       // end JES, JER variations
       "BTagWeight_Up", "BTagWeight_Down",                                                                                    // Systematics
       "BTagWeightLight_Up", "BTagWeightLight_Down",                                                                                    // Systematics
@@ -783,7 +790,7 @@ int main(int argc, char* argv[])
       //{"NWs_tau",       "nWs_tau",                           0.0,   5.0   , true},
       //{"NZs_qcd",       "nZs_qcd",                           0.0,   5.0   , true},
       //{"NZs_tau",       "nZs_tau",                           0.0,   5.0   , true},
-      {"TopDisc",     "ResolvedTopsDisc",                       0.7,   1.0,   false},
+      //{"TopDisc",     "ResolvedTopsDisc",                       0.7,   1.0,   false},
       {"nRt_ttz",       "nRt_ttz",                              0.0,   7.0,   true}};
       //{"TopPt",     "ResolvedTopCandidate_pt[0]",                       0.0,   1000.0, !doZptCut},
       //{"TopM",      "ResolvedTopCandidate_mass[0]",                     123.0, 223.0,  !doZptCut},
@@ -800,8 +807,8 @@ int main(int argc, char* argv[])
       //{"Bottom_dR", "b_dR_drLeptonCleaned",                             0.0,   5.0,    !doZptCut}};
     
     if (testSel) {                                                                 // validate selections
-      kenimatic_vars.push_back({"nRTops",    "nResolvedTops_drLeptonCleaned", 0.0, 10.0,   true});
-      kenimatic_vars.push_back({"nMTops",    "nMergedTops_drLeptonCleaned",   0.0, 10.0,   true});
+      //kenimatic_vars.push_back({"nRTops",    "nResolvedTops_drLeptonCleaned", 0.0, 10.0,   true});
+      //kenimatic_vars.push_back({"nMTops",    "nMergedTops_drLeptonCleaned",   0.0, 10.0,   true});
       kenimatic_vars.push_back({"nBot",      "nBottoms_drLeptonCleaned",      0.0, 10.0,   true});
     }
     std::string          Zpt_selection  = "bestRecoZPt>300";
@@ -817,7 +824,7 @@ int main(int argc, char* argv[])
     std::vector<StrPair> topR_selections = {
       //{"nRt0",  "nResolvedTops_drLeptonCleaned=0"},
       //{"nRt1", "nResolvedTops_drLeptonCleaned=1"},
-      {"nRtg0", "nResolvedTops_drLeptonCleaned>=1"},
+      //{"nRtg0", "nResolvedTops_drLeptonCleaned>=1"},
       //{"nRt2", "nResolvedTops_drLeptonCleaned=2"},
       //{"nRtg2", "nResolvedTops_drLeptonCleaned>2"},
       //{"nRt0",  "nRt_ttz=0"},
@@ -861,14 +868,6 @@ int main(int argc, char* argv[])
 	else top_selections.push_back({t.first+"_"+rm.first, t.second+";"+rm.second});
       }
     }
-    if (testSel) {                                                               // validate selections
-      top_selections.push_back({"nRtge2","nResolvedTops_drLeptonCleaned>=2"}); // really >= 1
-      top_selections.push_back({"nRteg2","nResolvedTops_drLeptonCleaned=>2"}); // doesnt work
-      top_selections.push_back({"nRt2","nResolvedTops_drLeptonCleaned=2"});    // works
-      top_selections.push_back({"nMtge2","nMergedTops_drLeptonCleaned>=2"});   // really >= 1
-      top_selections.push_back({"nMteg2","nMergedTops_drLeptonCleaned=>2"});   // doesnt work
-      top_selections.push_back({"nMt2","nMergedTops_drLeptonCleaned=2"});      // works
-      }
     // === PDS === // 
     // Baseline Cuts
     std::string ttz_elec_cuts      = "passElecZinvSelOnZMassPeak";//"passDiElecSel";

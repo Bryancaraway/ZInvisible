@@ -36,6 +36,7 @@
 #include <iostream>
 #include <string>
 #include <set>
+#include <sys/stat.h>
 
 namespace plotterFunctions
 {
@@ -636,12 +637,12 @@ namespace plotterFunctions
             }
 	    // Bryan print out event identifier (Lumi, Event, Run) for events that pass selection criteria
 	    bool sel_cuts = ((passElecZinvSelOnZMassPeak || passMuZinvSelOnZMassPeak) && (bestRecoZPt > 300));
-	    const auto& nRTops = tr.getVar<int>("nResolvedTops_drLeptonCleaned");
+	    //const auto& nRTops = tr.getVar<int>("nResolvedTops_drLeptonCleaned");
 	    const auto& nBots =  tr.getVar<int>("nBottoms");
-	    bool obj_cuts = ((nRTops > 0) & (nBots > 1));
-	    if ((sel_cuts && obj_cuts) && (isZToLL == true && isTAllHad == false)) {
-	      printf("Event,%i,%i,%i,%i,%i\n",lumi,event,run,isZToLL,isTAllHad); // Lumi,Event,Run,ZtoLL,TTallHad
-	    }
+	    //bool obj_cuts = ((nRTops > 0) & (nBots > 1));
+	    //if ((sel_cuts && obj_cuts) && (isZToLL == true && isTAllHad == false)) {
+	    //  printf("Event,%i,%i,%i,%i,%i\n",lumi,event,run,isZToLL,isTAllHad); // Lumi,Event,Run,ZtoLL,TTallHad
+	    //}
 	    // should create a new class/file to handle this gen analysis
 	    // ===========================================================================================
             tr.registerDerivedVar("bestRecoZPt", bestRecoZPt);

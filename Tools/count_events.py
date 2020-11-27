@@ -1,42 +1,73 @@
-#from ROOT import TFile                                                                                                                                                                                                                          
+#from ROOT import TFile                                                                                         
 import uproot
 import sys
 import os
 import concurrent.futures
 import multiprocessing
+import re
 import numpy as np
 executor = concurrent.futures.ThreadPoolExecutor()
 
 def worker(roo):
+    if 'cmseos' in roo:
+        #roo = roo.replace('root://kodiak-se.baylor.edu//','/cms/data/')
+        roo = roo.replace('root://cmseos.fnal.gov//','/eos/uscms/')   
     t=uproot.open(roo)['Events']
-
-    gw = t.array('genWeight', executor=executor, blocking=True)
+    gw = t.array('genWeight')#, executor=executor, blocking=True)
+    scale = t.array('LHEScaleWeight').pad(9).fillna(1) * np.sign(gw)
+    pdf_up   = t.array('pdfWeight_Up') * np.sign(gw)
+    pdf_down = t.array('pdfWeight_Down') * np.sign(gw)
+    #
+    sc_tot = [ sum( scale[:,i] ) for i in range(9)]
+    mur_up_tot, mur_down_tot   = sc_tot[7], sc_tot[1]
+    muf_up_tot, muf_down_tot   = sc_tot[5], sc_tot[3]
+    murf_up_tot, murf_down_tot = sc_tot[8], sc_tot[0]
+    #
+    pdf_up_tot, pdf_down_tot = sum(pdf_up), sum(pdf_down)
+    #
     p_count= sum(gw>=0.0)
     n_count= sum(gw<0.0)
-    return [p_count, n_count]
+    tot_count = p_count - n_count
+    return [p_count, n_count, # 1-2
+            tot_count,        # 3
+            mur_up_tot, mur_down_tot, muf_up_tot, muf_down_tot, murf_up_tot, murf_down_tot, # 4-9
+            pdf_up_tot, pdf_down_tot # 10-11
+    ]
  
 def process(sample, target_file, pool):
     with open(target_file) as roo_files:
         roo_list  = [line.strip('\n') for line in roo_files.readlines()]
         #
-        result_list = np.array(pool.map(worker, ( roo for roo in roo_list)))
-        p_count, n_count = sum(result_list[:,0]), sum(result_list[:,1])
-        #
         print('\nFor sample: {}'.format(sample))
-        print('p_events: {}'.format(p_count))
-        print('n_events: {}\n'.format(n_count))
+        result_list = np.array(pool.map(worker, ( roo for roo in roo_list if 'kodiak' not in roo)))
+        #results = sum(result_list[:,0]), sum(result_list[:,1])
+        results  = [ sum(result_list[:,i]) for i in range(11) ] 
+        #
+        print('p_events, n_events: {}, {}'.format(results[0], results[1]))
+        print('Sample : Tot events : u r up/down, mu f up/down, mu rf up/down : pdf up/down')
+        print('{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}'.format(sample, *results[2:]))
+
 
 def main(cfg_file,get_s=None):
     with open(sys.argv[1]) as cfg_file:
-        pool = multiprocessing.Pool(processes=8) # have to define this here
+        pool = multiprocessing.Pool() # have to define this here
         for sample in cfg_file.readlines():
             if '#' is sample[0]: continue
             if sample.replace('\n','') is '' : continue
             if get_s is not None and get_s not in sample: continue
             s_name, s_dir, s_file, = [ _.strip() for _ in sample.split(',')[:3] ]
-            if not os.path.exists(s_dir+'/'+s_file) : raise NameError(s_dir+'/'+s_file)
-
-            process(s_name, s_dir+'/'+s_file, pool)
+            #if not os.path.exists(s_dir+'/'+s_file) : raise NameError(s_dir+'/'+s_file)
+            print('uscms' in s_dir)
+            if 'uscms' in s_dir:
+                s_dir = 'xrdcp -f root://cmseos.fnal.gov//' + re.search(r'store/[a-zA-Z0-9_/]*', s_dir).group()            
+                print('{0}/{1} .'.format(s_dir, s_file))
+                os.system('{0}/{1} .'.format(s_dir, s_file))
+            else: 
+                s_file = '{0}/{1} .'.format(s_dir, s_file)
+            #print(f'{s_dir}/{s_file} .')
+            #os.system(f'{s_dir}/{s_file} .')
+            process(s_name, s_file, pool)
+            os.system('rm {}'.format(s_file))
 
 if __name__ == '__main__':
 
@@ -47,4 +78,3 @@ if __name__ == '__main__':
     #
     main(cfg_file,sample)
     
-
