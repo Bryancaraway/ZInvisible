@@ -509,7 +509,7 @@ int main(int argc, char* argv[])
       "Electron_pt","Electron_eta","Electron_phi","Electron_mass",
       "Electron_miniPFRelIso_all", "Electron_cutBasedNoIso", "Electron_cutBased", 
 
-      "nResolvedTops"+lClean, 
+      //"nResolvedTops"+lClean, 
       "ResolvedTopCandidate_discriminator",                                                                                  // validation
       "ResolvedTopCandidate_j1Idx", "ResolvedTopCandidate_j2Idx", "ResolvedTopCandidate_j3Idx",                              // validation
       
@@ -709,6 +709,9 @@ int main(int argc, char* argv[])
 	//
 	PDS dsTTZ_EFT = PDS("TTZ_EFT",       fileMap["TTZ_EFT"+eraTag], lepType.second,              "");
 	PDS dsTTH_EFT = PDS("TTH_EFT",       fileMap["TTH_EFT"+eraTag], lepType.second,              "");
+	PDS dsTTJets_EFT = PDS("TTJets_EFT", fileMap["TTJets_EFT"+eraTag], lepType.second,           "");
+	PDS dsTTBB_EFT = PDS("TTBB_EFT",       fileMap["TTBB_EFT"+eraTag], lepType.second,              "");
+	 
 	//
 	PDS dsMuData  = PDS("MuData",    fileMap["Data_SingleMuon"+eraTag],              lepType.second,              "");
 	PDS dsEleData = PDS("EleData",   fileMap["Data_SingleElectron"+eraTag],          lepType.second,              "");
@@ -721,7 +724,7 @@ int main(int argc, char* argv[])
 	//  scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsZJ, dsWJ, dsTTZ, dsTTHad, dsTTLep, dsVV, dsVVV, dsTTX, dsQCD}));
 	//}
 	if (lepType.first == "Training_bb"){
-	  scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsTTZ, dsTTH, dsTTZ_EFT, dsTTH_EFT,//dsTTZH, 
+	  scanners.push_back(Plotter::Scanner(lepType.first, vars, {dsTTZ, dsTTH, dsTTZ_EFT, dsTTH_EFT, dsTTJets_EFT, dsTTBB_EFT,//dsTTZH, 
 		  dsttZ_bb, dsDY, dsZJ, dsWJ, 
 		  dsTTHad_pow, dsTTHad_pow_erdOn, dsTTHad_pow_UEDown, dsTTHad_pow_UEUp, dsTTHad_pow_hdampDown,  dsTTHad_pow_hdampUp,  
 		  dsTTSemi_pow, dsTTSemi_pow_erdOn, dsTTSemi_pow_UEDown, dsTTSemi_pow_UEUp, dsTTSemi_pow_hdampDown,  dsTTSemi_pow_hdampUp,  
